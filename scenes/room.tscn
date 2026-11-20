@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://scripts/input/mouse_grabber.gd" id="2_grabber"]
 [ext_resource type="PackedScene" path="res://models/desk/desk_visual.tscn" id="3_desk"]
 [ext_resource type="Texture2D" path="res://models/environment/poly_haven_studio_1k.hdr" id="4_hdri"]
+[ext_resource type="Script" path="res://scripts/input/vr_grabber.gd" id="5_vr_grabber"]
 
 [sub_resource type="PanoramaSkyMaterial" id="SkyMat"]
 panorama = ExtResource("4_hdri")
@@ -41,6 +42,10 @@ roughness = 0.9
 [sub_resource type="PlaneMesh" id="Mesh_floor"]
 material = SubResource("Mat_floor")
 size = Vector2(6, 6)
+
+[sub_resource type="SphereMesh" id="Mesh_hand"]
+radius = 0.025
+height = 0.05
 
 [sub_resource type="BoxShape3D" id="Shape_table"]
 size = Vector3(1.2, 0.05, 0.7)
@@ -92,3 +97,26 @@ fov = 60.0
 
 [node name="MouseGrabber" type="Node" parent="."]
 script = ExtResource("2_grabber")
+
+[node name="XROrigin3D" type="XROrigin3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.55)
+
+[node name="XRCamera3D" type="XRCamera3D" parent="XROrigin3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+
+[node name="LeftHand" type="XRController3D" parent="XROrigin3D"]
+tracker = &"left_hand"
+
+[node name="Marker" type="MeshInstance3D" parent="XROrigin3D/LeftHand"]
+mesh = SubResource("Mesh_hand")
+
+[node name="RightHand" type="XRController3D" parent="XROrigin3D"]
+tracker = &"right_hand"
+
+[node name="Marker" type="MeshInstance3D" parent="XROrigin3D/RightHand"]
+mesh = SubResource("Mesh_hand")
+
+[node name="VRGrabber" type="Node" parent="." node_paths=PackedStringArray("left_hand", "right_hand")]
+script = ExtResource("5_vr_grabber")
+left_hand = NodePath("../XROrigin3D/LeftHand")
+right_hand = NodePath("../XROrigin3D/RightHand")
