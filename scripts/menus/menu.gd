@@ -9,11 +9,14 @@ extends Node3D
 const MenuTheme := preload("res://scripts/ui/menu_theme.gd")
 const MenuScreen3D := preload("res://scripts/ui/menu_screen_3d.gd")
 const MenuPointer := preload("res://scripts/input/menu_pointer.gd")
+const StoryMap := preload("res://scripts/menus/story_map.gd")
 
 ## The page on screen ("home", "login", "modes", "coming_soon", ...).
 var page := ""
 ## True when playing in a headset.
 var in_vr := false
+## The Story Mode roadmap (data/story.json).
+var story = null
 
 @onready var screen: MenuScreen3D = $MenuScreen
 @onready var pointer: MenuPointer = $MenuPointer
@@ -30,6 +33,10 @@ func _ready() -> void:
 		$Camera3D.make_current()
 		$XROrigin3D.visible = false
 	pointer.use_vr(in_vr)
+	var manager_for_story := _manager()
+	story = StoryMap.load_from(manager_for_story.registry if manager_for_story else null)
+	for problem in story.errors:
+		push_error("story.json: " + problem)
 	# Back from a mission started here: reopen the page it was started from.
 	var manager := _manager()
 	if manager and manager.return_page != "":
@@ -58,6 +65,10 @@ func show_page(name: String, arg := "") -> void:
 			content = _modes_page()
 		"free_play":
 			content = _free_play_page(arg if arg != "" else "computer")
+		"story":
+			content = _story_page()
+		"roadmap":
+			content = _roadmap_page(arg if arg != "" else "irl")
 		_:
 			content = _coming_soon_page(arg)
 	var frame := MenuTheme.panel()
@@ -140,7 +151,7 @@ func _modes_page() -> Control:
 		"Pick any Computer or Cloud task and start it.", [], func(): show_page("free_play", "computer")))
 	cards.add_child(_card("StoryCard", "mode_story", "Story Mode",
 		"Follow a roadmap: from plugging in a PC to building rigs, or into the cloud.", [],
-		func(): show_page("coming_soon", "Story Mode")))
+		func(): show_page("story")))
 	cards.add_child(_card("OpenWorldCard", "mode_open_world", "Open World",
 		"Your own desk and room, every part and tool.", ["Coming soon"],
 		func(): show_page("coming_soon", "Open World")))
@@ -237,6 +248,111 @@ func _click_layer(button_name: String, on_press: Callable) -> Button:
 	return b
 
 
+func _story_page() -> Control:
+	var column := _page_column("Story Mode", "modes")
+	var cards := HBoxContainer.new()
+	cards.add_theme_constant_override("separation", 32)
+	cards.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	for id in ["irl", "cloud"]:
+		var c: Dictionary = story.chapter(id)
+		if c.is_empty():
+			continue
+		var p: Array = story.progress(id, _is_done)
+		var tags := [] if p[1] > 0 else ["No tasks yet"]
+		var card := _card("Chapter_" + id, "story_" + id, c.title, c.subtitle, tags,
+			func(): show_page("roadmap", id), "%d of %d done" % [p[0], p[1]])
+		cards.add_child(card)
+	var both_done: bool = story.chapter_complete("irl", _is_done) and story.chapter_complete("cloud", _is_done)
+	var bridge := _card("Chapter_bridge", "story_bridge", str(story.bridge.get("title", "Bridge")),
+		str(story.bridge.get("subtitle", "")), [] if both_done else ["Locked"],
+		func(): show_page("coming_soon", "Bridge"), "Open")
+	bridge.disabled = not both_done
+	cards.add_child(bridge)
+	column.add_child(cards)
+	return column
+
+
+## A chapter's roadmap: each act and its tasks, in order, colored by state.
+func _roadmap_page(chapter_id: String) -> Control:
+	var c: Dictionary = story.chapter(chapter_id)
+	var column := _page_column("Story: " + str(c.get("title", chapter_id)), "story")
+	column.add_child(MenuTheme.label(str(c.get("subtitle", "")), MenuTheme.SIZE_SMALL, MenuTheme.MUTED))
+	var states: Dictionary = story.states(chapter_id, _is_done)
+	var scroll := MenuTheme.scroll()
+	scroll.name = "Roadmap"
+	var acts := VBoxContainer.new()
+	acts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	acts.add_theme_constant_override("separation", 22)
+	var number := 0
+	for act in c.get("acts", []):
+		acts.add_child(MenuTheme.label(act.title, MenuTheme.SIZE_BODY + 2))
+		var flow := HFlowContainer.new()
+		flow.add_theme_constant_override("h_separation", 20)
+		flow.add_theme_constant_override("v_separation", 20)
+		for task in act.tasks:
+			number += 1
+			flow.add_child(_roadmap_node(chapter_id, task, states[task.id], number))
+		acts.add_child(flow)
+	scroll.add_child(acts)
+	column.add_child(scroll)
+	return column
+
+
+## One step on the roadmap. Done and next steps can be played; locked and
+## planned ones can't. Its state is in the "state" meta (for tests).
+func _roadmap_node(chapter_id: String, task: Dictionary, state: String, number: int) -> Control:
+	var fill := MenuTheme.CARD
+	var border := MenuTheme.BORDER
+	var text_color := MenuTheme.TEXT
+	var tag_text := ""
+	match state:
+		StoryMap.DONE:
+			border = MenuTheme.DONE
+			tag_text = "Done"
+		StoryMap.NEXT:
+			fill = MenuTheme.ACCENT
+			border = MenuTheme.ACCENT
+			tag_text = "Play"
+		StoryMap.LOCKED:
+			text_color = MenuTheme.MUTED
+			tag_text = "Locked"
+		_:
+			fill = MenuTheme.PANEL
+			text_color = MenuTheme.MUTED
+			tag_text = "Planned"
+	var node := PanelContainer.new()
+	node.name = "Node_" + task.id.replace(".", "_")
+	node.set_meta("state", state)
+	node.custom_minimum_size = Vector2(262, 150)
+	node.add_theme_stylebox_override("panel", MenuTheme.box(fill, border, MenuTheme.RADIUS, 18))
+	var inside := VBoxContainer.new()
+	inside.add_theme_constant_override("separation", 8)
+	var top := HBoxContainer.new()
+	top.add_child(_nowrap(MenuTheme.label(str(number), MenuTheme.SIZE_SMALL, MenuTheme.TEXT if state == StoryMap.NEXT else MenuTheme.MUTED)))
+	var push := Control.new()
+	push.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(push)
+	var tag_fill := Color(1, 1, 1, 0.18) if state == StoryMap.NEXT else (Color(MenuTheme.DONE, 0.18) if state == StoryMap.DONE else MenuTheme.CARD_HOVER)
+	var tag_font := MenuTheme.TEXT if state == StoryMap.NEXT else (MenuTheme.DONE if state == StoryMap.DONE else MenuTheme.MUTED)
+	top.add_child(MenuTheme.tag(tag_text, tag_fill, tag_font))
+	inside.add_child(top)
+	inside.add_child(MenuTheme.label(task.title, MenuTheme.SIZE_SMALL, text_color))
+	_ignore_mouse(inside)
+	node.add_child(inside)
+	if state == StoryMap.DONE or state == StoryMap.NEXT:
+		node.add_child(_click_layer("Play_" + task.id.replace(".", "_"), func():
+			var saves := get_node_or_null("/root/SaveService")
+			if saves:
+				saves.set_story_current(chapter_id, task.id)
+			launch_task(task.mission, "roadmap:" + chapter_id, "Story Mode")))
+	return node
+
+
+func _is_done(task_id: String) -> bool:
+	var saves := get_node_or_null("/root/SaveService")
+	return saves != null and saves.is_task_done(task_id)
+
+
 func _coming_soon_page(what: String) -> Control:
 	var column := _page_column(what if what != "" else "Coming soon", "modes")
 	column.add_child(MenuTheme.label("This part of the game is coming soon.", MenuTheme.SIZE_BODY, MenuTheme.MUTED))
@@ -280,6 +396,7 @@ func _card(card_name: String, image_name: String, title: String, text: String, t
 	card.add_theme_stylebox_override("normal", MenuTheme.box(MenuTheme.CARD))
 	card.add_theme_stylebox_override("hover", MenuTheme.box(MenuTheme.CARD_HOVER, MenuTheme.ACCENT))
 	card.add_theme_stylebox_override("pressed", MenuTheme.box(MenuTheme.CARD_HOVER, MenuTheme.ACCENT_PRESSED))
+	card.add_theme_stylebox_override("disabled", MenuTheme.box(MenuTheme.PANEL))
 	card.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	var inside := VBoxContainer.new()
 	inside.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

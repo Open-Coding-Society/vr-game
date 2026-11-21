@@ -9,6 +9,7 @@ const MenuScreen3D := preload("res://scripts/ui/menu_screen_3d.gd")
 const MenuPointer := preload("res://scripts/input/menu_pointer.gd")
 const MenuTheme := preload("res://scripts/ui/menu_theme.gd")
 const MenuScene := preload("res://scenes/menus/menu.tscn")
+const StoryMap := preload("res://scripts/menus/story_map.gd")
 
 var _failures: Array[String] = []
 
@@ -39,7 +40,8 @@ func _tests() -> Array:
 		_test_theme_placeholder_image, _test_ray_transform, _test_home_page, _test_login_placeholder,
 		_test_mode_picker, _test_free_play_lists_tasks, _test_free_play_cloud_empty,
 		_test_free_play_starts_task, _test_done_task_shows_best, _test_mission_returns_to_menu,
-		_test_menu_reopens_return_page]
+		_test_menu_reopens_return_page, _test_story_map_states, _test_story_map_bad_mission,
+		_test_story_chapters, _test_roadmap_plays_next, _test_roadmap_cloud_planned]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -270,4 +272,80 @@ func _test_menu_reopens_return_page() -> void:
 	var menu := await _menu()
 	check("back from a mission, the menu reopens Free Play", menu.page == "free_play", menu.page)
 	check("the return is used once", manager.return_page == "" and manager.return_scene == "")
+	menu.queue_free()
+
+
+func _test_story_map_states() -> void:
+	var manager := root.get_node("TrainingManager")
+	var map = StoryMap.load_from(manager.registry)
+	check("data/story.json loads cleanly", map.errors.is_empty(), map.errors)
+	check("Story has the IRL and Cloud chapters", not map.chapter("irl").is_empty() and not map.chapter("cloud").is_empty())
+	var done := {}
+	var is_done := func(id: String) -> bool: return done.has(id)
+	var s: Dictionary = map.states("irl", is_done)
+	check("with nothing done, the first playable task is next", s["build_computer.install_ram"] == StoryMap.NEXT, s)
+	check("later playable tasks are locked", s["build_computer.identify_components"] == StoryMap.LOCKED)
+	check("tasks without a mission are planned", s["irl.setup.unbox"] == StoryMap.PLANNED)
+	done["build_computer.install_ram"] = true
+	s = map.states("irl", is_done)
+	check("finishing it makes the next one playable", s["build_computer.install_ram"] == StoryMap.DONE
+		and s["build_computer.identify_components"] == StoryMap.NEXT, s)
+	check("progress counts playable tasks only", map.progress("irl", is_done) == [1, 6], map.progress("irl", is_done))
+	check("the IRL chapter isn't complete yet", not map.chapter_complete("irl", is_done))
+
+
+func _test_story_map_bad_mission() -> void:
+	var manager := root.get_node("TrainingManager")
+	var map = StoryMap.new()
+	map.read({"chapters": [{"id": "irl", "acts": [{"title": "A", "tasks": [{"mission": "build_computer.nope"}]}]}]}, manager.registry)
+	check("a task naming a mission that doesn't exist is reported", map.errors.size() == 1
+		and map.errors[0].contains("build_computer.nope"), map.errors)
+
+
+func _test_story_chapters() -> void:
+	var menu := await _menu()
+	menu.show_page("modes")
+	await process_frame
+	await _click(menu, "StoryCard")
+	check("Story Mode opens the chapter picker", menu.page == "story", menu.page)
+	check("it offers IRL, Cloud and Bridge", menu.find_button("Chapter_irl") != null
+		and menu.find_button("Chapter_cloud") != null and menu.find_button("Chapter_bridge") != null)
+	check("Bridge is locked until both chapters are done", menu.find_button("Chapter_bridge").disabled)
+	await _click(menu, "Chapter_irl")
+	check("IRL opens its roadmap", menu.page == "roadmap", menu.page)
+	menu.queue_free()
+
+
+func _test_roadmap_plays_next() -> void:
+	_opened.clear()
+	var manager := root.get_node("TrainingManager")
+	var saves := root.get_node("SaveService")
+	saves.load_profile()
+	saves.profile.tasks.clear()
+	saves.record_task_result("build_computer.install_ram", 100, 30, 1)
+	var menu := await _menu()
+	menu.show_page("roadmap", "irl")
+	await process_frame
+	var node := func(id: String) -> Node: return menu.screen.ui_root.find_child("Node_" + id.replace(".", "_"), true, false)
+	check("the done task shows as done", node.call("build_computer.install_ram").get_meta("state") == StoryMap.DONE)
+	check("the next task shows as next", node.call("build_computer.identify_components").get_meta("state") == StoryMap.NEXT)
+	check("a locked task can't be played", menu.find_button("Play_build_computer_assemble_system") == null)
+	check("a planned task can't be played", menu.find_button("Play_irl_setup_unbox") == null)
+	await _click(menu, "Play_build_computer_identify_components")
+	check("playing the next task opens its mission", _opened == ["res://scenes/build_computer/identify_components.tscn"], _opened)
+	check("it will come back to this roadmap", manager.return_page == "roadmap:irl" and manager.return_label == "Story Mode",
+		manager.return_page)
+	check("the roadmap position is saved", saves.story_current("irl") == "build_computer.identify_components")
+	manager.return_scene = ""
+	manager.return_page = ""
+	manager.return_label = ""
+	menu.queue_free()
+
+
+func _test_roadmap_cloud_planned() -> void:
+	var menu := await _menu()
+	menu.show_page("roadmap", "cloud")
+	await process_frame
+	var node: Node = menu.screen.ui_root.find_child("Node_cloud_internet_follow_a_packet", true, false)
+	check("Cloud's tasks are all planned for now", node != null and node.get_meta("state") == StoryMap.PLANNED)
 	menu.queue_free()

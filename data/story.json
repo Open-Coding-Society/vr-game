@@ -1,0 +1,128 @@
+{
+  "_comment": "Story Mode roadmap (Phase 1 shell). A task with a \"mission\" is playable and uses that mission from data/modules.json; a task with only an id and title is planned (shown, not playable yet). Order matters: each chapter's playable tasks unlock one after another. From the game design plan, section 3.",
+  "chapters": [
+    {
+      "id": "irl",
+      "title": "IRL",
+      "subtitle": "From plugging in a PC to building your own rigs.",
+      "acts": [
+        {
+          "title": "Act 1: Set up a pre-built PC",
+          "tasks": [
+            {"id": "irl.setup.unbox", "title": "Unbox the PC"},
+            {"id": "irl.setup.connect_peripherals", "title": "Connect the monitor, keyboard and mouse"},
+            {"id": "irl.setup.power_on", "title": "Plug in power and watch it boot"},
+            {"id": "irl.setup.go_online", "title": "Connect to Wi-Fi or Ethernet"}
+          ]
+        },
+        {
+          "title": "Act 2: Inside the PC",
+          "tasks": [
+            {"mission": "build_computer.install_ram"},
+            {"mission": "build_computer.identify_components"},
+            {"id": "irl.inside.swap_ssd", "title": "Swap in an SSD"},
+            {"id": "irl.inside.cooler_paste", "title": "Reseat the cooler with thermal paste"}
+          ]
+        },
+        {
+          "title": "Act 3: Build your own PC",
+          "tasks": [
+            {"id": "irl.build.pick_parts", "title": "Pick parts that work together"},
+            {"mission": "build_computer.assemble_system"},
+            {"mission": "build_computer.execute_task"},
+            {"mission": "build_computer.add_capacity"},
+            {"mission": "build_computer.diagnose_failure"}
+          ]
+        },
+        {
+          "title": "Act 4: Small rigs",
+          "tasks": [
+            {"id": "irl.rigs.connect_two", "title": "Connect two computers"},
+            {"id": "irl.rigs.switch", "title": "Add a switch"},
+            {"id": "irl.rigs.router", "title": "Add a router"},
+            {"id": "irl.rigs.redundancy", "title": "Add redundancy"},
+            {"id": "irl.rigs.distribute", "title": "Split a workload across machines"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cloud",
+      "title": "Cloud",
+      "subtitle": "Teleport inside the internet and learn the CSP course.",
+      "acts": [
+        {
+          "title": "Act 1: How the Internet works",
+          "tasks": [
+            {"id": "cloud.internet.follow_a_packet", "title": "Follow a packet"},
+            {"id": "cloud.internet.addresses_dns", "title": "IP addresses and DNS"},
+            {"id": "cloud.internet.routing", "title": "Route around a broken path"}
+          ]
+        },
+        {
+          "title": "Act 2: Fault tolerance and parallel work",
+          "tasks": [
+            {"id": "cloud.parallel.rebuild_route", "title": "Rebuild a route when a link fails"},
+            {"id": "cloud.parallel.split_job", "title": "Split a job across servers"}
+          ]
+        },
+        {
+          "title": "Act 3: Data",
+          "tasks": [
+            {"id": "cloud.data.binary", "title": "Bits and binary"},
+            {"id": "cloud.data.compression", "title": "Lossless vs lossy compression"}
+          ]
+        },
+        {
+          "title": "Act 4: Programming",
+          "tasks": [
+            {"id": "cloud.code.variables", "title": "Variables and expressions"},
+            {"id": "cloud.code.conditionals_loops", "title": "Conditionals and loops"},
+            {"id": "cloud.code.procedures", "title": "Procedures and algorithms"}
+          ]
+        },
+        {
+          "title": "Act 5: Frontend to backend",
+          "tasks": [
+            {"id": "cloud.web.layers", "title": "The layers of a web app"},
+            {"id": "cloud.web.api_request", "title": "Send an API request"},
+            {"id": "cloud.web.jokes_api", "title": "Build the Jokes API"},
+            {"id": "cloud.web.login", "title": "Log in with JWT"}
+          ]
+        },
+        {
+          "title": "Act 6: Data storage",
+          "tasks": [
+            {"id": "cloud.storage.models", "title": "Models and SQL tables"}
+          ]
+        },
+        {
+          "title": "Act 7: Deploy",
+          "tasks": [
+            {"id": "cloud.deploy.server", "title": "Put the app on a server"},
+            {"id": "cloud.deploy.dns_https", "title": "DNS and HTTPS"}
+          ]
+        },
+        {
+          "title": "Act 8: Computing in the world",
+          "tasks": [
+            {"id": "cloud.world.safe_computing", "title": "Safe computing"},
+            {"id": "cloud.world.bias", "title": "Computing bias"},
+            {"id": "cloud.world.legal_ethical", "title": "Legal and ethical concerns"}
+          ]
+        },
+        {
+          "title": "Act 9: Undecidable and CPT",
+          "tasks": [
+            {"id": "cloud.cpt.undecidable", "title": "Undecidable problems"},
+            {"id": "cloud.cpt.review", "title": "CPT concepts review"}
+          ]
+        }
+      ]
+    }
+  ],
+  "bridge": {
+    "title": "Bridge",
+    "subtitle": "IRL meets Cloud. Unlocks when both chapters are done."
+  }
+}
