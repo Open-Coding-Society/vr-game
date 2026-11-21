@@ -1,6 +1,8 @@
 # Menu images needed
 
-The menus show a named placeholder (`image: <name>`) wherever an image goes. To add one, save it as **`ui/images/<name>.png`**. The menu picks it up automatically, with no code change (`scripts/ui/menu_theme.gd`, `image()`).
+Every image below has a file name. Save the finished image as **`ui/images/<name>.png`** and the menu picks it up automatically, with no code change (`scripts/ui/menu_theme.gd`, `image()`). Where a file is missing, a named placeholder (`image: <name>`) shows instead.
+
+**For now (interim):** each file in `ui/images/` is one of Google's Material Symbols (Apache 2.0, see `ui/icons/material/LICENSE.md`) drawn in OCS blue on the card color, made by `tools/make_menu_images.gd`. They're flat and match the menus. The real art (team build order, phase 8, Canva) replaces them file by file, using the same names.
 
 **Style for all of them**, so they match the menus:
 - **Flat and clean.** Simple shapes, solid colors, crisp edges. **No gradients, no glow, no AI-generated look.**

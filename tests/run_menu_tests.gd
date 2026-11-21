@@ -145,7 +145,8 @@ func _test_home_page() -> void:
 	check("the game opens on the Home page", menu.page == "home", menu.page)
 	check("Home has Log in and Play locally", menu.find_button("LoginButton") != null
 		and menu.find_button("PlayLocallyButton") != null)
-	check("Home shows the hero image's placeholder", menu.screen.ui_root.find_child("Placeholder_home_hero", true, false) != null)
+	check("Home shows the hero image (or its placeholder)", menu.screen.ui_root.find_child("Image_home_hero", true, false) != null
+		or menu.screen.ui_root.find_child("Placeholder_home_hero", true, false) != null)
 	await _click(menu, "PlayLocallyButton")
 	check("Play locally opens the mode picker", menu.page == "modes", menu.page)
 	menu.queue_free()

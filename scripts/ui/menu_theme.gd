@@ -89,13 +89,19 @@ static func _button(text: String, fill: Color, border: Color, hover: Color, pres
 static func image(name: String, size: Vector2) -> Control:
 	var path := IMAGE_DIR + name + ".png"
 	if ResourceLoader.exists(path):
+		# A rounded panel that clips the picture to its shape, so every image
+		# gets the menus' rounded corners, whatever its file looks like.
+		var frame := PanelContainer.new()
+		frame.name = "Image_" + name
+		frame.custom_minimum_size = size
+		frame.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+		frame.add_theme_stylebox_override("panel", box(Color.WHITE, Color.WHITE, RADIUS - 6, 0))
 		var t := TextureRect.new()
 		t.texture = load(path)
 		t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		t.custom_minimum_size = size
-		t.name = "Image_" + name
-		return t
+		frame.add_child(t)
+		return frame
 	var p := PanelContainer.new()
 	p.name = "Placeholder_" + name
 	p.custom_minimum_size = size
