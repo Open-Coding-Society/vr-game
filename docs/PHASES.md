@@ -1,18 +1,27 @@
 # OCS VR game: phases
 
-The game design plan (`OCSVR_Game_Design_Plan.md` in the team Drive's "OCS VR" folder) split into phases. Each phase is its own branch and pull request. Aryan merges into `main`.
+The game design plan (`OCSVR_Game_Design_Plan.md` in the team Drive's "OCS VR" folder), split into phases. Each phase is its own branch and pull request, and Aryan merges into `main`.
 
-| Phase | What | Status |
-|---|---|---|
-| 0 | Play in the Quest headset: VR grabber, XR rig, OpenXR, Quest plugin and export (build-plan step 3) | Done on `quest-vr`; the Quest playtest is still open |
-| **1** | **Menus: save system, Home screen, Login placeholder, mode picker, Free Play, Story roadmap shell** | **This branch (`phase-1-menus`)** |
-| 2 | Tools: `Tool`, `ToolZone`, the tool rack; existing missions turned into tool-based tasks | Not started |
-| 3 | Story IRL, Acts 1–2 (set up a pre-built PC, inside the PC), with the roadmap unlocking as you go | Not started |
-| 4 | Cloud world and Story Cloud, Acts 1–2 (needs Mr. Mortensen's OK for the wider scope) | Not started |
-| 5 | OCS saves: `OCSSaveBackend` plus the Flask `VRProfile` API (OCS pattern), and real login | Not started |
-| 6 | Open World: desk, cube room, spawn menu, racks, Transfer to Cloud | Not started |
-| 7 | Story IRL Acts 3–4, Cloud Acts 3–9, Bridge modules | Not started |
-| Art | Detailed 3D models, plus the menu images listed in `docs/IMAGES_NEEDED.md` | Alongside every phase (Aryan) |
+The team builds the game **one person at a time**, in this order (the build order in the design plan, §0b). A phase is done when its owner posts `From_<Name>_NN_Phase_<n>_Done.md` in the Drive and Aryan merges the PR.
+
+| # | Who | What | Status |
+|---|---|---|---|
+| 0 | Aryan | Play in the Quest headset: VR grabber, XR rig, OpenXR, Quest plugin and export | Done (in this branch); the Quest playtest is still open |
+| **1** | **Aryan** | **Home menu with a placeholder OCS login, plus the menu system the next phases build on: save system, mode picker, Free Play list, Story roadmap shell** | **This branch (`phase-1-menus`)** |
+| 2 | Chetan | Two game modes, with placeholder models | Next |
+| 3 | Kashyap | One more mode | Waiting |
+| 4 | Ryden | Assigned later | Waiting |
+| 5 | Aaditya | Finish the game | Waiting |
+| 6 | Chetan + one more Claude | Bug fixes | Waiting |
+| 7 | Aryan | Detailed, dissectible 3D models | Waiting |
+| 8 | Aarav / Jake | Canva menu art: the images in `docs/IMAGES_NEEDED.md` | Waiting |
+| 9 | Team | VR test | Waiting |
+| 10 | Team | Flask saving (`OCSSaveBackend` plus real login) | Waiting |
+
+**For Phase 2 and later:**
+- **New task screens:** add them as menu pages in `scripts/menus/menu.gd` using `menu_theme.gd`'s pieces.
+- **New tasks:** add entries to `data/modules.json` (Free Play) and `data/story.json` (Story roadmap).
+- **Saving:** save through `SaveService` only.
 
 ## Phase 1 steps (one commit each)
 
