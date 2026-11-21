@@ -11,11 +11,13 @@ extends RefCounted
 ## part has that type`, so a typo shows up when the game starts, not mid-mission.
 
 const DEFAULT_PATH := "res://data/modules.json"
+## Free Play's two lists. A module says which one its missions go in.
+const CATEGORIES := ["computer", "cloud"]
 
 ## Every mission by its full id ("module.mission"), each a Dictionary with the
 ## mission's fields plus "full_id" and "module_title".
 var missions: Dictionary = {}
-## The modules in file order: [{id, title, mission_ids}].
+## The modules in file order: [{id, title, category, mission_ids}].
 var modules: Array = []
 ## What's wrong with the file. Empty means it loaded cleanly.
 var errors: PackedStringArray = []
@@ -49,6 +51,16 @@ func mission(full_id: String) -> Dictionary:
 	return missions.get(full_id, {})
 
 
+## Every mission in a Free Play category ("computer" or "cloud"), in file order.
+func missions_in(category: String) -> Array:
+	var out := []
+	for module in modules:
+		if module.category == category:
+			for id in module.mission_ids:
+				out.append(missions[id])
+	return out
+
+
 func _read_module(module) -> void:
 	if typeof(module) != TYPE_DICTIONARY or not _is_id(module.get("id")):
 		errors.append("modules: each module needs an id in lower_snake_case")
@@ -57,19 +69,23 @@ func _read_module(module) -> void:
 	if modules.any(func(m) -> bool: return m.id == module_id):
 		errors.append("%s: module id used twice" % module_id)
 		return
-	var entry := {"id": module_id, "title": str(module.get("title", module_id)), "mission_ids": []}
+	var category = module.get("category", "computer")
+	if not category in CATEGORIES:
+		errors.append("%s.category: must be one of %s" % [module_id, ", ".join(CATEGORIES)])
+		category = "computer"
+	var entry := {"id": module_id, "title": str(module.get("title", module_id)), "category": category, "mission_ids": []}
 	modules.append(entry)
 	var mission_list = module.get("missions")
 	if typeof(mission_list) != TYPE_ARRAY or mission_list.is_empty():
 		errors.append("%s.missions: must be a non-empty list" % module_id)
 		return
 	for m in mission_list:
-		var full_id := _read_mission(module_id, entry.title, m)
+		var full_id := _read_mission(module_id, entry.title, m, category)
 		if full_id != "":
 			entry.mission_ids.append(full_id)
 
 
-func _read_mission(module_id: String, module_title: String, m) -> String:
+func _read_mission(module_id: String, module_title: String, m, category := "computer") -> String:
 	if typeof(m) != TYPE_DICTIONARY or not _is_id(m.get("id")):
 		errors.append("%s.missions: each mission needs an id in lower_snake_case" % module_id)
 		return ""
@@ -83,6 +99,10 @@ func _read_mission(module_id: String, module_title: String, m) -> String:
 			errors.append("%s.%s: must be text" % [full_id, field])
 	if typeof(m.get("scene")) == TYPE_STRING and not ResourceLoader.exists(m.scene):
 		errors.append("%s.scene: %s doesn't exist" % [full_id, m.scene])
+	# Free Play's card text: optional, but text when given.
+	for field in ["description", "topic", "difficulty"]:
+		if m.has(field) and (typeof(m[field]) != TYPE_STRING or m[field] == ""):
+			errors.append("%s.%s: must be text" % [full_id, field])
 	for field in ["intro", "success"]:
 		if not _is_text_list(m.get(field)):
 			errors.append("%s.%s: must be a non-empty list of text" % [full_id, field])
@@ -97,6 +117,10 @@ func _read_mission(module_id: String, module_title: String, m) -> String:
 	var copy: Dictionary = m.duplicate(true)
 	copy.full_id = full_id
 	copy.module_title = module_title
+	copy.category = category
+	copy.description = str(m.get("description", ""))
+	copy.topic = str(m.get("topic", ""))
+	copy.difficulty = str(m.get("difficulty", ""))
 	copy.practice = bool(m.get("practice", false))
 	copy.scoring = {"full": int(scoring.full), "per_mistake": int(scoring.per_mistake)}
 	missions[full_id] = copy

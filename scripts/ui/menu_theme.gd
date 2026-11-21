@@ -100,7 +100,8 @@ static func image(name: String, size: Vector2) -> Control:
 	p.name = "Placeholder_" + name
 	p.custom_minimum_size = size
 	p.add_theme_stylebox_override("panel", box(Color("#202733"), BORDER, RADIUS - 6, 12))
-	var l := label("image: " + name, SIZE_SMALL, MUTED)
+	# Small placeholders get smaller text, so the image's name fits.
+	var l := label("image: " + name, SIZE_SMALL if size.x == 0 or size.x >= 400 else SIZE_SMALL - 10, MUTED)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	p.add_child(l)

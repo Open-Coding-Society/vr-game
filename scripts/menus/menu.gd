@@ -30,7 +30,16 @@ func _ready() -> void:
 		$Camera3D.make_current()
 		$XROrigin3D.visible = false
 	pointer.use_vr(in_vr)
-	show_page("home")
+	# Back from a mission started here: reopen the page it was started from.
+	var manager := _manager()
+	if manager and manager.return_page != "":
+		var bits: PackedStringArray = manager.return_page.split(":", true, 1)
+		manager.return_scene = ""
+		manager.return_page = ""
+		manager.return_label = ""
+		show_page(bits[0], bits[1] if bits.size() > 1 else "")
+	else:
+		show_page("home")
 
 
 ## Replaces the screen's page. `arg` is page-specific (e.g. which mode).
@@ -47,6 +56,8 @@ func show_page(name: String, arg := "") -> void:
 			content = _login_page()
 		"modes":
 			content = _modes_page()
+		"free_play":
+			content = _free_play_page(arg if arg != "" else "computer")
 		_:
 			content = _coming_soon_page(arg)
 	var frame := MenuTheme.panel()
@@ -54,6 +65,23 @@ func show_page(name: String, arg := "") -> void:
 	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	frame.add_child(content)
 	screen.ui_root.add_child(frame)
+
+
+## Starts a mission from the menu. When it ends, the game comes back here and
+## reopens `return_page` (e.g. "free_play:computer"); `label` names it on the
+## mission's success panel.
+func launch_task(full_id: String, return_page: String, label: String) -> void:
+	var manager := _manager()
+	if manager == null:
+		return
+	var mission: Dictionary = manager.registry.mission(full_id)
+	if mission.is_empty():
+		push_error("Menu: no mission %s" % full_id)
+		return
+	manager.return_scene = scene_file_path
+	manager.return_page = return_page
+	manager.return_label = label
+	manager.open_scene(mission.scene)
 
 
 ## The button named `button_name` on the current page, or null.
@@ -109,7 +137,7 @@ func _modes_page() -> Control:
 	cards.add_theme_constant_override("separation", 32)
 	cards.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	cards.add_child(_card("FreePlayCard", "mode_free_play", "Free Play",
-		"Pick any Computer or Cloud task and start it.", [], func(): show_page("coming_soon", "Free Play")))
+		"Pick any Computer or Cloud task and start it.", [], func(): show_page("free_play", "computer")))
 	cards.add_child(_card("StoryCard", "mode_story", "Story Mode",
 		"Follow a roadmap: from plugging in a PC to building rigs, or into the cloud.", [],
 		func(): show_page("coming_soon", "Story Mode")))
@@ -118,6 +146,95 @@ func _modes_page() -> Control:
 		func(): show_page("coming_soon", "Open World")))
 	column.add_child(cards)
 	return column
+
+
+func _free_play_page(category: String) -> Control:
+	var column := _page_column("Free Play", "modes")
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 16)
+	for tab in [["computer", "Computer"], ["cloud", "Cloud"]]:
+		var look: Button = MenuTheme.primary_button(tab[1]) if tab[0] == category else MenuTheme.secondary_button(tab[1])
+		var b := _button("Tab" + tab[1], look, func(): show_page("free_play", tab[0]))
+		b.custom_minimum_size = Vector2(240, 80)
+		tabs.add_child(b)
+	column.add_child(tabs)
+	var manager := _manager()
+	var tasks: Array = manager.registry.missions_in(category) if manager else []
+	if tasks.is_empty():
+		var empty := MenuTheme.label("No %s tasks yet. The cloud world arrives in a later phase." % category.capitalize(),
+			MenuTheme.SIZE_BODY, MenuTheme.MUTED)
+		empty.name = "EmptyList"
+		column.add_child(empty)
+		return column
+	var scroll := MenuTheme.scroll()
+	scroll.name = "TaskList"
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 18)
+	for task in tasks:
+		list.add_child(_task_row(task, "free_play:" + category))
+	scroll.add_child(list)
+	column.add_child(scroll)
+	return column
+
+
+## One task in a list: image, title, description, tags, and Done/best score or
+## Start. The card is a panel that grows with its text; a clear button on top
+## of it ("Task_<id>") takes the click and draws the blue hover border.
+func _task_row(task: Dictionary, return_page: String) -> Control:
+	var card := PanelContainer.new()
+	card.name = "TaskCard_" + task.full_id.replace(".", "_")
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.add_theme_stylebox_override("panel", MenuTheme.box(MenuTheme.CARD, MenuTheme.BORDER, MenuTheme.RADIUS, 20))
+	var inside := HBoxContainer.new()
+	inside.add_theme_constant_override("separation", 28)
+	inside.add_child(MenuTheme.image("task_" + task.id, Vector2(230, 150)))
+	var text := VBoxContainer.new()
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.alignment = BoxContainer.ALIGNMENT_CENTER
+	text.add_theme_constant_override("separation", 8)
+	text.add_child(MenuTheme.label(task.title.strip_edges(), MenuTheme.SIZE_BODY + 4))
+	if task.description != "":
+		text.add_child(MenuTheme.label(task.description, MenuTheme.SIZE_SMALL, MenuTheme.MUTED))
+	var tags := HBoxContainer.new()
+	tags.add_theme_constant_override("separation", 10)
+	for t in [task.topic, task.difficulty, "Practice" if task.practice else ""]:
+		if t != "":
+			tags.add_child(MenuTheme.tag(t))
+	text.add_child(tags)
+	inside.add_child(text)
+	var side := VBoxContainer.new()
+	side.alignment = BoxContainer.ALIGNMENT_CENTER
+	side.add_theme_constant_override("separation", 8)
+	var saves := get_node_or_null("/root/SaveService")
+	var progress: Dictionary = saves.task_progress(task.full_id) if saves else {}
+	if not progress.is_empty():
+		var done := MenuTheme.tag("Done", Color(MenuTheme.DONE, 0.18), MenuTheme.DONE)
+		done.name = "DoneTag"
+		side.add_child(done)
+		side.add_child(_nowrap(MenuTheme.label("Best %d" % progress.best_score, MenuTheme.SIZE_SMALL, MenuTheme.MUTED)))
+	side.add_child(_nowrap(MenuTheme.label("Start  >", MenuTheme.SIZE_BODY, MenuTheme.ACCENT)))
+	inside.add_child(side)
+	_ignore_mouse(inside)
+	card.add_child(inside)
+	card.add_child(_click_layer("Task_" + task.full_id.replace(".", "_"),
+		func(): launch_task(task.full_id, return_page, "Free Play")))
+	return card
+
+
+## A see-through button that covers a card: it takes the click and shows a
+## blue border on hover.
+func _click_layer(button_name: String, on_press: Callable) -> Button:
+	var b := Button.new()
+	b.name = button_name
+	b.focus_mode = Control.FOCUS_NONE
+	var clear := Color(0, 0, 0, 0)
+	b.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	b.add_theme_stylebox_override("hover", MenuTheme.box(clear, MenuTheme.ACCENT))
+	b.add_theme_stylebox_override("pressed", MenuTheme.box(clear, MenuTheme.ACCENT_PRESSED))
+	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	b.pressed.connect(on_press)
+	return b
 
 
 func _coming_soon_page(what: String) -> Control:
@@ -199,6 +316,16 @@ func _ignore_mouse(node: Node) -> void:
 		node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for child in node.get_children():
 		_ignore_mouse(child)
+
+
+## A label that stays on one line (in a row, a wrapping label gets no width).
+func _nowrap(l: Label) -> Label:
+	l.autowrap_mode = TextServer.AUTOWRAP_OFF
+	return l
+
+
+func _manager() -> Node:
+	return get_node_or_null("/root/TrainingManager")
 
 
 func _spacer(height: int) -> Control:
