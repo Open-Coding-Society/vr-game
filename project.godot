@@ -20,6 +20,7 @@ config/icon="res://icon.svg"
 
 TrainingManager="*res://scripts/training_manager.gd"
 ScoreReporter="*res://scripts/net/score_reporter.gd"
+SaveService="*res://scripts/save/save_service.gd"
 
 [display]
 
