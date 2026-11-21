@@ -1,0 +1,103 @@
+extends SceneTree
+## Menu checks (Phase 1, steps 4-7): the 3D screen and pointer, then the
+## menus themselves. No headset or mouse needed: clicks go through the same
+## pointer code a controller or mouse uses.
+##
+##   godot --headless --script res://tests/run_menu_tests.gd
+
+const MenuScreen3D := preload("res://scripts/ui/menu_screen_3d.gd")
+const MenuPointer := preload("res://scripts/input/menu_pointer.gd")
+const MenuTheme := preload("res://scripts/ui/menu_theme.gd")
+
+var _failures: Array[String] = []
+
+
+func _initialize() -> void:
+	_run.call_deferred()
+
+
+func _run() -> void:
+	var saves := root.get_node_or_null("SaveService")
+	if saves:
+		saves.use_backend(preload("res://scripts/save/local_save_backend.gd").new("user://test_ocsvr_save.json"))
+	for test in _tests():
+		await test.call()
+	print("\n%s" % ("ALL PASSED" if _failures.is_empty() else "%d FAILED" % _failures.size()))
+	quit(0 if _failures.is_empty() else 1)
+
+
+func _tests() -> Array:
+	return [_test_screen_pixels, _test_pointer_clicks_button, _test_pointer_misses_off_screen,
+		_test_theme_placeholder_image, _test_ray_transform]
+
+
+func check(label: String, ok: bool, detail = "") -> void:
+	var why := str(detail)
+	print(("PASS  " if ok else "FAIL  ") + label + ("" if ok or why == "" else "   [%s]" % why))
+	if not ok:
+		_failures.append(label)
+
+
+## A screen at the origin facing +z, plus a pointer, in a fresh world.
+func _screen_world() -> Array:
+	var world := Node3D.new()
+	root.add_child(world)
+	var screen := MenuScreen3D.new()
+	world.add_child(screen)
+	var pointer := MenuPointer.new()
+	world.add_child(pointer)
+	await physics_frame
+	await physics_frame
+	return [world, screen, pointer]
+
+
+func _test_screen_pixels() -> void:
+	var parts := await _screen_world()
+	var screen = parts[1]
+	check("the screen's viewport is 1600 x 1000 px", screen.viewport.size == Vector2i(1600, 1000), screen.viewport.size)
+	check("the middle of the screen is the middle pixel", screen.world_to_pixel(Vector3.ZERO) == Vector2(800, 500),
+		screen.world_to_pixel(Vector3.ZERO))
+	check("the top-left corner is pixel (0, 0)", screen.world_to_pixel(Vector3(-0.8, 0.5, 0)).is_equal_approx(Vector2.ZERO),
+		screen.world_to_pixel(Vector3(-0.8, 0.5, 0)))
+	check("a point off the screen is (-1, -1)", screen.world_to_pixel(Vector3(2, 0, 0)) == Vector2(-1, -1))
+	parts[0].queue_free()
+
+
+func _test_pointer_clicks_button() -> void:
+	var parts := await _screen_world()
+	var screen = parts[1]
+	var pointer = parts[2]
+	var button := MenuTheme.primary_button("Play")
+	button.position = Vector2(700, 450)
+	button.size = Vector2(200, 100)
+	screen.ui_root.add_child(button)
+	var clicks := [0]
+	button.pressed.connect(func(): clicks[0] += 1)
+	await process_frame
+	# Pixel (800, 500) is the screen's middle, which is world (0, 0, 0).
+	check("the pointer reaches the screen", pointer.click_world(Vector3(0, 0, 0)))
+	await process_frame
+	check("clicking on a button presses it", clicks[0] == 1, clicks[0])
+	pointer.click_world(Vector3(0.6, 0.4, 0))
+	await process_frame
+	check("clicking elsewhere on the screen doesn't", clicks[0] == 1, clicks[0])
+	parts[0].queue_free()
+
+
+func _test_pointer_misses_off_screen() -> void:
+	var parts := await _screen_world()
+	check("pointing past the screen hits nothing", not parts[2].click_world(Vector3(3, 0, 0)))
+	parts[0].queue_free()
+
+
+func _test_theme_placeholder_image() -> void:
+	var img := MenuTheme.image("not_a_real_image_name", Vector2(400, 300))
+	check("a missing image shows a named placeholder", img.name == "Placeholder_not_a_real_image_name"
+		and img.custom_minimum_size == Vector2(400, 300), img.name)
+	img.free()
+
+
+func _test_ray_transform() -> void:
+	var t: Transform3D = MenuPointer._ray_transform(Vector3(0, 1, 0), Vector3(0, 0, -1), 2.0)
+	check("the controller ray starts at the hand and points forward",
+		t.origin.is_equal_approx(Vector3(0, 1, -1)) and (t.basis.y).is_equal_approx(Vector3(0, 0, -2)), t)
