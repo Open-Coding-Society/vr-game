@@ -29,6 +29,11 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	# Missions finished here would be recorded in the player's real save; use a
+	# throwaway file instead.
+	var saves := root.get_node_or_null("SaveService")
+	if saves:
+		saves.use_backend(preload("res://scripts/save/local_save_backend.gd").new("user://test_ocsvr_save.json"))
 	# Use the project's autoloads (loaded for --script runs too), adding them
 	# at the same paths only if they're missing.
 	manager = root.get_node_or_null("TrainingManager")

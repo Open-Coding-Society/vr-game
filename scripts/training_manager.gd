@@ -33,6 +33,15 @@ var now_ms: Callable = Time.get_ticks_msec
 ## Tests turn this off.
 var auto_advance := true
 var advance_delay_s := 6.0
+## Set by the menu when it starts a mission (Free Play, Story Mode): when the
+## mission ends, go back to this scene instead of on to the next mission.
+## return_page is the menu page to reopen (e.g. "free_play:computer") and
+## return_label what the success panel calls it ("Free Play").
+var return_scene := ""
+var return_page := ""
+var return_label := ""
+## Opens a scene by path. Tests swap it so nothing really changes scene.
+var scene_opener: Callable = func(path: String) -> void: get_tree().change_scene_to_file(path)
 var _started_ms := 0
 
 
@@ -105,3 +114,8 @@ func complete() -> void:
 func _set_state(new_state: State) -> void:
 	state = new_state
 	state_changed.emit(state)
+
+
+## Opens a scene (a mission or the menu) through scene_opener.
+func open_scene(path: String) -> void:
+	scene_opener.call(path)

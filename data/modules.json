@@ -3,10 +3,14 @@
     {
       "id": "build_computer",
       "title": "Build a Computer",
+      "category": "computer",
       "missions": [
         {
           "id": "install_ram",
           "title": "Install the RAM",
+          "description": "Practice: slide a RAM stick into its slot. Learn to grab, carry and drop parts.",
+          "topic": "Memory",
+          "difficulty": "Beginner",
           "practice": true,
           "scene": "res://scenes/workbench.tscn",
           "intro": [
@@ -36,6 +40,9 @@
         {
           "id": "identify_components",
           "title": "Identify the components",
+          "description": "Find the CPU, memory, storage and input/output parts and put each where it belongs.",
+          "topic": "Components",
+          "difficulty": "Beginner",
           "scene": "res://scenes/build_computer/identify_components.tscn",
           "intro": [
             "Every computer needs four things: a processor, memory, storage, and a way to talk to people.",
@@ -92,6 +99,9 @@
         {
           "id": "assemble_system",
           "title": "Assemble the system",
+          "description": "Build a working computer from its parts, in the order that makes it run.",
+          "topic": "Assembly",
+          "difficulty": "Intermediate",
           "scene": "res://scenes/build_computer/assemble_system.tscn",
           "intro": [
             "Build the computer inside its case. Every part has a job.",
@@ -157,6 +167,9 @@
         {
           "id": "execute_task",
           "title": "Execute a task",
+          "description": "Follow a task as its data moves from storage, to memory, to the CPU.",
+          "topic": "Data flow",
+          "difficulty": "Intermediate",
           "scene": "res://scenes/build_computer/execute_task.tscn",
           "intro": [
             "Open a photo. The photo file (the glowing cube) starts on the SSD.",
@@ -207,6 +220,9 @@
         {
           "id": "add_capacity",
           "title": "Add processing capacity",
+          "description": "Add a graphics card and see which jobs run faster on a GPU than a CPU.",
+          "topic": "CPU vs GPU",
+          "difficulty": "Advanced",
           "scene": "res://scenes/build_computer/add_capacity.tscn",
           "intro": [
             "Some jobs are a long list of steps. Others repeat the same math millions of times.",
@@ -270,6 +286,9 @@
         {
           "id": "diagnose_failure",
           "title": "Diagnose a failure",
+          "description": "A computer won't work. Find the faulty parts and replace them.",
+          "topic": "Troubleshooting",
+          "difficulty": "Advanced",
           "scene": "res://scenes/build_computer/diagnose_failure.tscn",
           "intro": [
             "This computer won't start properly: when it turns on, it beeps and shows no picture.",

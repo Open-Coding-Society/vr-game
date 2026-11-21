@@ -139,7 +139,10 @@ func _on_module_completed(_module_id: String, score: int, duration_s: int) -> vo
 	_result_lines = PackedStringArray(config.success)
 	_result_lines.append("Score: %d   Time: %s   Mistakes: %d" % [score, _clock(duration_s), manager.mistakes])
 	next_mission = manager.next_mission_id(mission_id)
-	if next_mission != "" and manager.auto_advance:
+	if manager.return_scene != "":
+		_result_lines.append("Back to %s in %d seconds" % [manager.return_label, roundi(manager.advance_delay_s)])
+		get_tree().create_timer(manager.advance_delay_s).timeout.connect(_return_to_menu)
+	elif next_mission != "" and manager.auto_advance:
 		_result_lines.append("Next: %s in %d seconds" % [manager.registry.mission(next_mission).title, roundi(manager.advance_delay_s)])
 		get_tree().create_timer(manager.advance_delay_s).timeout.connect(_open_next)
 	_show_result()
@@ -149,9 +152,15 @@ func _on_module_completed(_module_id: String, score: int, duration_s: int) -> vo
 var next_mission := ""
 
 
+## Started from the menu: go back to it (it reopens manager.return_page).
+func _return_to_menu() -> void:
+	if is_inside_tree() and manager.state == manager.State.SUCCESS and manager.mission.full_id == mission_id:
+		manager.open_scene(manager.return_scene)
+
+
 func _open_next() -> void:
 	if is_inside_tree() and manager.state == manager.State.SUCCESS and manager.mission.full_id == mission_id:
-		get_tree().change_scene_to_file(manager.registry.mission(next_mission).scene)
+		manager.open_scene(manager.registry.mission(next_mission).scene)
 
 
 func _on_report_finished(_ok: bool, message: String) -> void:
