@@ -68,6 +68,17 @@ func world_to_pixel(world_point: Vector3) -> Vector2:
 	return uv * Vector2(viewport.size)
 
 
+## The world position of a UI pixel on the screen (the inverse of world_to_pixel).
+func pixel_to_world(pixel: Vector2) -> Vector3:
+	var uv := pixel / Vector2(viewport.size)
+	return to_global(Vector3((uv.x - 0.5) * size.x, (0.5 - uv.y) * size.y, 0.0))
+
+
+## The world position of the middle of a control on this screen.
+func control_to_world(control: Control) -> Vector3:
+	return pixel_to_world(control.get_global_rect().get_center())
+
+
 ## The pointer moved over the screen.
 func pointer_move(pixel: Vector2) -> void:
 	var e := InputEventMouseMotion.new()

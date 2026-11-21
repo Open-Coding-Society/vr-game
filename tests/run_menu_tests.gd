@@ -8,6 +8,7 @@ extends SceneTree
 const MenuScreen3D := preload("res://scripts/ui/menu_screen_3d.gd")
 const MenuPointer := preload("res://scripts/input/menu_pointer.gd")
 const MenuTheme := preload("res://scripts/ui/menu_theme.gd")
+const MenuScene := preload("res://scenes/menus/menu.tscn")
 
 var _failures: Array[String] = []
 
@@ -28,7 +29,8 @@ func _run() -> void:
 
 func _tests() -> Array:
 	return [_test_screen_pixels, _test_pointer_clicks_button, _test_pointer_misses_off_screen,
-		_test_theme_placeholder_image, _test_ray_transform]
+		_test_theme_placeholder_image, _test_ray_transform, _test_home_page, _test_login_placeholder,
+		_test_mode_picker]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -101,3 +103,61 @@ func _test_ray_transform() -> void:
 	var t: Transform3D = MenuPointer._ray_transform(Vector3(0, 1, 0), Vector3(0, 0, -1), 2.0)
 	check("the controller ray starts at the hand and points forward",
 		t.origin.is_equal_approx(Vector3(0, 1, -1)) and (t.basis.y).is_equal_approx(Vector3(0, 0, -2)), t)
+
+
+# ---------------------------------------------------------------- menu scene
+
+## The menu scene, loaded fresh, on its Home page.
+func _menu() -> Node3D:
+	var menu: Node3D = MenuScene.instantiate()
+	root.add_child(menu)
+	await physics_frame
+	await process_frame
+	await process_frame
+	return menu
+
+
+## Clicks a named button on the menu's current page the way the pointer does.
+func _click(menu: Node3D, button_name: String) -> bool:
+	var button: Button = menu.find_button(button_name)
+	if button == null:
+		return false
+	await process_frame
+	var hit: bool = menu.pointer.click_world(menu.screen.control_to_world(button))
+	await process_frame
+	await process_frame
+	return hit
+
+
+func _test_home_page() -> void:
+	var menu := await _menu()
+	check("the game opens on the Home page", menu.page == "home", menu.page)
+	check("Home has Log in and Play locally", menu.find_button("LoginButton") != null
+		and menu.find_button("PlayLocallyButton") != null)
+	check("Home shows the hero image's placeholder", menu.screen.ui_root.find_child("Placeholder_home_hero", true, false) != null)
+	await _click(menu, "PlayLocallyButton")
+	check("Play locally opens the mode picker", menu.page == "modes", menu.page)
+	menu.queue_free()
+
+
+func _test_login_placeholder() -> void:
+	var menu := await _menu()
+	await _click(menu, "LoginButton")
+	check("Log in opens the sign-in page", menu.page == "login", menu.page)
+	check("the sign-in page offers Play locally", menu.find_button("PlayLocallyButton") != null)
+	await _click(menu, "BackButton")
+	check("Back returns to Home", menu.page == "home", menu.page)
+	menu.queue_free()
+
+
+func _test_mode_picker() -> void:
+	var menu := await _menu()
+	menu.show_page("modes")
+	await process_frame
+	for card in ["FreePlayCard", "StoryCard", "OpenWorldCard"]:
+		check("the mode picker has %s" % card, menu.find_button(card) != null)
+	await _click(menu, "OpenWorldCard")
+	check("Open World says it's coming soon", menu.page == "coming_soon", menu.page)
+	await _click(menu, "BackButton")
+	check("Back returns to the mode picker", menu.page == "modes", menu.page)
+	menu.queue_free()
