@@ -2,11 +2,11 @@
 
 Every image below has a file name. Save the finished image as **`ui/images/<name>.png`** and the menu picks it up automatically, with no code change (`scripts/ui/menu_theme.gd`, `image()`). Where a file is missing, a named placeholder (`image: <name>`) shows instead.
 
-**For now (interim):** each file in `ui/images/` is one of Google's Material Symbols (Apache 2.0, see `ui/icons/material/LICENSE.md`) drawn in OCS blue on the card color, made by `tools/make_menu_images.gd`. They're flat and match the menus. The real art (team build order, phase 8, Canva) replaces them file by file, using the same names.
+**For now (interim):** each file in `ui/images/` is one of Google's Material Symbols (Apache 2.0, see `ui/icons/material/LICENSE.md`) drawn in the menu's bronze accent on a cream tile, made by `tools/make_menu_images.gd`. They're flat and match the menus. The real art (team build order, phase 8, Canva) replaces them file by file, using the same names.
 
 **Style for all of them**, so they match the menus:
 - **Flat and clean.** Simple shapes, solid colors, crisp edges. **No gradients, no glow, no AI-generated look.**
-- **Palette:** near-black `#0E1116` / `#161B22`, card `#1C2330`, white `#F0F3F6`, grey `#9AA4B2`, one accent **OCS blue `#2F81F7`**, and green `#3FB950` only for "done" ideas.
+- **Palette:** the menus are light now. Cream `#EDE6D9`, warm white `#FAF6EE`, white cards `#FFFFFF`, a cream tile `#F3ECDF` behind each image, charcoal `#26231F`, grey `#6B645A`, one accent **bronze `#8C6A3A`**, and green `#2F7D4F` only for "done" ideas.
 - **No text in the images.** The menu draws titles and descriptions itself.
 - **Framing:** the image is cropped to fill its box (corners are rounded by the menu), so keep the subject centered with a little margin.
 - **Size:** use the size listed (2× the on-screen size, so it stays sharp in the headset). PNG.

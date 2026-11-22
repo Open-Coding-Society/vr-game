@@ -31,7 +31,8 @@ func _ready() -> void:
 	mesh.height = 1.0
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.albedo_color = Color("#2F81F7")
+	# Dark, so the thin ray shows against the light room and screen
+	mat.albedo_color = Color("#26231F")
 	mesh.material = mat
 	_ray.mesh = mesh
 	_ray.visible = false
