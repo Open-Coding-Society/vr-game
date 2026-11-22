@@ -19,6 +19,7 @@ The team builds the game **one person at a time**, in this order (the build orde
 | 10 | Team | Flask saving (`OCSSaveBackend` plus real login) | Waiting |
 
 **For Phase 2 and later:**
+- **The menus' look** is in `scripts/ui/menu_theme.gd`: every color and size is a constant there. Change the look there, not in a page. `tests/run_menu_tests.gd` checks that each kind of text still stands out from its background.
 - **New task screens:** add them as menu pages in `scripts/menus/menu.gd` using `menu_theme.gd`'s pieces.
 - **New tasks:** add entries to `data/modules.json` (Free Play) and `data/story.json` (Story roadmap).
 - **Saving:** save through `SaveService` only.
@@ -30,7 +31,7 @@ The team builds the game **one person at a time**, in this order (the build orde
 | 1 | Fix current bugs: project icon (Quest export error) | Clean import; `run_tests.gd` and `run_api_tests.gd` pass |
 | 2 | This file: the phase split | n/a |
 | 3 | `SaveService` autoload with local saves (`user://ocsvr_save.json`): one versioned save shape, results recorded automatically when a mission ends | `tests/run_save_tests.gd` |
-| 4 | Menu UI kit: flat dark theme with the OCS blue accent (rounded, thin borders, no gradients), a 3D menu screen that shows normal Godot UI, and one pointer for mouse and controllers | `tests/run_menu_tests.gd` |
+| 4 | Menu UI kit: flat theme (rounded, thin borders, no gradients; dark with an OCS blue accent at first, changed to white and cream with a bronze accent in Phase 2), a 3D menu screen that shows normal Godot UI, and one pointer for mouse and controllers | `tests/run_menu_tests.gd` |
 | 5 | Menu scene and Home screen: Log in (placeholder) or Play locally, then the mode picker (Free Play, Story Mode, Open World). It becomes the game's first scene. | `run_menu_tests.gd` |
 | 6 | Free Play: Computer and Cloud tabs and scrollable task cards from `data/modules.json` (title, description, topic, difficulty, ✔ and best score). Start any task; it returns to Free Play when done. | `run_menu_tests.gd`, `run_tests.gd` |
 | 7 | Story Mode shell: pick the IRL or Cloud chapter, then a roadmap of acts and tasks from `data/story.json` (done, next, locked). Existing missions are playable from it; the rest are marked planned. | `run_menu_tests.gd` |

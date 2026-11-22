@@ -37,7 +37,8 @@ func _run() -> void:
 
 func _tests() -> Array:
 	return [_test_screen_pixels, _test_pointer_clicks_button, _test_pointer_misses_off_screen,
-		_test_theme_placeholder_image, _test_ray_transform, _test_home_page, _test_login_placeholder,
+		_test_theme_placeholder_image, _test_theme_text_is_readable,
+		_test_ray_transform, _test_home_page, _test_login_placeholder,
 		_test_mode_picker, _test_free_play_lists_tasks, _test_free_play_cloud_empty,
 		_test_free_play_starts_task, _test_done_task_shows_best, _test_mission_returns_to_menu,
 		_test_menu_reopens_return_page, _test_story_map_states, _test_story_map_bad_mission,
@@ -108,6 +109,41 @@ func _test_theme_placeholder_image() -> void:
 	check("a missing image shows a named placeholder", img.name == "Placeholder_not_a_real_image_name"
 		and img.custom_minimum_size == Vector2(400, 300), img.name)
 	img.free()
+
+
+## How far apart two colors are in brightness, from 1 (the same) to 21 (black
+## on white). Text needs 4.5 or more to read easily.
+static func _contrast(a: Color, b: Color) -> float:
+	var la := _luminance(a)
+	var lb := _luminance(b)
+	return (maxf(la, lb) + 0.05) / (minf(la, lb) + 0.05)
+
+
+static func _luminance(c: Color) -> float:
+	var parts := []
+	for v in [c.r, c.g, c.b]:
+		parts.append(v / 12.92 if v <= 0.03928 else pow((v + 0.055) / 1.055, 2.4))
+	return 0.2126 * parts[0] + 0.7152 * parts[1] + 0.0722 * parts[2]
+
+
+## The light theme only works if every kind of text stands out from what it
+## sits on: a pale accent or a pale grey on white is the easy mistake.
+func _test_theme_text_is_readable() -> void:
+	var pairs := [
+		["text on the screen", MenuTheme.TEXT, MenuTheme.PANEL],
+		["text on a card", MenuTheme.TEXT, MenuTheme.CARD],
+		["quiet text on the screen", MenuTheme.MUTED, MenuTheme.PANEL],
+		["quiet text on a card", MenuTheme.MUTED, MenuTheme.CARD],
+		["quiet text on a tag", MenuTheme.MUTED, MenuTheme.CARD_HOVER],
+		["accent text on a card", MenuTheme.ACCENT, MenuTheme.CARD],
+		["accent text on the screen", MenuTheme.ACCENT, MenuTheme.PANEL],
+		["text on the main button", MenuTheme.ON_PRIMARY, MenuTheme.PRIMARY],
+		["text on the main button when pointed at", MenuTheme.ON_PRIMARY, MenuTheme.PRIMARY_HOVER],
+		["the Done word on a card", MenuTheme.DONE, MenuTheme.CARD],
+	]
+	for pair in pairs:
+		var ratio := _contrast(pair[1], pair[2])
+		check("%s is readable" % pair[0], ratio >= 4.5, "contrast %.2f" % ratio)
 
 
 func _test_ray_transform() -> void:

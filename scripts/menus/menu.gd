@@ -191,7 +191,7 @@ func _free_play_page(category: String) -> Control:
 
 ## One task in a list: image, title, description, tags, and Done/best score or
 ## Start. The card is a panel that grows with its text; a clear button on top
-## of it ("Task_<id>") takes the click and draws the blue hover border.
+## of it ("Task_<id>") takes the click and draws the accent hover border.
 func _task_row(task: Dictionary, return_page: String) -> Control:
 	var card := PanelContainer.new()
 	card.name = "TaskCard_" + task.full_id.replace(".", "_")
@@ -220,7 +220,7 @@ func _task_row(task: Dictionary, return_page: String) -> Control:
 	var saves := get_node_or_null("/root/SaveService")
 	var progress: Dictionary = saves.task_progress(task.full_id) if saves else {}
 	if not progress.is_empty():
-		var done := MenuTheme.tag("Done", Color(MenuTheme.DONE, 0.18), MenuTheme.DONE)
+		var done := MenuTheme.tag("Done", Color(MenuTheme.DONE, 0.14), MenuTheme.DONE)
 		done.name = "DoneTag"
 		side.add_child(done)
 		side.add_child(_nowrap(MenuTheme.label("Best %d" % progress.best_score, MenuTheme.SIZE_SMALL, MenuTheme.MUTED)))
@@ -234,7 +234,7 @@ func _task_row(task: Dictionary, return_page: String) -> Control:
 
 
 ## A see-through button that covers a card: it takes the click and shows a
-## blue border on hover.
+## border in the accent color on hover.
 func _click_layer(button_name: String, on_press: Callable) -> Button:
 	var b := Button.new()
 	b.name = button_name
@@ -310,8 +310,9 @@ func _roadmap_node(chapter_id: String, task: Dictionary, state: String, number: 
 			border = MenuTheme.DONE
 			tag_text = "Done"
 		StoryMap.NEXT:
-			fill = MenuTheme.ACCENT
+			fill = MenuTheme.PRIMARY
 			border = MenuTheme.ACCENT
+			text_color = MenuTheme.ON_PRIMARY
 			tag_text = "Play"
 		StoryMap.LOCKED:
 			text_color = MenuTheme.MUTED
@@ -328,12 +329,12 @@ func _roadmap_node(chapter_id: String, task: Dictionary, state: String, number: 
 	var inside := VBoxContainer.new()
 	inside.add_theme_constant_override("separation", 8)
 	var top := HBoxContainer.new()
-	top.add_child(_nowrap(MenuTheme.label(str(number), MenuTheme.SIZE_SMALL, MenuTheme.TEXT if state == StoryMap.NEXT else MenuTheme.MUTED)))
+	top.add_child(_nowrap(MenuTheme.label(str(number), MenuTheme.SIZE_SMALL, MenuTheme.ON_PRIMARY if state == StoryMap.NEXT else MenuTheme.MUTED)))
 	var push := Control.new()
 	push.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(push)
-	var tag_fill := Color(1, 1, 1, 0.18) if state == StoryMap.NEXT else (Color(MenuTheme.DONE, 0.18) if state == StoryMap.DONE else MenuTheme.CARD_HOVER)
-	var tag_font := MenuTheme.TEXT if state == StoryMap.NEXT else (MenuTheme.DONE if state == StoryMap.DONE else MenuTheme.MUTED)
+	var tag_fill := Color(1, 1, 1, 0.16) if state == StoryMap.NEXT else (Color(MenuTheme.DONE, 0.14) if state == StoryMap.DONE else MenuTheme.CARD_HOVER)
+	var tag_font := MenuTheme.ON_PRIMARY if state == StoryMap.NEXT else (MenuTheme.DONE if state == StoryMap.DONE else MenuTheme.MUTED)
 	top.add_child(MenuTheme.tag(tag_text, tag_fill, tag_font))
 	inside.add_child(top)
 	inside.add_child(MenuTheme.label(task.title, MenuTheme.SIZE_SMALL, text_color))
@@ -386,7 +387,7 @@ func _button(button_name: String, button: Button, on_press: Callable) -> Button:
 
 
 ## A big clickable card: image, title, description, then either an action
-## ("Open >", in blue) or tags such as "Coming soon" along the bottom.
+## ("Open >", in the accent color) or tags such as "Coming soon" along the bottom.
 func _card(card_name: String, image_name: String, title: String, text: String, tags: Array, on_press: Callable, action := "Open") -> Button:
 	var card := Button.new()
 	card.name = card_name

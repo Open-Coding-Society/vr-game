@@ -1,20 +1,28 @@
 extends RefCounted
-## The menus' look: flat dark panels, white text, one OCS blue accent. Rounded
-## corners and thin borders, no gradients or shadows. Every menu builds its
-## controls through these helpers, so the style lives in one place.
+## The menus' look: warm white panels and white cards on cream, charcoal text,
+## and one bronze accent. Rounded corners and thin borders, no gradients or
+## shadows. Every menu builds its controls through these helpers, so the style
+## lives in one place.
 
-const BG := Color("#0E1116")
-const PANEL := Color("#161B22")
-const CARD := Color("#1C2330")
-const CARD_HOVER := Color("#232C3B")
-const BORDER := Color("#2A313C")
-const TEXT := Color("#F0F3F6")
-const MUTED := Color("#9AA4B2")
-const ACCENT := Color("#2F81F7")
-const ACCENT_HOVER := Color("#4493F8")
-const ACCENT_PRESSED := Color("#1F6FEB")
-const LOCKED := Color("#3A414C")
-const DONE := Color("#3FB950")
+const BG := Color("#EDE6D9")
+const PANEL := Color("#FAF6EE")
+const CARD := Color("#FFFFFF")
+const CARD_HOVER := Color("#F6EFE2")
+const BORDER := Color("#E0D6C4")
+const TEXT := Color("#26231F")
+const MUTED := Color("#6B645A")
+## The accent: links such as "Start >", the border of whatever is pointed at.
+const ACCENT := Color("#8C6A3A")
+const ACCENT_HOVER := Color("#9E7B49")
+const ACCENT_PRESSED := Color("#735629")
+## The fill of the main button on a screen and of the selected tab or step, and
+## the text that goes on it.
+const PRIMARY := Color("#26231F")
+const PRIMARY_HOVER := Color("#3B362F")
+const PRIMARY_PRESSED := Color("#15130F")
+const ON_PRIMARY := Color("#FBF7EF")
+const LOCKED := Color("#D8CFBF")
+const DONE := Color("#2F7D4F")
 
 const RADIUS := 20
 const BORDER_WIDTH := 2
@@ -56,14 +64,14 @@ static func label(text: String, size := SIZE_BODY, color := TEXT) -> Label:
 	return l
 
 
-## A filled blue button for the main action on a screen.
+## A filled charcoal button for the main action on a screen.
 static func primary_button(text: String) -> Button:
-	return _button(text, ACCENT, ACCENT, ACCENT_HOVER, ACCENT_PRESSED, TEXT)
+	return _button(text, PRIMARY, PRIMARY, PRIMARY_HOVER, PRIMARY_PRESSED, ON_PRIMARY)
 
 
-## A dark outlined button for every other action.
+## A white outlined button for every other action.
 static func secondary_button(text: String) -> Button:
-	return _button(text, CARD, BORDER, CARD_HOVER, CARD, TEXT)
+	return _button(text, CARD, BORDER, CARD_HOVER, CARD_HOVER, TEXT)
 
 
 static func _button(text: String, fill: Color, border: Color, hover: Color, pressed: Color, font: Color) -> Button:
@@ -105,7 +113,7 @@ static func image(name: String, size: Vector2) -> Control:
 	var p := PanelContainer.new()
 	p.name = "Placeholder_" + name
 	p.custom_minimum_size = size
-	p.add_theme_stylebox_override("panel", box(Color("#202733"), BORDER, RADIUS - 6, 12))
+	p.add_theme_stylebox_override("panel", box(CARD_HOVER, BORDER, RADIUS - 6, 12))
 	# Small placeholders get smaller text, so the image's name fits.
 	var l := label("image: " + name, SIZE_SMALL if size.x == 0 or size.x >= 400 else SIZE_SMALL - 10, MUTED)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

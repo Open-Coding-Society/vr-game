@@ -1,13 +1,13 @@
 extends SceneTree
 ## Makes the interim menu images in ui/images/: one Google Material Symbol
-## (ui/icons/material/, Apache 2.0) drawn in the menu's OCS blue, centered on the
-## flat card color, at each image's size from docs/IMAGES_NEEDED.md. Flat, no
+## (ui/icons/material/, Apache 2.0) drawn in the menu's bronze accent, centered on
+## a flat cream tile, at each image's size from docs/IMAGES_NEEDED.md. Flat, no
 ## gradients. Phase 8's Canva art replaces these files with the same names.
 ##
 ##   godot --headless --path . --script res://tools/make_menu_images.gd
 
-const ACCENT := "#2F81F7"
-const BACKGROUND := Color("#202733")
+const ACCENT := "#8C6A3A"
+const BACKGROUND := Color("#F3ECDF")
 
 ## image name -> [icon, width, height]
 const IMAGES := {

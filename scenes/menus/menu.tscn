@@ -6,13 +6,13 @@
 
 [sub_resource type="Environment" id="Environment_menu"]
 background_mode = 1
-background_color = Color(0.0549, 0.0667, 0.0863, 1)
+background_color = Color(0.929, 0.902, 0.851, 1)
 ambient_light_source = 2
 ambient_light_color = Color(1, 1, 1, 1)
 ambient_light_energy = 0.6
 
 [sub_resource type="StandardMaterial3D" id="Mat_floor"]
-albedo_color = Color(0.086, 0.106, 0.133, 1)
+albedo_color = Color(0.878, 0.839, 0.769, 1)
 roughness = 0.9
 
 [sub_resource type="PlaneMesh" id="Mesh_floor"]
@@ -21,7 +21,7 @@ size = Vector2(12, 12)
 
 [sub_resource type="StandardMaterial3D" id="Mat_ring"]
 shading_mode = 0
-albedo_color = Color(0.184, 0.506, 0.969, 1)
+albedo_color = Color(0.549, 0.416, 0.227, 1)
 
 [sub_resource type="TorusMesh" id="Mesh_ring"]
 material = SubResource("Mat_ring")
