@@ -11,6 +11,9 @@ const MenuScreen3D := preload("res://scripts/ui/menu_screen_3d.gd")
 const MenuPointer := preload("res://scripts/input/menu_pointer.gd")
 const StoryMap := preload("res://scripts/menus/story_map.gd")
 
+## How many steps of a roadmap sit side by side.
+const ROADMAP_COLUMNS := 4
+
 ## The page on screen ("home", "login", "modes", "coming_soon", ...).
 var page := ""
 ## True when playing in a headset.
@@ -222,6 +225,7 @@ func _task_row(task: Dictionary, return_page: String) -> Control:
 	if not progress.is_empty():
 		var done := MenuTheme.tag("Done", Color(MenuTheme.DONE, 0.14), MenuTheme.DONE)
 		done.name = "DoneTag"
+		done.size_flags_horizontal = Control.SIZE_SHRINK_END
 		side.add_child(done)
 		side.add_child(_nowrap(MenuTheme.label("Best %d" % progress.best_score, MenuTheme.SIZE_SMALL, MenuTheme.MUTED)))
 	side.add_child(_nowrap(MenuTheme.label("Start  >", MenuTheme.SIZE_BODY, MenuTheme.ACCENT)))
@@ -286,13 +290,17 @@ func _roadmap_page(chapter_id: String) -> Control:
 	var number := 0
 	for act in c.get("acts", []):
 		acts.add_child(MenuTheme.label(act.title, MenuTheme.SIZE_BODY + 2))
-		var flow := HFlowContainer.new()
-		flow.add_theme_constant_override("h_separation", 20)
-		flow.add_theme_constant_override("v_separation", 20)
+		# A grid, so the steps share the screen's width evenly and a short last
+		# row still lines up under the one above.
+		var steps := GridContainer.new()
+		steps.columns = ROADMAP_COLUMNS
+		steps.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		steps.add_theme_constant_override("h_separation", 20)
+		steps.add_theme_constant_override("v_separation", 20)
 		for task in act.tasks:
 			number += 1
-			flow.add_child(_roadmap_node(chapter_id, task, states[task.id], number))
-		acts.add_child(flow)
+			steps.add_child(_roadmap_node(chapter_id, task, states[task.id], number))
+		acts.add_child(steps)
 	scroll.add_child(acts)
 	column.add_child(scroll)
 	return column
@@ -325,6 +333,7 @@ func _roadmap_node(chapter_id: String, task: Dictionary, state: String, number: 
 	node.name = "Node_" + task.id.replace(".", "_")
 	node.set_meta("state", state)
 	node.custom_minimum_size = Vector2(262, 150)
+	node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	node.add_theme_stylebox_override("panel", MenuTheme.box(fill, border, MenuTheme.RADIUS, 18))
 	var inside := VBoxContainer.new()
 	inside.add_theme_constant_override("separation", 8)

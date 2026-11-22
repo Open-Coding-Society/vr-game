@@ -122,12 +122,23 @@ static func image(name: String, size: Vector2) -> Control:
 	return p
 
 
-## A small rounded tag, e.g. a topic or "Done".
+## A small rounded tag, e.g. a topic or "Done". It stays the size of its
+## text: a row or column it sits in can't stretch it into a wide or tall blob.
 static func tag(text: String, fill := CARD_HOVER, font := MUTED) -> PanelContainer:
 	var p := PanelContainer.new()
-	p.add_theme_stylebox_override("panel", box(fill, fill, 999, 10))
+	var pill := box(fill, fill, 999, 0)
+	# No border: over a see-through fill it would show as a darker ring
+	pill.set_border_width_all(0)
+	pill.content_margin_left = 20
+	pill.content_margin_right = 20
+	pill.content_margin_top = 6
+	pill.content_margin_bottom = 6
+	p.add_theme_stylebox_override("panel", pill)
+	p.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	p.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var l := label(text, SIZE_SMALL - 4, font)
 	l.autowrap_mode = TextServer.AUTOWRAP_OFF
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	p.add_child(l)
 	return p
 

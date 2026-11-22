@@ -37,12 +37,13 @@ func _run() -> void:
 
 func _tests() -> Array:
 	return [_test_screen_pixels, _test_pointer_clicks_button, _test_pointer_misses_off_screen,
-		_test_theme_placeholder_image, _test_theme_text_is_readable,
+		_test_theme_placeholder_image, _test_theme_text_is_readable, _test_tag_keeps_its_size,
 		_test_ray_transform, _test_home_page, _test_login_placeholder,
 		_test_mode_picker, _test_free_play_lists_tasks, _test_free_play_cloud_empty,
 		_test_free_play_starts_task, _test_done_task_shows_best, _test_mission_returns_to_menu,
 		_test_menu_reopens_return_page, _test_story_map_states, _test_story_map_bad_mission,
-		_test_story_chapters, _test_roadmap_plays_next, _test_roadmap_cloud_planned]
+		_test_story_chapters, _test_roadmap_plays_next, _test_roadmap_cloud_planned,
+		_test_roadmap_rows_fill_the_screen]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -144,6 +145,34 @@ func _test_theme_text_is_readable() -> void:
 	for pair in pairs:
 		var ratio := _contrast(pair[1], pair[2])
 		check("%s is readable" % pair[0], ratio >= 4.5, "contrast %.2f" % ratio)
+
+
+## A tag in a column or a tall row used to be stretched to the container's size.
+func _test_tag_keeps_its_size() -> void:
+	var column := VBoxContainer.new()
+	column.custom_minimum_size = Vector2(600, 300)
+	var wide := MenuTheme.label("A much longer line than the tag", MenuTheme.SIZE_BODY)
+	wide.autowrap_mode = TextServer.AUTOWRAP_OFF
+	column.add_child(wide)
+	var tag := MenuTheme.tag("Done")
+	column.add_child(tag)
+	root.add_child(column)
+	await process_frame
+	await process_frame
+	var want: float = tag.get_combined_minimum_size().x
+	check("a tag in a column stays as wide as its text", is_equal_approx(tag.size.x, want) and tag.size.x < wide.size.x,
+		"%s wide, text needs %s" % [tag.size.x, want])
+	var row := HBoxContainer.new()
+	row.custom_minimum_size = Vector2(600, 120)
+	var tall := MenuTheme.tag("Playing locally")
+	row.add_child(tall)
+	root.add_child(row)
+	await process_frame
+	await process_frame
+	check("a tag in a tall row stays as tall as its text", is_equal_approx(tall.size.y, tall.get_combined_minimum_size().y),
+		"%s tall in a row %s tall" % [tall.size.y, row.size.y])
+	column.queue_free()
+	row.queue_free()
 
 
 func _test_ray_transform() -> void:
@@ -385,4 +414,28 @@ func _test_roadmap_cloud_planned() -> void:
 	await process_frame
 	var node: Node = menu.screen.ui_root.find_child("Node_cloud_internet_follow_a_packet", true, false)
 	check("Cloud's tasks are all planned for now", node != null and node.get_meta("state") == StoryMap.PLANNED)
+	menu.queue_free()
+
+
+
+## Each act's steps share the screen's width evenly, so a row has no gap at its
+## end and a title has room to wrap between words.
+func _test_roadmap_rows_fill_the_screen() -> void:
+	var menu := await _menu()
+	menu.show_page("roadmap", "irl")
+	await process_frame
+	await process_frame
+	var first := menu.screen.ui_root.find_child("Node_irl_setup_unbox", true, false) as Control
+	var last := menu.screen.ui_root.find_child("Node_irl_setup_go_online", true, false) as Control
+	var roadmap := menu.screen.ui_root.find_child("Roadmap", true, false) as Control
+	check("the roadmap's first act is on the page", first != null and last != null and roadmap != null)
+	if first == null or last == null or roadmap == null:
+		menu.queue_free()
+		return
+	var row: Control = first.get_parent()
+	check("the four steps of an act are the same width", is_equal_approx(first.size.x, last.size.x), "%s and %s" % [first.size.x, last.size.x])
+	check("the row of steps is as wide as the roadmap's list", is_equal_approx(row.size.x, row.get_parent().size.x) and row.size.x > roadmap.size.x * 0.9,
+		"row %s, list %s, roadmap %s" % [row.size.x, row.get_parent().size.x, roadmap.size.x])
+	check("the last step ends where the row ends", is_equal_approx(last.position.x + last.size.x, row.size.x),
+		"%s of %s" % [last.position.x + last.size.x, row.size.x])
 	menu.queue_free()
