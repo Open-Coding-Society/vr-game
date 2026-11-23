@@ -66,7 +66,7 @@ func _tests() -> Array:
 		_test_rule_ram_type, _test_rule_storage_slot, _test_rule_gpu_plug, _test_rule_enough_power,
 		_test_rules_by_name, _test_matching_builds_pass, _test_balanced_builds,
 		_test_shelf_parts_load_their_specs, _test_shelf_layout, _test_part_variants,
-		_test_bonus_points, _test_swappable_zone, _test_zone_compat_rule]
+		_test_bonus_points, _test_swappable_zone, _test_zone_compat_rule, _test_registry_checks_slot_rules]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -896,3 +896,16 @@ func _test_zone_compat_rule() -> void:
 	await _carry_and_drop(wrong, socket.global_position)
 	check("a swap for a part that fails the rule is refused, and the part that was in stays",
 		turned_away[0] == 2 and socket.installed_part == right and right.is_installed and not wrong.is_installed)
+
+
+func _test_registry_checks_slot_rules() -> void:
+	var errors := _bad_power_on(func(m): m.slots["Tower/PowerIn"].compat = "cpu_sockets")
+	check("a slot with a compat rule the game doesn't have is caught, naming the slot",
+		errors.size() == 1 and 'slot "Tower/PowerIn" compat must be one of cpu_socket' in errors[0], "; ".join(errors))
+	errors = _bad_power_on(func(m): m.slots["Tower/PowerIn"].swappable = "yes")
+	check("swappable must be true or false",
+		errors.size() == 1 and 'slot "Tower/PowerIn" swappable must be true or false' in errors[0], "; ".join(errors))
+	errors = _bad_power_on(func(m):
+		m.slots["Tower/PowerIn"].compat = "power"
+		m.slots["Tower/PowerIn"].swappable = true)
+	check("a known rule and a true or false swappable are fine", errors.is_empty(), "; ".join(errors))

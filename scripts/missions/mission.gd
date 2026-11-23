@@ -46,6 +46,7 @@ func _ready() -> void:
 		zone.snapped.connect(_on_snapped)
 		zone.rejected.connect(_on_rejected)
 		zone.blocked.connect(_on_blocked)
+		zone.swapped.connect(_on_swapped)
 	manager.module_completed.connect(_on_module_completed)
 	var reporter := get_node_or_null("/root/ScoreReporter")
 	if reporter:
@@ -80,6 +81,8 @@ func _apply_registry() -> void:
 		zone.pass_through = slot.get("pass_through", false)
 		zone.capacity = int(slot.get("capacity", 1))
 		zone.working = slot.get("working", false)
+		zone.swappable = slot.get("swappable", false)
+		zone.compat = StringName(slot.get("compat", ""))
 		zones.append(zone)
 		if not zone.working:
 			goals.append(zone)
@@ -132,10 +135,21 @@ func _on_rejected(zone: SnapZone, part: GrabbablePart) -> void:
 	if manager.state != manager.State.ACTIVE:
 		return
 	manager.note_mistake()
-	if zone.working:
+	if zone.last_problem != "":
+		# The right kind of part, but it doesn't work with the others.
+		_show_checklist(zone.last_problem)
+	elif zone.working:
 		_show_checklist("Not that one. " + zone.hint)
 	else:
 		_show_checklist("The %s doesn't go there. %s" % [part.display_name, zone.hint])
+
+
+## A part was swapped out. Whatever was plugged into it can't stay: every slot
+## that needed this one filled first is emptied, and its parts go back home.
+func _on_swapped(zone: SnapZone, _old_part: GrabbablePart) -> void:
+	for other in zones:
+		if other.prerequisites.has(zone):
+			other.eject_all()
 
 
 func _on_blocked(zone: SnapZone, part: GrabbablePart) -> void:
