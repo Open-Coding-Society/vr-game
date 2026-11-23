@@ -40,10 +40,19 @@ The work follows the team build plan (`OCSVR_Training_Plan.md` section 5 in the 
 | `scenes/build_computer/execute_task.tscn` | Module 1, mission 4: carry a photo file from the SSD to RAM, the CPU, then the screen |
 | `scenes/build_computer/add_capacity.tscn` | Module 1, mission 5 (advanced): install a GPU, then send step-by-step jobs to the CPU and parallel jobs to the GPU |
 | `scenes/build_computer/diagnose_failure.tscn` | Module 1, mission 6 (advanced): read the symptoms, find the broken RAM, then the dead SSD, and swap in spares |
+| `scenes/setup_pc/` | Module 2, "Set up a pre-built PC" (Story IRL Act 1): `unbox`, `connect_peripherals`, `power_on` and `go_online`, plus the placeholder shapes in `props/` |
+| `scenes/build_pc/build_your_own.tscn` | "Build your own PC": pick a motherboard, CPU, memory, storage, graphics card and power supply from three tiers; it only boots if they work together |
+| `scenes/build_pc/parts_shelf.tscn` | The shelf of parts for it: five kinds in three tiers |
+| `scenes/parts/cable.tscn` | A cable: a grabbable plug at each end and a wire between them (`scripts/parts/cable.gd`) |
 | `scenes/workbench.tscn` | The "Install the RAM" practice mission (step 1's workbench, now registry-only) |
 | `scripts/grabbable_part.gd` | A part you can pick up. Knows its `part_type`; on a drop it picks the one slot that judges it (so a keyboard over three slots is one mistake, not three); goes home if not installed |
 | `scripts/snap_zone.gd` | A slot (`Area3D`) with a `hint`. It judges a dropped part: right type → installs it and emits `snapped`; wrong type → emits `rejected` |
 | `scripts/input/mouse_grabber.gd` | The laptop's grab/drop layer: press, carry, release. The only script that knows about the mouse |
+| `data/parts_catalog.json` | The three tiers of each PC part and their specs, read by `scripts/parts/parts_catalog.gd` |
+| `scripts/parts/compatibility.gd` | Whether parts work together: one pure function per rule, each returning the message a student reads when it fails |
+| `scripts/parts/monitor_screen.gd` | A monitor's picture: plays a mission's boot lines, shows the desktop or a message |
+| `scripts/parts/link_light.gd` | A status light that comes on when the slots it watches are filled |
+| `scripts/missions/build_pc_mission.gd` | What only Build your own PC does, on top of `mission.gd`: the reason on the monitor, the balanced bonus, the build on the results card |
 | `tests/run_tests.gd` | Headless checks (below) |
 | `tests/run_mode_tests.gd` | Headless checks for the cables, Set up a pre-built PC and Build your own PC |
 
