@@ -488,16 +488,16 @@ func _test_power_wall_goes_last() -> void:
 		manager.mistakes == 1 and not wall_plug.is_installed and wall_plug.global_position.is_equal_approx(wall_plug.home_transform.origin),
 		"%s %s" % [manager.mistakes, wall_plug.global_position])
 	check("the panel says what has to come first, and why",
-		"Not yet. First finish: tower power inlet, monitor power inlet. Always plug into the wall last" in mission.panel.text(), mission.panel.text())
+		"Not yet. First finish: power socket on the tower, power socket on the monitor. Always plug into the wall last" in mission.panel.text(), mission.panel.text())
 	check("and the checklist marks the wall socket as waiting",
-		"[  ] wall socket (0 of 2)  (after: tower power inlet, monitor power inlet)" in mission.panel.text(), mission.panel.text())
+		"[  ] wall socket (0 of 2)  (after: power socket on the tower, power socket on the monitor)" in mission.panel.text(), mission.panel.text())
 	await _drag(mission, "TowerPower/EndA", _over(mission, "Tower/PowerIn"))
 	await _drag(mission, "TowerPower/EndB", _over(mission, "Wall/Socket"))
 	check("with only the tower's cable in, the wall is still blocked: the monitor's comes first too",
-		manager.mistakes == 2 and "First finish: monitor power inlet." in mission.panel.text(), mission.panel.text())
+		manager.mistakes == 2 and "First finish: power socket on the monitor." in mission.panel.text(), mission.panel.text())
 	await _drag(mission, "MonitorPower/EndA", _over(mission, "Wall/Socket"))
 	check("the end that goes into a device doesn't fit the wall",
-		manager.mistakes == 3 and "The monitor power cable doesn't go there." in mission.panel.text(), mission.panel.text())
+		manager.mistakes == 3 and "The monitor power plug doesn't go there." in mission.panel.text(), mission.panel.text())
 	await _drag_all(mission, [["MonitorPower/EndA", "Monitor/PowerIn"], ["MonitorPower/EndB", "Wall/Socket"]])
 	check("once both devices have their cable, a wall plug goes in",
 		mission.get_node("MonitorPower/EndB").is_installed and "[  ] wall socket (1 of 2)" in mission.panel.text(), mission.panel.text())

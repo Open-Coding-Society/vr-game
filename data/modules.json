@@ -580,13 +580,13 @@
               "accepts": "usb",
               "name": "first USB port",
               "hint": "Keyboard and mouse are input devices: they send information into the computer.",
-              "role": "USB carries input into the computer: every key press and click goes down this cable."
+              "role": "This cable carries input into the computer: every key press and click goes down it."
             },
             "Tower/Usb2": {
               "accepts": "usb",
               "name": "second USB port",
               "hint": "Keyboard and mouse are input devices: they send information into the computer.",
-              "role": "USB carries input into the computer: every key press and click goes down this cable."
+              "role": "This cable carries input into the computer: every key press and click goes down it."
             }
           }
         },
@@ -618,15 +618,15 @@
           "parts": {
             "TowerPower/EndA": {
               "type": "power_plug",
-              "name": "PC power cable"
+              "name": "tower power plug"
             },
             "TowerPower/EndB": {
               "type": "wall_plug",
-              "name": "PC wall plug"
+              "name": "tower wall plug"
             },
             "MonitorPower/EndA": {
               "type": "power_plug",
-              "name": "monitor power cable"
+              "name": "monitor power plug"
             },
             "MonitorPower/EndB": {
               "type": "wall_plug",
@@ -636,15 +636,15 @@
           "slots": {
             "Tower/PowerIn": {
               "accepts": "power_plug",
-              "name": "tower power inlet",
-              "hint": "A power cable's device end goes in here, on the power supply at the bottom of the tower's back.",
+              "name": "power socket on the tower",
+              "hint": "A power plug goes in here, on the power supply at the bottom of the tower's back.",
               "role": "The power supply turns wall power into the low voltages the parts inside the tower use."
             },
             "Monitor/PowerIn": {
               "accepts": "power_plug",
-              "name": "monitor power inlet",
-              "hint": "A power cable's device end goes in here. The monitor needs power of its own.",
-              "role": "The monitor has its own power: the HDMI cable only carries the picture."
+              "name": "power socket on the monitor",
+              "hint": "A power plug goes in here. The monitor needs power of its own.",
+              "role": "The monitor has its own power: the HDMI cable carries the picture, not power."
             },
             "Wall/Socket": {
               "accepts": "wall_plug",
