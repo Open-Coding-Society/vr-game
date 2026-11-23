@@ -86,14 +86,19 @@ Never commit a password. With no account set up, the game still plays, and the s
    - `pass_through: true`: the part is placed here but stays free to move on, so it can go through several stages, like data moving through the computer
    - `capacity`: how many parts fill it (a job queue); they sit side by side along the SnapPoint's x axis
    - `working: true`: a part that isn't broken. It takes nothing (so no `accepts`), isn't on the checklist, and turns any part away with its hint
+   - `swappable: true`: a full slot still takes a part of its type, and the part that was in it goes back home. Slots that needed it filled first are emptied too
+   - `compat`: a rule in `scripts/parts/compatibility.gd` (`cpu_socket`, `ram_type`, `storage_slot`, `gpu_plug`, `enough_power`, or `power` for both power rules). A part of the right type is also checked against the parts in the slots this one `requires`, and the rule's message is shown when it fails
 
    A zone with a child node named `Replaced` (the old part's mesh) hides it once the zone is full.
 
    A mission can also have `"on_complete": "boot"` with `"boot_lines"` (a list of text). When its last slot is filled, the scene's monitor screen (a node named `MonitorScreen` using `scripts/parts/monitor_screen.gd`) shows the lines one after another before the success panel comes up, and the last line stays on the screen.
 
+   A mission with `"catalog_parts": true` also uses parts from `data/parts_catalog.json`: a part whose `variant` is a catalog id (`cpu_mid`) takes its type, name, label and tier colour from there and needs no entry under `parts`. `scoring` can have a `balanced_bonus` for missions that give one. The top score should stay at 100: the score API accepts 0 to 100.
+
    Ready-made pieces for a scene:
    - `scenes/parts/cable.tscn`: a cable with a grabbable plug at each end (`EndA`, `EndB`), listed in the registry like any other part. Set `fixed_end` for a device's own cable (one plug), and `fixed_end_b` as well for a cable that is already plugged in (only its wire).
    - `scripts/parts/link_light.gd`: a light that comes on once the slots in its `zones` are all filled. A monitor screen can watch one through `link_light`.
+   - `scenes/build_pc/parts_shelf.tscn`: a shelf with a CPU, RAM kit, storage drive, graphics card and power supply in each of the three tiers.
 
    Missions play in the order they're listed.
 
