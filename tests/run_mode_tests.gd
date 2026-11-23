@@ -66,7 +66,8 @@ func _tests() -> Array:
 		_test_rule_ram_type, _test_rule_storage_slot, _test_rule_gpu_plug, _test_rule_enough_power,
 		_test_rules_by_name, _test_matching_builds_pass, _test_balanced_builds,
 		_test_shelf_parts_load_their_specs, _test_shelf_layout, _test_part_variants,
-		_test_bonus_points, _test_swappable_zone, _test_zone_compat_rule, _test_registry_checks_slot_rules]
+		_test_bonus_points, _test_swappable_zone, _test_zone_compat_rule, _test_registry_checks_slot_rules,
+		_test_registry_catalog_parts]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -909,3 +910,20 @@ func _test_registry_checks_slot_rules() -> void:
 		m.slots["Tower/PowerIn"].compat = "power"
 		m.slots["Tower/PowerIn"].swappable = true)
 	check("a known rule and a true or false swappable are fine", errors.is_empty(), "; ".join(errors))
+
+
+func _test_registry_catalog_parts() -> void:
+	# A slot that takes a type only the parts catalog has.
+	var add_bay := func(m): m.slots["Case/PsuBay"] = {"accepts": "psu", "name": "power supply bay", "hint": "The power supply goes here."}
+	var errors := _bad_power_on(add_bay)
+	check("a slot for a catalog part type is caught in a mission that doesn't use the catalog",
+		not errors.is_empty() and 'slot "Case/PsuBay" accepts "psu", but no part has that type' in errors[0], "; ".join(errors))
+	errors = _bad_power_on(func(m):
+		add_bay.call(m)
+		m.catalog_parts = true)
+	check("with catalog_parts the catalog's part types can fill slots", errors.is_empty(), "; ".join(errors))
+	errors = _bad_power_on(func(m): m.catalog_parts = "yes")
+	check("catalog_parts must be true or false",
+		errors.size() == 1 and "setup_pc.power_on.catalog_parts: must be true or false" in errors[0], "; ".join(errors))
+	check("a mission says whether it uses the catalog",
+		ModuleRegistry.load_from().mission("setup_pc.power_on").catalog_parts == false)

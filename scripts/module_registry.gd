@@ -11,6 +11,7 @@ extends RefCounted
 ## part has that type`, so a typo shows up when the game starts, not mid-mission.
 
 const Compatibility := preload("res://scripts/parts/compatibility.gd")
+const PartsCatalog := preload("res://scripts/parts/parts_catalog.gd")
 
 const DEFAULT_PATH := "res://data/modules.json"
 ## Free Play's two lists. A module says which one its missions go in.
@@ -116,6 +117,13 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 			or not _is_whole(scoring.get("per_mistake"), 0, 1000):
 		errors.append("%s.scoring: needs whole numbers full (1-1000) and per_mistake (0-1000)" % full_id)
 	var types := _read_parts(full_id, m.get("parts"))
+	# With catalog_parts, the scene also has parts that take their type from
+	# data/parts_catalog.json (a `variant`), so slots can accept those types.
+	if m.has("catalog_parts") and typeof(m.catalog_parts) != TYPE_BOOL:
+		errors.append("%s.catalog_parts: must be true or false" % full_id)
+	elif m.get("catalog_parts", false):
+		var catalog = PartsCatalog.shared()
+		types.append_array(catalog.parts.values().map(func(part) -> String: return part.type))
 	_read_slots(full_id, m.get("slots"), types)
 	_read_on_complete(full_id, m)
 	if errors.size() > before:
@@ -128,6 +136,7 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 	copy.topic = str(m.get("topic", ""))
 	copy.difficulty = str(m.get("difficulty", ""))
 	copy.practice = bool(m.get("practice", false))
+	copy.catalog_parts = bool(m.get("catalog_parts", false))
 	copy.scoring = {"full": int(scoring.full), "per_mistake": int(scoring.per_mistake)}
 	missions[full_id] = copy
 	return full_id

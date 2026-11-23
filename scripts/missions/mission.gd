@@ -97,8 +97,12 @@ func _apply_registry() -> void:
 			if other:
 				zone.prerequisites.append(other)
 	# Anything in the scene the registry doesn't list would never be scored.
+	# The exception: with catalog_parts, a part with a `variant` gets its type
+	# and name from data/parts_catalog.json instead.
 	for node in find_children("*", "Node3D", true, false):
-		if (node is SnapZone and not zones.has(node)) or (node is GrabbablePart and not parts.has(node)):
+		if node is GrabbablePart and not parts.has(node) and config.catalog_parts and node.variant != "":
+			parts.append(node)
+		elif (node is SnapZone and not zones.has(node)) or (node is GrabbablePart and not parts.has(node)):
 			_problem('"%s" is in the scene but not in the registry' % get_path_to(node))
 
 
