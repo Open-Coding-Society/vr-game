@@ -39,7 +39,7 @@ func _tests() -> Array:
 	return [_test_screen_pixels, _test_pointer_clicks_button, _test_pointer_misses_off_screen,
 		_test_theme_placeholder_image, _test_theme_text_is_readable, _test_tag_keeps_its_size,
 		_test_ray_transform, _test_home_page, _test_login_placeholder,
-		_test_mode_picker, _test_free_play_lists_tasks, _test_free_play_cloud_empty,
+		_test_mode_picker, _test_free_play_lists_tasks, _test_free_play_lists_the_new_modes, _test_free_play_cloud_empty,
 		_test_free_play_starts_task, _test_done_task_shows_best, _test_mission_returns_to_menu,
 		_test_menu_reopens_return_page, _test_story_map_states, _test_story_act_1_unlocks_in_order,
 		_test_story_act_3_starts_with_build_your_own,
@@ -268,6 +268,44 @@ func _test_free_play_lists_tasks() -> void:
 		if a.get_global_rect().end.y > b.get_global_rect().position.y + 0.5:
 			overlaps.append(tasks[i].id)
 	check("task cards don't overlap", overlaps.is_empty(), overlaps)
+	menu.queue_free()
+
+
+## The two Phase 2 modes are in Free Play: Build your own PC and the four
+## Set up a pre-built PC tasks, after the six that were there.
+func _test_free_play_lists_the_new_modes() -> void:
+	_opened.clear()
+	var manager := root.get_node("TrainingManager")
+	var ids: Array = manager.registry.missions_in("computer").map(func(task) -> String: return task.full_id)
+	check("Free Play's Computer list has eleven tasks, the new ones last",
+		ids.size() == 11 and ids.slice(6) == ["build_computer.build_your_own", "setup_pc.unbox", "setup_pc.connect_peripherals",
+			"setup_pc.power_on", "setup_pc.go_online"], ids)
+	var menu := await _menu()
+	menu.show_page("free_play", "computer")
+	await process_frame
+	var card: Button = menu.find_button("Task_build_computer_build_your_own")
+	check("Build your own PC has a card", card != null)
+	if card == null:
+		menu.queue_free()
+		return
+	var words := []
+	for label in card.get_parent().find_children("*", "Label", true, false):
+		words.append(label.text)
+	check("the card shows the plan's description, topic and difficulty",
+		words.has("Build your own PC") and words.has("Pick parts from three tiers and build a PC that works")
+			and words.has("Compatibility") and words.has("Intermediate"), words)
+	# It is far down the list: scroll to it, as a player would, then click.
+	var list := menu.screen.ui_root.find_child("TaskList", true, false) as ScrollContainer
+	list.ensure_control_visible(card)
+	await process_frame
+	await process_frame
+	await _click(menu, "Task_build_computer_build_your_own")
+	check("clicking it opens the Build your own PC scene", _opened == ["res://scenes/build_pc/build_your_own.tscn"], _opened)
+	check("and it will come back to Free Play", manager.return_page == "free_play:computer" and manager.return_label == "Free Play",
+		manager.return_page)
+	manager.return_scene = ""
+	manager.return_page = ""
+	manager.return_label = ""
 	menu.queue_free()
 
 
