@@ -209,6 +209,9 @@ no_depth_test = true
 [node name="Mesh" parent="Tower" instance=ExtResource("5_tower")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.08, 0, 0)
 
+[node name="GrabPoint" type="Marker3D" parent="Tower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.08, 0.16, 0)
+
 [node name="Monitor" type="RigidBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0.38, 0.902, 0.325)
 script = ExtResource("4_grabbable_part")
@@ -227,6 +230,9 @@ no_depth_test = true
 
 [node name="Mesh" parent="Monitor" instance=ExtResource("6_monitor")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.07)
+
+[node name="GrabPoint" type="Marker3D" parent="Monitor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.185, 0.055)
 
 [node name="Keyboard" type="RigidBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.04, 0.902, 0.25)

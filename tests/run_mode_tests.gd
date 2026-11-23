@@ -73,7 +73,7 @@ func _tests() -> Array:
 		_test_monitor_screen_message, _test_build_scene, _test_build_board_goes_first,
 		_test_build_matching_tiers_boot, _test_build_parts_that_do_not_fit, _test_build_power_rules,
 		_test_build_swapping_the_board, _test_build_monitor_says_why, _test_build_balanced_bonus,
-		_test_build_results_card]
+		_test_build_results_card, _test_big_parts_are_grabbed_by_the_middle]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -1191,3 +1191,23 @@ func _test_build_results_card() -> void:
 			and not "Balanced build" in mission.panel.text() and "Score: 90" in mission.panel.text(), mission.panel.text())
 	var other := await _fresh(Unbox.instantiate())
 	check("other missions add nothing of their own to the success panel", other._result_extras().is_empty())
+
+
+# ---- The headset: reaching for a big part ----
+
+func _test_big_parts_are_grabbed_by_the_middle() -> void:
+	var mission := await _fresh(Unbox.instantiate())
+	var hands = mission.get_node("Room/VRGrabber")
+	var tower: GrabbablePart = mission.get_node("Tower")
+	var keyboard: GrabbablePart = mission.get_node("Keyboard")
+	var middle: Vector3 = (tower.get_node("CollisionShape3D") as Node3D).global_position
+	check("the boxed tower's origin is at one end, too far from its middle for a hand there",
+		tower.global_position.distance_to(middle) > hands.grab_radius, tower.global_position.distance_to(middle))
+	check("so it has a grab point at its middle", tower.grab_position().is_equal_approx(middle), tower.grab_position())
+	check("a part with no grab point is reached for at its origin", keyboard.grab_position() == keyboard.global_position)
+	# The headset's grabber looks through the scene being played.
+	current_scene = mission
+	check("a hand at the middle of the tower picks the tower", hands.part_near(middle) == tower, hands.part_near(middle))
+	check("a hand over the keyboard picks the keyboard", hands.part_near(keyboard.global_position + Vector3(0, 0.03, 0)) == keyboard)
+	check("a hand away from every part picks nothing", hands.part_near(Vector3(0, 1.5, 0)) == null)
+	current_scene = null

@@ -76,6 +76,13 @@ func can_grab() -> bool:
 	return not is_installed and not is_held
 
 
+## Where a hand reaches for the part: its origin, or a child Marker3D named
+## GrabPoint, for a big part whose origin (its snap point) is at one edge.
+func grab_position() -> Vector3:
+	var point := get_node_or_null("GrabPoint") as Node3D
+	return point.global_position if point else global_position
+
+
 func grab() -> bool:
 	if not can_grab():
 		return false
