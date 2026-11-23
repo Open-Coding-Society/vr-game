@@ -65,7 +65,8 @@ func _tests() -> Array:
 		_test_parts_catalog_loads, _test_parts_catalog_catches_mistakes, _test_rule_cpu_socket,
 		_test_rule_ram_type, _test_rule_storage_slot, _test_rule_gpu_plug, _test_rule_enough_power,
 		_test_rules_by_name, _test_matching_builds_pass, _test_balanced_builds,
-		_test_shelf_parts_load_their_specs, _test_shelf_layout, _test_part_variants]
+		_test_shelf_parts_load_their_specs, _test_shelf_layout, _test_part_variants,
+		_test_bonus_points]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -792,3 +793,19 @@ func _test_part_variants() -> void:
 	check("a variant gives any part its type, name, label and specs, with or without a mesh",
 		cpu.part_type == &"cpu" and cpu.display_name == "AMD Ryzen 9 9950X" and tag.text == "AMD Ryzen 9 9950X" and cpu.spec.socket == "AM5",
 		str(cpu.spec))
+
+
+# ---- Step 7: Build your own PC ----
+
+func _test_bonus_points() -> void:
+	manager.begin("setup_pc.unbox")
+	manager.add_bonus(10)
+	check("a bonus before the mission is under way is ignored", manager.bonus == 0 and manager.score == 100, manager.score)
+	manager.note_grab()
+	manager.note_mistake()
+	manager.add_bonus(5)
+	check("a bonus is added on top of what the mistakes leave", manager.bonus == 5 and manager.score == 95, manager.score)
+	manager.note_mistake()
+	check("and a later mistake doesn't lose it", manager.score == 85 and manager.mistakes == 2, manager.score)
+	manager.begin("setup_pc.unbox")
+	check("the next mission starts with no bonus", manager.bonus == 0 and manager.score == 100, manager.score)

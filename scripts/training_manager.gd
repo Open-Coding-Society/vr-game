@@ -23,6 +23,8 @@ var state := State.IDLE
 ## The mission being played, from the registry (empty when IDLE).
 var mission: Dictionary = {}
 var mistakes := 0
+## Extra points a mission has given on top of its score (see add_bonus).
+var bonus := 0
 var score := 0
 var duration_s := 0
 ## Tries the student needed: 1 plus the mistakes. The API's `attempts` field.
@@ -69,6 +71,7 @@ func begin(full_id: String) -> Dictionary:
 		_set_state(State.IDLE)
 		return {}
 	mistakes = 0
+	bonus = 0
 	attempts = 1
 	duration_s = 0
 	score = mission.scoring.full
@@ -99,7 +102,20 @@ func note_mistake() -> void:
 		return
 	mistakes += 1
 	attempts = mistakes + 1
-	score = maxi(0, mission.scoring.full - mission.scoring.per_mistake * mistakes)
+	_update_score()
+
+
+## A mission gives extra points for something done well (e.g. a balanced PC
+## build). They are added on top of what the mistakes leave.
+func add_bonus(points: int) -> void:
+	if state != State.ACTIVE:
+		return
+	bonus += points
+	_update_score()
+
+
+func _update_score() -> void:
+	score = maxi(0, mission.scoring.full - mission.scoring.per_mistake * mistakes) + bonus
 
 
 ## Every slot is filled: stop the clock and announce the result.
