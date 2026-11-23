@@ -345,6 +345,116 @@
               "hint": "The power supply is fine: the computer turns on and beeps, so it's getting power."
             }
           }
+        },
+        {
+          "id": "build_your_own",
+          "title": "Build your own PC",
+          "description": "Pick parts from three tiers and build a PC that works",
+          "topic": "Compatibility",
+          "difficulty": "Intermediate",
+          "scene": "res://scenes/build_pc/build_your_own.tscn",
+          "intro": [
+            "Pick a motherboard first: its socket and slots decide which parts fit.",
+            "Then add a CPU, memory, storage, a graphics card and a power supply from any row, and press the power button with the finger."
+          ],
+          "success": [
+            "It boots! Every part in this PC works with the others."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "catalog_parts": true,
+          "on_complete": "boot",
+          "boot_lines": [
+            "POST: checking CPU, memory, storage... OK",
+            "BIOS: boot drive found",
+            "Starting the operating system...",
+            "Desktop ready"
+          ],
+          "parts": {
+            "Finger": {
+              "type": "finger",
+              "name": "finger"
+            }
+          },
+          "slots": {
+            "Case/BoardTray": {
+              "accepts": "motherboard",
+              "swappable": true,
+              "name": "motherboard tray",
+              "hint": "The motherboard goes in first: every other part plugs into it.",
+              "role": "The motherboard joins every part together. Its socket and slots decide what fits."
+            },
+            "Case/CpuSocket": {
+              "accepts": "cpu",
+              "compat": "cpu_socket",
+              "swappable": true,
+              "requires": [
+                "Case/BoardTray"
+              ],
+              "name": "CPU socket",
+              "hint": "The socket takes the processor (CPU): it runs every instruction.",
+              "role": "The CPU runs every instruction. Its socket has to match the motherboard's."
+            },
+            "Case/RamSlots": {
+              "accepts": "ram",
+              "compat": "ram_type",
+              "swappable": true,
+              "requires": [
+                "Case/BoardTray"
+              ],
+              "name": "memory slots",
+              "hint": "The long slots take memory (RAM): it holds what the CPU is working on right now.",
+              "role": "Memory holds what the CPU is working on right now."
+            },
+            "Case/StorageBay": {
+              "accepts": "storage",
+              "compat": "storage_slot",
+              "swappable": true,
+              "requires": [
+                "Case/BoardTray"
+              ],
+              "name": "storage bay",
+              "hint": "Storage goes here: it keeps your files when the power is off.",
+              "role": "Storage keeps the operating system and your files when the power is off."
+            },
+            "Case/GpuSlot": {
+              "accepts": "gpu",
+              "swappable": true,
+              "requires": [
+                "Case/BoardTray"
+              ],
+              "name": "graphics card slot",
+              "hint": "The long slot takes the graphics card: it makes the picture.",
+              "role": "The graphics card makes the picture. A big one needs its own power cable."
+            },
+            "Case/PsuBay": {
+              "accepts": "psu",
+              "swappable": true,
+              "requires": [
+                "Case/BoardTray"
+              ],
+              "name": "power supply bay",
+              "hint": "The power supply goes here: it feeds every part.",
+              "role": "The power supply feeds every part, so it has to be big enough for all of them."
+            },
+            "Case/PowerButton": {
+              "accepts": "finger",
+              "compat": "power",
+              "requires": [
+                "Case/BoardTray",
+                "Case/CpuSocket",
+                "Case/RamSlots",
+                "Case/StorageBay",
+                "Case/GpuSlot",
+                "Case/PsuBay"
+              ],
+              "name": "power button",
+              "hint": "Press the power button with the finger once every part is in.",
+              "role": "Power on!"
+            }
+          }
         }
       ]
     },

@@ -15,6 +15,7 @@ const ConnectPeripherals := preload("res://scenes/setup_pc/connect_peripherals.t
 const PowerOn := preload("res://scenes/setup_pc/power_on.tscn")
 const GoOnline := preload("res://scenes/setup_pc/go_online.tscn")
 const PartsShelf := preload("res://scenes/build_pc/parts_shelf.tscn")
+const BuildYourOwn := preload("res://scenes/build_pc/build_your_own.tscn")
 const MonitorScreen := preload("res://scripts/parts/monitor_screen.gd")
 const Mission := preload("res://scripts/missions/mission.gd")
 const PartsCatalog := preload("res://scripts/parts/parts_catalog.gd")
@@ -69,7 +70,9 @@ func _tests() -> Array:
 		_test_shelf_parts_load_their_specs, _test_shelf_layout, _test_part_variants,
 		_test_bonus_points, _test_swappable_zone, _test_zone_compat_rule, _test_registry_checks_slot_rules,
 		_test_registry_catalog_parts, _test_panel_body_size, _test_long_lists_are_cut_short,
-		_test_monitor_screen_message]
+		_test_monitor_screen_message, _test_build_scene, _test_build_board_goes_first,
+		_test_build_matching_tiers_boot, _test_build_parts_that_do_not_fit, _test_build_power_rules,
+		_test_build_swapping_the_board]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -111,12 +114,14 @@ func _over(mission: Node3D, slot_path: String) -> Vector3:
 
 
 ## The real input path, as the mouse does it: press on the part through the
-## camera, carry it above the table to over `to`, let go.
-func _drag(mission: Node3D, part_path: String, to: Vector3) -> void:
+## camera, carry it above the table to over `to`, let go. The press is on the
+## middle of the part's grab shape, moved by `press` for a part that is partly
+## under another.
+func _drag(mission: Node3D, part_path: String, to: Vector3, press := Vector3.ZERO) -> void:
 	var part: GrabbablePart = mission.get_node(part_path)
 	var grabber = mission.get_node("Room/MouseGrabber")
 	var camera: Camera3D = mission.get_node("Room/Camera3D")
-	var middle: Vector3 = (part.get_node("CollisionShape3D") as Node3D).global_position
+	var middle: Vector3 = (part.get_node("CollisionShape3D") as Node3D).global_position + press
 	if grabber.try_grab_at(camera.unproject_position(middle)) != part:
 		check("pressing on %s through the camera picks it up" % part_path, false)
 		return
@@ -967,3 +972,152 @@ func _test_monitor_screen_message() -> void:
 	screen.show_desktop("Desktop ready", PackedStringArray())
 	check("the desktop replaces it once the PC starts",
 		screen.text() == "Desktop ready\n" and screen._style.bg_color.is_equal_approx(MonitorScreen.DESKTOP_COLOR))
+
+
+const BUILD_SLOTS := {"board": "Case/BoardTray", "cpu": "Case/CpuSocket", "ram": "Case/RamSlots",
+	"storage": "Case/StorageBay", "gpu": "Case/GpuSlot", "psu": "Case/PsuBay"}
+const BUILD_NODES := {"cpu": "Cpu", "ram": "Ram", "storage": "Storage", "gpu": "Gpu", "psu": "Psu"}
+const BUILD_ROWS := {"starter": "Starter", "mid": "Mid", "high": "High"}
+const BUILD_ORDER := ["board", "cpu", "ram", "storage", "gpu", "psu"]
+
+
+## Build your own PC, loaded fresh, with a monitor that doesn't wait between boot lines.
+func _build_mission() -> Node3D:
+	var mission := await _fresh(BuildYourOwn.instantiate())
+	mission.get_node("Monitor/MonitorScreen").line_seconds = 0.0
+	return mission
+
+
+## The `tier` version of a kind of part: a board on the stand or a part on the shelf.
+func _build_part(mission: Node3D, kind: String, tier: String) -> GrabbablePart:
+	if kind == "board":
+		return mission.get_node("Boards/" + BUILD_ROWS[tier])
+	return mission.get_node("Shelf/%s/%s" % [BUILD_ROWS[tier], BUILD_NODES[kind]])
+
+
+## Carries the `tier` version of `kind` to its slot, with the mouse. A board
+## is pressed on its front edge, the part of it the stand leaves showing.
+func _fit(mission: Node3D, kind: String, tier: String) -> void:
+	var path := str(mission.get_path_to(_build_part(mission, kind, tier)))
+	await _drag(mission, path, _over(mission, BUILD_SLOTS[kind]), Vector3(0, 0, 0.1) if kind == "board" else Vector3.ZERO)
+
+
+## Fits a whole build: `tiers` gives each kind's tier, and any kind left out gets `tier`.
+func _fit_all(mission: Node3D, tier: String, tiers := {}) -> void:
+	for kind in BUILD_ORDER:
+		await _fit(mission, kind, tiers.get(kind, tier))
+
+
+func _press_power(mission: Node3D) -> void:
+	await _drag(mission, "Finger", _over(mission, "Case/PowerButton"))
+
+
+func _test_build_scene() -> void:
+	var mission := await _build_mission()
+	check("Build your own PC loads with nothing out of place", mission.problems.is_empty(), "; ".join(mission.problems))
+	check("it has seven slots and nineteen parts: three boards, the shelf's fifteen and the finger",
+		mission.zones.size() == 7 and mission.parts.size() == 19, "%s %s" % [mission.zones.size(), mission.parts.size()])
+	var boards := ["Starter", "Mid", "High"].map(func(row) -> String: return mission.get_node("Boards/" + row).display_name)
+	check("the stand holds the three motherboards", boards == ["ASRock H110 Pro BTC+", "B650", "X870E"], str(boards))
+	check("the registry lists it with the Computer tasks, with the plan's card text",
+		mission.config.description == "Pick parts from three tiers and build a PC that works"
+			and mission.config.topic == "Compatibility" and mission.config.difficulty == "Intermediate" and mission.config.category == "computer")
+	check("the monitor is off until the PC starts", not mission.get_node("Monitor/MonitorScreen").is_on)
+
+
+func _test_build_board_goes_first() -> void:
+	var mission := await _build_mission()
+	await _fit(mission, "cpu", "mid")
+	check("a CPU before any motherboard is blocked: a mistake, and it goes back to the shelf",
+		manager.mistakes == 1 and not _build_part(mission, "cpu", "mid").is_installed
+			and "Not yet. First finish: motherboard tray." in mission.panel.text(), mission.panel.text())
+	await _press_power(mission)
+	check("the power button waits for every part, and the long list is cut short",
+		manager.mistakes == 2 and "Not yet. First finish: motherboard tray, CPU socket and 4 more." in mission.panel.text(), mission.panel.text())
+	await _fit(mission, "board", "mid")
+	check("the motherboard goes in the tray, lying flat",
+		_build_part(mission, "board", "mid").is_installed and "[x] motherboard tray" in mission.panel.text()
+			and "Yes! The motherboard joins every part together." in mission.panel.text(), mission.panel.text())
+	await _fit(mission, "gpu", "mid")
+	await _drag(mission, "Shelf/Mid/Psu", _over(mission, "Case/CpuSocket"))
+	check("a power supply on the CPU socket is turned away with the socket's hint",
+		manager.mistakes == 3 and "The EVGA SuperNOVA 850 P2 doesn't go there. The socket takes the processor" in mission.panel.text(),
+		mission.panel.text())
+
+
+func _test_build_matching_tiers_boot() -> void:
+	for tier in PartsCatalog.TIERS:
+		var mission := await _build_mission()
+		var screen = mission.get_node("Monitor/MonitorScreen")
+		await _fit_all(mission, tier)
+		check("%s tier: all six parts go in with no mistakes, and nothing starts yet" % tier,
+			manager.mistakes == 0 and manager.state == manager.State.ACTIVE and not screen.is_on
+				and BUILD_ORDER.all(func(kind) -> bool: return _build_part(mission, kind, tier).is_installed), mission.panel.text())
+		await _press_power(mission)
+		check("%s tier: pressing power boots the PC and finishes the mission" % tier,
+			manager.state == manager.State.SUCCESS and screen.text() == "Desktop ready\n" and "It boots!" in mission.panel.text(),
+			"%s | %s" % [screen.text(), mission.panel.text()])
+
+
+func _test_build_parts_that_do_not_fit() -> void:
+	var mission := await _build_mission()
+	await _fit(mission, "board", "starter")
+	await _fit(mission, "cpu", "mid")
+	check("an AM5 CPU on the LGA1151 board is turned away with the socket message, and counts as a mistake",
+		manager.mistakes == 1 and not _build_part(mission, "cpu", "mid").is_installed
+			and "This CPU's socket (AM5) doesn't match the motherboard (LGA1151)." in mission.panel.text(), mission.panel.text())
+	await _fit(mission, "ram", "high")
+	check("DDR5 memory on the DDR4 board is turned away with the notch message",
+		manager.mistakes == 2 and not _build_part(mission, "ram", "high").is_installed
+			and "DDR5 RAM won't fit a DDR4 slot: the notch is in a different place." in mission.panel.text(), mission.panel.text())
+	await _fit(mission, "storage", "high")
+	check("an NVMe drive is fine: this board has an M.2 slot", manager.mistakes == 2 and _build_part(mission, "storage", "high").is_installed)
+	await _fit(mission, "cpu", "starter")
+	await _fit(mission, "ram", "starter")
+	check("the parts that match the board go in",
+		_build_part(mission, "cpu", "starter").is_installed and _build_part(mission, "ram", "starter").is_installed and manager.mistakes == 2)
+
+
+func _test_build_power_rules() -> void:
+	var mission := await _build_mission()
+	var screen = mission.get_node("Monitor/MonitorScreen")
+	var finger: GrabbablePart = mission.get_node("Finger")
+	await _fit_all(mission, "high", {"psu": "mid"})
+	await _press_power(mission)
+	check("an RTX 5090 on a supply with no 12V-2x6 cable won't start: a mistake, with the reason on the panel",
+		manager.mistakes == 1 and manager.state == manager.State.ACTIVE and not finger.is_installed
+			and "The RTX 5090 needs a 12V-2x6 cable, and this power supply doesn't have one." in mission.panel.text(), mission.panel.text())
+	await _fit(mission, "psu", "high")
+	check("the player can swap the power supply: the new one goes in and the old one is back on the shelf",
+		_build_part(mission, "psu", "high").is_installed and not _build_part(mission, "psu", "mid").is_installed
+			and _build_part(mission, "psu", "mid").global_position.is_equal_approx(_build_part(mission, "psu", "mid").home_transform.origin)
+			and manager.mistakes == 1)
+	await _press_power(mission)
+	check("with the right supply it boots, one mistake down",
+		manager.state == manager.State.SUCCESS and screen.text() == "Desktop ready\n" and manager.mistakes == 1, screen.text())
+	mission = await _build_mission()
+	await _fit_all(mission, "mid", {"cpu": "high", "psu": "starter"})
+	await _press_power(mission)
+	check("a supply that is too small won't start either, and the message says how big it should be",
+		manager.mistakes == 1 and manager.state == manager.State.ACTIVE
+			and "The power supply is too small: the PC shuts off under load. You need about 550 W." in mission.panel.text(), mission.panel.text())
+	await _fit(mission, "cpu", "mid")
+	await _press_power(mission)
+	check("swapping the CPU for one that draws less also fixes it", manager.state == manager.State.SUCCESS and manager.mistakes == 1)
+
+
+func _test_build_swapping_the_board() -> void:
+	var mission := await _build_mission()
+	await _fit(mission, "board", "mid")
+	await _fit(mission, "cpu", "mid")
+	await _fit(mission, "ram", "mid")
+	await _fit(mission, "board", "starter")
+	check("a different motherboard takes the tray, and the first one goes back to the stand",
+		_build_part(mission, "board", "starter").is_installed and not _build_part(mission, "board", "mid").is_installed
+			and _build_part(mission, "board", "mid").global_position.is_equal_approx(_build_part(mission, "board", "mid").home_transform.origin))
+	check("the parts that were on the old board go back to the shelf, with no mistake counted",
+		not _build_part(mission, "cpu", "mid").is_installed and not _build_part(mission, "ram", "mid").is_installed
+			and not mission.get_node("Case/CpuSocket").is_filled() and not mission.get_node("Case/RamSlots").is_filled() and manager.mistakes == 0)
+	check("and the checklist shows them as still to do",
+		"[x] motherboard tray" in mission.panel.text() and "[  ] CPU socket" in mission.panel.text() and "[  ] memory slots" in mission.panel.text(),
+		mission.panel.text())
