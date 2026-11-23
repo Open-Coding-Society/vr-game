@@ -72,7 +72,8 @@ func _tests() -> Array:
 		_test_registry_catalog_parts, _test_panel_body_size, _test_long_lists_are_cut_short,
 		_test_monitor_screen_message, _test_build_scene, _test_build_board_goes_first,
 		_test_build_matching_tiers_boot, _test_build_parts_that_do_not_fit, _test_build_power_rules,
-		_test_build_swapping_the_board, _test_build_monitor_says_why, _test_build_balanced_bonus]
+		_test_build_swapping_the_board, _test_build_monitor_says_why, _test_build_balanced_bonus,
+		_test_build_results_card]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -1168,3 +1169,25 @@ func _test_build_balanced_bonus() -> void:
 	await _press_power(mission)
 	check("a mistake on the way still costs its points: a balanced build after one mistake is 90",
 		manager.state == manager.State.SUCCESS and manager.mistakes == 1 and manager.score == 90, "%s %s" % [manager.mistakes, manager.score])
+
+
+func _test_build_results_card() -> void:
+	check("a build is summed up by its parts' names, CPU and graphics card first",
+		Compatibility.summary(_tier_build("mid")) == "AMD Ryzen 5 7600 + RTX 4060 Ti + DDR5-5600 2x16 GB + 1 TB NVMe Gen4 + B650 + EVGA SuperNOVA 850 P2",
+		Compatibility.summary(_tier_build("mid")))
+	check("a part that is missing is left out", Compatibility.summary([_spec("psu_high"), _spec("cpu_starter")]) == "Intel Core i5-6500 + Antec HCP 1300 W")
+	var mission := await _build_mission()
+	await _fit_all(mission, "mid")
+	await _press_power(mission)
+	check("the success panel lists the build",
+		"Your build: AMD Ryzen 5 7600 + RTX 4060 Ti + DDR5-5600 2x16 GB + 1 TB NVMe Gen4 + B650 + EVGA SuperNOVA 850 P2" in mission.panel.text(),
+		mission.panel.text())
+	check("with the bonus and the score", "Balanced build: +10" in mission.panel.text() and "Score: 100" in mission.panel.text(), mission.panel.text())
+	mission = await _build_mission()
+	await _fit_all(mission, "mid", {"storage": "starter", "psu": "high"})
+	await _press_power(mission)
+	check("a build with no bonus lists its parts and its score only",
+		"Your build: AMD Ryzen 5 7600 + RTX 4060 Ti + DDR5-5600 2x16 GB + Samsung 860 EVO 250 GB (SATA) + B650 + Antec HCP 1300 W" in mission.panel.text()
+			and not "Balanced build" in mission.panel.text() and "Score: 90" in mission.panel.text(), mission.panel.text())
+	var other := await _fresh(Unbox.instantiate())
+	check("other missions add nothing of their own to the success panel", other._result_extras().is_empty())

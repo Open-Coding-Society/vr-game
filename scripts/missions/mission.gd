@@ -172,6 +172,7 @@ func _on_module_completed(_module_id: String, score: int, duration_s: int) -> vo
 		if not is_inside_tree() or manager.mission.get("full_id", "") != mission_id:
 			return
 	_result_lines = PackedStringArray(config.success)
+	_result_lines.append_array(_result_extras())
 	_result_lines.append("Score: %d   Time: %s   Mistakes: %d" % [score, _clock(duration_s), manager.mistakes])
 	next_mission = manager.next_mission_id(mission_id)
 	if manager.return_scene != "":
@@ -192,6 +193,12 @@ var next_mission := ""
 func _monitor_screen() -> Node:
 	var screen := find_child("MonitorScreen", true, false)
 	return screen if screen and screen.has_method("play_boot") else null
+
+
+## Lines a mission adds to its success panel, between the registry's success
+## text and the score. None by default; a mission script of its own can say more.
+func _result_extras() -> PackedStringArray:
+	return PackedStringArray()
 
 
 ## Started from the menu: go back to it (it reopens manager.return_page).

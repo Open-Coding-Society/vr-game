@@ -22,6 +22,8 @@ const HEADROOM := 1.25
 const WATTS_STEP := 50.0
 ## Lowest tier first: a build is balanced when its tiers are neighbours.
 const TIERS := ["starter", "mid", "high"]
+## The order parts are named in a build's summary.
+const SUMMARY_ORDER := ["cpu", "gpu", "ram", "storage", "motherboard", "psu"]
 ## How a power plug is written in a message.
 const PLUG_NAMES := {"pcie8": "8-pin PCIe", "12v2x6": "12V-2x6"}
 
@@ -96,6 +98,18 @@ static func watts_needed(cpu: Dictionary, gpu: Dictionary) -> float:
 static func is_balanced(parts: Array) -> bool:
 	var steps := parts.map(func(part) -> int: return TIERS.find(part.get("tier", "")))
 	return not steps.is_empty() and not steps.has(-1) and steps.max() - steps.min() <= 1
+
+
+## A build in one line for a results card: the parts' names, the ones a
+## student compares first (CPU, graphics card) in front.
+## e.g. "AMD Ryzen 5 7600 + RTX 4060 Ti + DDR5-5600 2x16 GB + ..."
+static func summary(parts: Array) -> String:
+	var names := []
+	for type in SUMMARY_ORDER:
+		var part := of_type(parts, type)
+		if not part.is_empty():
+			names.append(part.name)
+	return " + ".join(names)
 
 
 ## The first of `parts` that is of `type`, or {}.

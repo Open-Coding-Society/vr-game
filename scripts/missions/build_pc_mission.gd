@@ -33,3 +33,11 @@ func _on_rejected(zone: SnapZone, part: GrabbablePart) -> void:
 	var screen := _monitor_screen()
 	if counts and screen and zone.compat == &"power" and zone.last_problem != "":
 		screen.show_message(PackedStringArray([zone.last_problem]))
+
+
+## The results card lists the build, and says when it earned the bonus.
+func _result_extras() -> PackedStringArray:
+	var out := PackedStringArray(["Your build: " + Compatibility.summary(build_specs())])
+	if manager.bonus > 0:
+		out.append("Balanced build: +%d" % manager.bonus)
+	return out
