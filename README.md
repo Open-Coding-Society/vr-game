@@ -45,6 +45,7 @@ The work follows the team build plan (`OCSVR_Training_Plan.md` section 5 in the 
 | `scripts/snap_zone.gd` | A slot (`Area3D`) with a `hint`. It judges a dropped part: right type → installs it and emits `snapped`; wrong type → emits `rejected` |
 | `scripts/input/mouse_grabber.gd` | The laptop's grab/drop layer: press, carry, release. The only script that knows about the mouse |
 | `tests/run_tests.gd` | Headless checks (below) |
+| `tests/run_mode_tests.gd` | Headless checks for the cables, Set up a pre-built PC and Build your own PC |
 
 The VR rules from the build plan, and where they show up:
 
@@ -111,6 +112,9 @@ From the repo folder, with `godot` meaning your Godot 4.7.2 binary:
 ```bash
 godot --headless --import
 godot --headless --script res://tests/run_tests.gd       # game: snap rules, missions, registry
+godot --headless --script res://tests/run_mode_tests.gd  # cables, Set up a pre-built PC, Build your own PC
+godot --headless --script res://tests/run_menu_tests.gd  # menus, Free Play, Story roadmap
+godot --headless --script res://tests/run_save_tests.gd  # local saves
 godot --headless --script res://tests/run_api_tests.gd   # score saving, against a fake server
 ```
 
