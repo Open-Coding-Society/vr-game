@@ -1,0 +1,69 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/parts/cable.gd" id="1_cable"]
+[ext_resource type="Script" path="res://scripts/grabbable_part.gd" id="2_part"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_plug"]
+albedo_color = Color(0.2, 0.22, 0.26, 1)
+roughness = 0.7
+
+[sub_resource type="BoxMesh" id="Mesh_plug"]
+material = SubResource("Mat_plug")
+size = Vector3(0.03, 0.02, 0.045)
+
+[sub_resource type="BoxShape3D" id="Shape_plug"]
+size = Vector3(0.05, 0.04, 0.06)
+
+[sub_resource type="StandardMaterial3D" id="Mat_wire"]
+albedo_color = Color(0.12, 0.13, 0.15, 1)
+roughness = 0.8
+
+[sub_resource type="CylinderMesh" id="Mesh_wire"]
+material = SubResource("Mat_wire")
+top_radius = 0.004
+bottom_radius = 0.004
+height = 1.0
+radial_segments = 8
+rings = 1
+
+[node name="Cable" type="Node3D"]
+script = ExtResource("1_cable")
+
+[node name="EndA" type="RigidBody3D" parent="."]
+script = ExtResource("2_part")
+
+[node name="Mesh" type="MeshInstance3D" parent="EndA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
+mesh = SubResource("Mesh_plug")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="EndA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+shape = SubResource("Shape_plug")
+
+[node name="Name" type="Label3D" parent="EndA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+billboard = 1
+pixel_size = 0.0004
+font_size = 48
+outline_size = 10
+
+[node name="EndB" type="RigidBody3D" parent="."]
+script = ExtResource("2_part")
+
+[node name="Mesh" type="MeshInstance3D" parent="EndB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
+mesh = SubResource("Mesh_plug")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="EndB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+shape = SubResource("Shape_plug")
+
+[node name="Name" type="Label3D" parent="EndB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+billboard = 1
+pixel_size = 0.0004
+font_size = 48
+outline_size = 10
+
+[node name="Wire" type="MeshInstance3D" parent="."]
+mesh = SubResource("Mesh_wire")

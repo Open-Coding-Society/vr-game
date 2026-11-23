@@ -345,6 +345,372 @@
               "hint": "The power supply is fine: the computer turns on and beeps, so it's getting power."
             }
           }
+        },
+        {
+          "id": "build_your_own",
+          "title": "Build your own PC",
+          "description": "Pick parts from three tiers and build a PC that works.",
+          "topic": "Compatibility",
+          "difficulty": "Intermediate",
+          "scene": "res://scenes/build_pc/build_your_own.tscn",
+          "intro": [
+            "Pick a motherboard first: its socket and slots decide which parts fit.",
+            "Then add a CPU, memory, storage, a graphics card and a power supply from any row, and press the power button with the finger."
+          ],
+          "success": [
+            "It boots! Every part in this PC works with the others."
+          ],
+          "scoring": {
+            "full": 90,
+            "per_mistake": 10,
+            "balanced_bonus": 10
+          },
+          "catalog_parts": true,
+          "on_complete": "boot",
+          "boot_lines": [
+            "POST: checking CPU, memory, storage... OK",
+            "BIOS: boot drive found",
+            "Starting the operating system...",
+            "Desktop ready"
+          ],
+          "parts": {
+            "Finger": {
+              "type": "finger",
+              "name": "finger"
+            }
+          },
+          "slots": {
+            "Case/BoardTray": {
+              "accepts": "motherboard",
+              "swappable": true,
+              "name": "motherboard tray",
+              "hint": "This tray holds the motherboard. Every other part has its own place on the board or beside it.",
+              "role": "The motherboard joins every part together. Its socket and slots decide what fits."
+            },
+            "Case/CpuSocket": {
+              "accepts": "cpu",
+              "compat": "cpu_socket",
+              "swappable": true,
+              "requires": [
+                "Case/BoardTray"
+              ],
+              "name": "CPU socket",
+              "hint": "The socket takes the processor (CPU): it runs every instruction.",
+              "role": "The CPU runs every instruction. Its socket has to match the motherboard's."
+            },
+            "Case/RamSlots": {
+              "accepts": "ram",
+              "compat": "ram_type",
+              "swappable": true,
+              "requires": [
+                "Case/BoardTray"
+              ],
+              "name": "memory slots",
+              "hint": "The long slots take memory (RAM): it holds what the CPU is working on right now.",
+              "role": "Memory holds what the CPU is working on right now."
+            },
+            "Case/StorageBay": {
+              "accepts": "storage",
+              "compat": "storage_slot",
+              "swappable": true,
+              "requires": [
+                "Case/BoardTray"
+              ],
+              "name": "storage slot",
+              "hint": "Storage goes here: it keeps your files when the power is off.",
+              "role": "Storage keeps the operating system and your files when the power is off."
+            },
+            "Case/GpuSlot": {
+              "accepts": "gpu",
+              "swappable": true,
+              "requires": [
+                "Case/BoardTray"
+              ],
+              "name": "graphics card slot",
+              "hint": "The long slot takes the graphics card: it makes the picture.",
+              "role": "The graphics card makes the picture. A big one needs its own power cable."
+            },
+            "Case/PsuBay": {
+              "accepts": "psu",
+              "swappable": true,
+              "requires": [
+                "Case/BoardTray"
+              ],
+              "name": "power supply bay",
+              "hint": "The power supply goes here: it feeds every part.",
+              "role": "The power supply feeds every part, so it has to be big enough for all of them."
+            },
+            "Case/PowerButton": {
+              "accepts": "finger",
+              "compat": "power",
+              "requires": [
+                "Case/BoardTray",
+                "Case/CpuSocket",
+                "Case/RamSlots",
+                "Case/StorageBay",
+                "Case/GpuSlot",
+                "Case/PsuBay"
+              ],
+              "name": "power button",
+              "hint": "Press the power button with the finger once every part is in.",
+              "role": "Power on!"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "setup_pc",
+      "title": "Set up a pre-built PC",
+      "category": "computer",
+      "missions": [
+        {
+          "id": "unbox",
+          "title": "Unbox the PC",
+          "description": "Lift the tower, monitor, keyboard and mouse out of the box and set each one on the desk.",
+          "topic": "Input and output",
+          "difficulty": "Beginner",
+          "scene": "res://scenes/setup_pc/unbox.tscn",
+          "intro": [
+            "A new PC comes as four things: the tower, a monitor, a keyboard and a mouse.",
+            "Lift each one out of the box and put it on its marked spot on the desk."
+          ],
+          "success": [
+            "Unboxed! The tower does the computing, the monitor shows the output, and the keyboard and mouse are how you give it input."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "parts": {
+            "Tower": {
+              "type": "tower",
+              "name": "PC tower"
+            },
+            "Monitor": {
+              "type": "monitor",
+              "name": "monitor"
+            },
+            "Keyboard": {
+              "type": "keyboard",
+              "name": "keyboard"
+            },
+            "Mouse": {
+              "type": "mouse",
+              "name": "mouse"
+            }
+          },
+          "slots": {
+            "Desk/TowerSpot": {
+              "accepts": "tower",
+              "name": "tower spot",
+              "hint": "This spot is for the tower, the big case the other parts plug into.",
+              "role": "The tower is the computer itself: the processor, memory and storage are inside it."
+            },
+            "Desk/MonitorSpot": {
+              "accepts": "monitor",
+              "name": "monitor spot",
+              "hint": "This spot is for the monitor, the screen you look at.",
+              "role": "The monitor is an output device: it shows you what the computer is doing."
+            },
+            "Desk/KeyboardSpot": {
+              "accepts": "keyboard",
+              "name": "keyboard spot",
+              "hint": "This spot is for the keyboard, the one you type on.",
+              "role": "The keyboard is an input device: it sends what you type into the computer."
+            },
+            "Desk/MouseSpot": {
+              "accepts": "mouse",
+              "name": "mouse spot",
+              "hint": "This spot is for the mouse, the one you point and click with.",
+              "role": "The mouse is an input device: it sends your moves and clicks into the computer."
+            }
+          }
+        },
+        {
+          "id": "connect_peripherals",
+          "title": "Connect the monitor, keyboard and mouse",
+          "description": "Run an HDMI cable from the PC to the monitor, and plug the keyboard and mouse into USB ports.",
+          "topic": "Ports and cables",
+          "difficulty": "Beginner",
+          "scene": "res://scenes/setup_pc/connect_peripherals.tscn",
+          "intro": [
+            "The tower is turned round so you can reach the ports on its back.",
+            "Plug the HDMI cable into the tower and the monitor, then plug the keyboard and the mouse into the USB ports."
+          ],
+          "success": [
+            "Connected! HDMI carries the picture out to the monitor, and USB brings your typing and clicks in."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "parts": {
+            "HdmiCable/EndA": {
+              "type": "hdmi",
+              "name": "HDMI plug"
+            },
+            "HdmiCable/EndB": {
+              "type": "hdmi",
+              "name": "HDMI plug"
+            },
+            "KeyboardCable/EndB": {
+              "type": "usb",
+              "name": "keyboard plug"
+            },
+            "MouseCable/EndB": {
+              "type": "usb",
+              "name": "mouse plug"
+            }
+          },
+          "slots": {
+            "Tower/GpuHdmi": {
+              "accepts": "hdmi",
+              "name": "graphics card HDMI port",
+              "hint": "The picture comes from the graphics card's port, the one lower down on the back.",
+              "role": "The graphics card makes the picture and sends it out through this port."
+            },
+            "Monitor/HdmiIn": {
+              "accepts": "hdmi",
+              "name": "monitor HDMI port",
+              "hint": "The monitor's HDMI port takes the picture that comes from the computer.",
+              "role": "The picture comes into the monitor here, so the monitor is an output device."
+            },
+            "Tower/Usb1": {
+              "accepts": "usb",
+              "name": "first USB port",
+              "hint": "Keyboard and mouse are input devices: they send information into the computer.",
+              "role": "This cable carries input into the computer: every key press and click goes down it."
+            },
+            "Tower/Usb2": {
+              "accepts": "usb",
+              "name": "second USB port",
+              "hint": "Keyboard and mouse are input devices: they send information into the computer.",
+              "role": "This cable carries input into the computer: every key press and click goes down it."
+            }
+          }
+        },
+        {
+          "id": "power_on",
+          "title": "Plug in power and watch it boot",
+          "description": "Give the tower and the monitor power, plug into the wall last, and watch the PC start up.",
+          "topic": "Power and booting",
+          "difficulty": "Intermediate",
+          "scene": "res://scenes/setup_pc/power_on.tscn",
+          "intro": [
+            "Everything is connected except power.",
+            "Plug a power cable into the tower and one into the monitor. Then plug both into the wall: the wall always comes last."
+          ],
+          "success": [
+            "It boots! First the PC tests its own hardware (POST), then the BIOS finds the drive, then the operating system loads from storage into memory."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "on_complete": "boot",
+          "boot_lines": [
+            "POST: checking CPU, memory, storage... OK",
+            "BIOS: boot drive found",
+            "Starting the operating system...",
+            "Desktop ready"
+          ],
+          "parts": {
+            "TowerPower/EndA": {
+              "type": "power_plug",
+              "name": "tower power plug"
+            },
+            "TowerPower/EndB": {
+              "type": "wall_plug",
+              "name": "tower wall plug"
+            },
+            "MonitorPower/EndA": {
+              "type": "power_plug",
+              "name": "monitor power plug"
+            },
+            "MonitorPower/EndB": {
+              "type": "wall_plug",
+              "name": "monitor wall plug"
+            }
+          },
+          "slots": {
+            "Tower/PowerIn": {
+              "accepts": "power_plug",
+              "name": "power socket on the tower",
+              "hint": "A power plug goes in here, on the power supply at the bottom of the tower's back.",
+              "role": "The power supply turns wall power into the low voltages the parts inside the tower use."
+            },
+            "Monitor/PowerIn": {
+              "accepts": "power_plug",
+              "name": "power socket on the monitor",
+              "hint": "A power plug goes in here. The monitor needs power of its own.",
+              "role": "The monitor has its own power: the HDMI cable carries the picture, not power."
+            },
+            "Wall/Socket": {
+              "accepts": "wall_plug",
+              "capacity": 2,
+              "requires": [
+                "Tower/PowerIn",
+                "Monitor/PowerIn"
+              ],
+              "name": "wall socket",
+              "hint": "Always plug into the wall last, after everything else is connected.",
+              "role": "Power now flows from the wall to that device."
+            }
+          }
+        },
+        {
+          "id": "go_online",
+          "title": "Connect to the network",
+          "description": "Run an Ethernet cable from the PC to the router and watch the link light come on.",
+          "topic": "Networks",
+          "difficulty": "Intermediate",
+          "scene": "res://scenes/setup_pc/go_online.tscn",
+          "intro": [
+            "The PC works, but it can't reach any other computer yet.",
+            "Plug one end of the Ethernet cable into the tower and the other into the router."
+          ],
+          "success": [
+            "You're online! The cable links the PC to the router, and the router passes its messages on to other networks."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "monitor": {
+            "start": [
+              "Desktop",
+              "Network: not connected"
+            ],
+            "linked": [
+              "Connected",
+              "This PC is on the network."
+            ]
+          },
+          "parts": {
+            "EthernetCable/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "EthernetCable/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            }
+          },
+          "slots": {
+            "Tower/Ethernet": {
+              "accepts": "ethernet",
+              "name": "tower network port",
+              "hint": "The network (LAN) port is the square one beside the USB ports.",
+              "role": "The network port is how the PC sends and receives data over a cable."
+            },
+            "Router/Lan1": {
+              "accepts": "ethernet",
+              "name": "router LAN port",
+              "hint": "The router connects your computer to other networks, including the internet.",
+              "role": "The router connects your computer to other networks, including the internet."
+            }
+          }
         }
       ]
     }

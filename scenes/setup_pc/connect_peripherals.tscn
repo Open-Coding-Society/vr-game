@@ -1,0 +1,138 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/missions/mission.gd" id="1_mission"]
+[ext_resource type="PackedScene" path="res://scenes/room.tscn" id="2_room"]
+[ext_resource type="PackedScene" path="res://scenes/setup_pc/props/tower.tscn" id="3_tower"]
+[ext_resource type="PackedScene" path="res://scenes/setup_pc/props/monitor.tscn" id="4_monitor"]
+[ext_resource type="PackedScene" path="res://scenes/setup_pc/props/keyboard.tscn" id="5_keyboard"]
+[ext_resource type="PackedScene" path="res://scenes/setup_pc/props/mouse.tscn" id="6_mouse"]
+[ext_resource type="Script" path="res://scripts/snap_zone.gd" id="7_snap_zone"]
+[ext_resource type="PackedScene" path="res://scenes/parts/cable.tscn" id="8_cable"]
+[ext_resource type="Script" path="res://scripts/ui/info_panel.gd" id="9_info_panel"]
+
+[sub_resource type="BoxShape3D" id="Shape_1"]
+size = Vector3(0.04, 0.34, 0.07)
+
+[sub_resource type="BoxShape3D" id="Shape_2"]
+size = Vector3(0.07, 0.14, 0.08)
+
+[node name="ConnectPeripherals" type="Node3D"]
+script = ExtResource("1_mission")
+mission_id = "setup_pc.connect_peripherals"
+
+[node name="Room" parent="." instance=ExtResource("2_room")]
+
+[node name="Tower" type="Node3D" parent="."]
+transform = Transform3D(0.866, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866, -0.44, 0.9, -0.165)
+
+[node name="Shape" parent="Tower" instance=ExtResource("3_tower")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
+
+[node name="Monitor" type="Node3D" parent="."]
+transform = Transform3D(0.766, 0, -0.6428, 0, 1, 0, 0.6428, 0, 0.766, 0.46, 0.9, -0.2)
+
+[node name="Shape" parent="Monitor" instance=ExtResource("4_monitor")]
+
+[node name="Keyboard" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.04, 0.9, -0.1)
+
+[node name="Shape" parent="Keyboard" instance=ExtResource("5_keyboard")]
+
+[node name="CableOut" type="Marker3D" parent="Keyboard"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.18, 0.012, 0)
+
+[node name="Mouse" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.21, 0.9, -0.1)
+
+[node name="Shape" parent="Mouse" instance=ExtResource("6_mouse")]
+
+[node name="CableOut" type="Marker3D" parent="Mouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, -0.05)
+
+[node name="GpuHdmi" type="Area3D" parent="Tower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.05, 0, 0.15)
+script = ExtResource("7_snap_zone")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tower/GpuHdmi"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.17, 0.04)
+shape = SubResource("Shape_1")
+
+[node name="SnapPoint" type="Marker3D" parent="Tower/GpuHdmi"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.115, 0.031)
+
+[node name="Label" type="Label3D" parent="Tower/GpuHdmi"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.149, 0.012)
+pixel_size = 0.0004
+text = "HDMI"
+font_size = 44
+outline_size = 8
+
+[node name="Usb1" type="Area3D" parent="Tower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.06, 0, 0.15)
+script = ExtResource("7_snap_zone")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tower/Usb1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.17, 0.04)
+shape = SubResource("Shape_1")
+
+[node name="SnapPoint" type="Marker3D" parent="Tower/Usb1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.23, 0.031)
+
+[node name="Label" type="Label3D" parent="Tower/Usb1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.264, 0.012)
+pixel_size = 0.0004
+text = "USB"
+font_size = 36
+outline_size = 8
+
+[node name="Usb2" type="Area3D" parent="Tower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.02, 0, 0.15)
+script = ExtResource("7_snap_zone")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tower/Usb2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.17, 0.04)
+shape = SubResource("Shape_1")
+
+[node name="SnapPoint" type="Marker3D" parent="Tower/Usb2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.23, 0.031)
+
+[node name="Label" type="Label3D" parent="Tower/Usb2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.264, 0.012)
+pixel_size = 0.0004
+text = "USB"
+font_size = 36
+outline_size = 8
+
+[node name="HdmiIn" type="Area3D" parent="Monitor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.11, 0, -0.005)
+script = ExtResource("7_snap_zone")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Monitor/HdmiIn"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0.04)
+shape = SubResource("Shape_2")
+
+[node name="SnapPoint" type="Marker3D" parent="Monitor/HdmiIn"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0475, 0.027)
+
+[node name="Label" type="Label3D" parent="Monitor/HdmiIn"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, 0.012)
+pixel_size = 0.0004
+text = "HDMI"
+font_size = 44
+outline_size = 8
+
+[node name="HdmiCable" parent="." instance=ExtResource("8_cable")]
+end_b_position = Vector3(0.08, 0.9, 0.22)
+end_a_position = Vector3(-0.1, 0.9, 0.22)
+
+[node name="KeyboardCable" parent="." instance=ExtResource("8_cable")]
+end_b_position = Vector3(-0.26, 0.9, 0.1)
+fixed_end = NodePath("../Keyboard/CableOut")
+
+[node name="MouseCable" parent="." instance=ExtResource("8_cable")]
+end_b_position = Vector3(0.33, 0.9, 0.06)
+fixed_end = NodePath("../Mouse/CableOut")
+
+[node name="InfoPanel" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.9063, 0.4226, 0, -0.4226, 0.9063, -0.02, 1.12, -0.32)
+script = ExtResource("9_info_panel")

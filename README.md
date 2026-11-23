@@ -10,7 +10,7 @@ The work follows the team build plan (`OCSVR_Training_Plan.md` section 5 in the 
 
 1. Install **Godot 4.7.2 standard** (not .NET). Setup guides with the exact versions are in the team Drive: `OCSVR_Godot_Setup_Windows.md` and `OCSVR_Godot_Setup_macOS.md`.
 2. Clone this repo and open `project.godot` from Godot's project manager (**Import**).
-3. Press **Play** (F5). Module 1 starts with the "Install the RAM" practice mission, and each finished mission opens the next one after 6 seconds. To play one mission on its own, open its scene and press F6.
+3. Press **Play** (F5). The home menu opens: choose **Play locally**, then **Free Play** (any task) or **Story Mode** (tasks in order). A finished mission goes back to the menu after 6 seconds. To play one mission on its own, open its scene and press F6.
 
 ## Status
 
@@ -20,6 +20,7 @@ The work follows the team build plan (`OCSVR_Training_Plan.md` section 5 in the 
 | 2. One full mission ("Identify components") with hints and a success panel | **Done:** CPU, RAM, SSD and keyboard into their places, checklist and hints on a 3D panel, score/time/attempts on success |
 | 4. `TrainingManager` autoload + module registry | **Done:** missions are data in `data/modules.json`; one generic mission script |
 | Module 1 missions | **All 5, plus a practice:** Install the RAM (practice), Identify the components, Assemble the system, Execute a task, Add processing capacity, Diagnose a failure |
+| Phase 2 modes | **Built, with placeholder shapes:** "Set up a pre-built PC" (unbox, connect the monitor, keyboard and mouse, power on and boot, go online) and "Build your own PC" (three tiers of parts that must work together) |
 | 5. Send scores to Flask | **Done:** each finished mission is saved through the training API (sign in, start a session, complete it with retries) |
 | OpenXR, Quest export preset, vendors plugin | Being set up by Aryan's side; they get added here |
 
@@ -34,17 +35,27 @@ The work follows the team build plan (`OCSVR_Training_Plan.md` section 5 in the 
 | `scripts/training_manager.gd` | **The `TrainingManager` autoload**: Intro → Active (first grab starts the clock) → Success; mistakes, score, attempts; emits `module_completed(module_id, score, duration_s)` |
 | `scripts/net/score_reporter.gd` | **The `ScoreReporter` autoload**: on `mission_started` it starts a server session; on `module_completed` it completes it with score, time, attempts and device, retrying if the server can't be reached. Practice missions aren't sent |
 | `scripts/net/training_api.gd` | The HTTP client for the backend's `/api/authenticate`, `/api/sessions/start`, `/api/sessions/complete` and `/api/learners/<uid>/progress`. Sends the login JWT as `Authorization: Bearer` |
-| `scripts/missions/mission.gd` | The one script every mission scene uses: gives the scene's parts and slots their registry data and drives the panel |
+| `scripts/missions/mission.gd` | The script every mission scene uses (Build your own PC extends it): gives the scene's parts and slots their registry data and drives the panel |
 | `scripts/ui/info_panel.gd` | A 3D panel (SubViewport on a quad) for intros, checklists, hints and results |
 | `scenes/build_computer/assemble_system.tscn` | Module 1, mission 3: mount the motherboard, PSU and SSD in a case, power last |
 | `scenes/build_computer/execute_task.tscn` | Module 1, mission 4: carry a photo file from the SSD to RAM, the CPU, then the screen |
 | `scenes/build_computer/add_capacity.tscn` | Module 1, mission 5 (advanced): install a GPU, then send step-by-step jobs to the CPU and parallel jobs to the GPU |
 | `scenes/build_computer/diagnose_failure.tscn` | Module 1, mission 6 (advanced): read the symptoms, find the broken RAM, then the dead SSD, and swap in spares |
+| `scenes/setup_pc/` | Module 2, "Set up a pre-built PC" (Story IRL Act 1): `unbox`, `connect_peripherals`, `power_on` and `go_online`, plus the placeholder shapes in `props/` |
+| `scenes/build_pc/build_your_own.tscn` | "Build your own PC": pick a motherboard, CPU, memory, storage, graphics card and power supply from three tiers; it only boots if they work together |
+| `scenes/build_pc/parts_shelf.tscn` | The shelf of parts for it: five kinds in three tiers |
+| `scenes/parts/cable.tscn` | A cable: a grabbable plug at each end and a wire between them (`scripts/parts/cable.gd`) |
 | `scenes/workbench.tscn` | The "Install the RAM" practice mission (step 1's workbench, now registry-only) |
-| `scripts/grabbable_part.gd` | A part you can pick up. Knows its `part_type`; on a drop it picks the one slot that judges it (so a keyboard over three slots is one mistake, not three); goes home if not installed |
-| `scripts/snap_zone.gd` | A slot (`Area3D`) with a `hint`. It judges a dropped part: right type → installs it and emits `snapped`; wrong type → emits `rejected` |
+| `scripts/grabbable_part.gd` | A part you can pick up. Knows its `part_type`; on a drop it picks the one slot that judges it (so a keyboard over three slots is one mistake, not three); goes home if not installed. With a `variant`, it takes its type, name and colour from the parts catalog |
+| `scripts/snap_zone.gd` | A slot (`Area3D`) with a `hint`. It judges a dropped part: right type → installs it and emits `snapped`; wrong type → emits `rejected`. Options from the registry add order, capacity, swapping and compatibility rules |
 | `scripts/input/mouse_grabber.gd` | The laptop's grab/drop layer: press, carry, release. The only script that knows about the mouse |
+| `data/parts_catalog.json` | The three tiers of each PC part and their specs, read by `scripts/parts/parts_catalog.gd` |
+| `scripts/parts/compatibility.gd` | Whether parts work together: one pure function per rule, each returning the message a student reads when it fails |
+| `scripts/parts/monitor_screen.gd` | A monitor's picture: plays a mission's boot lines, shows the desktop or a message |
+| `scripts/parts/link_light.gd` | A status light that comes on when the slots it watches are filled |
+| `scripts/missions/build_pc_mission.gd` | What only Build your own PC does, on top of `mission.gd`: the reason on the monitor, the balanced bonus, the build on the results card |
 | `tests/run_tests.gd` | Headless checks (below) |
+| `tests/run_mode_tests.gd` | Headless checks for the cables, Set up a pre-built PC and Build your own PC |
 
 The VR rules from the build plan, and where they show up:
 
@@ -86,12 +97,25 @@ Never commit a password. With no account set up, the game still plays, and the s
    - `pass_through: true`: the part is placed here but stays free to move on, so it can go through several stages, like data moving through the computer
    - `capacity`: how many parts fill it (a job queue); they sit side by side along the SnapPoint's x axis
    - `working: true`: a part that isn't broken. It takes nothing (so no `accepts`), isn't on the checklist, and turns any part away with its hint
+   - `swappable: true`: a full slot still takes a part of its type, and the part that was in it goes back home. Slots that needed it filled first are emptied too
+   - `compat`: a rule in `scripts/parts/compatibility.gd` (`cpu_socket`, `ram_type`, `storage_slot`, `gpu_plug`, `enough_power`, or `power` for both power rules). A part of the right type is also checked against the parts in the slots this one `requires`, and the rule's message is shown when it fails
 
    A zone with a child node named `Replaced` (the old part's mesh) hides it once the zone is full.
 
+   A mission can also have `"on_complete": "boot"` with `"boot_lines"` (a list of text). When its last slot is filled, the scene's monitor screen (a node named `MonitorScreen` using `scripts/parts/monitor_screen.gd`) shows the lines one after another before the success panel comes up, and the last line stays on the screen. A mission can also give `"monitor"` text for that screen: `start` is shown from the beginning (a PC that is already on) and `linked` once the screen's `link_light` comes on. The first line of each is its heading.
+
+   A mission with `"catalog_parts": true` also uses parts from `data/parts_catalog.json`: a part whose `variant` is a catalog id (`cpu_mid`) takes its type, name, label and tier colour from there and needs no entry under `parts`. Its `parts` list still needs at least one entry of its own (the finger, in Build your own PC). `scoring` can have a `balanced_bonus` for missions that give one. The top score should stay at 100: the score API accepts 0 to 100.
+
+   Ready-made pieces for a scene:
+   - `scenes/parts/cable.tscn`: a cable with a grabbable plug at each end (`EndA`, `EndB`), listed in the registry like any other part. Set `fixed_end` for a device's own cable (one plug), and `fixed_end_b` as well for a cable that is already plugged in (only its wire).
+   - `scripts/parts/link_light.gd`: a light that comes on once the slots in its `zones` are all filled. A monitor screen can watch one through `link_light` and then shows the registry's `monitor.linked` text.
+   - `scenes/build_pc/parts_shelf.tscn`: a shelf with a CPU, RAM kit, storage drive, graphics card and power supply in each of the three tiers.
+   - A `GrabPoint` marker on a big part whose origin is at one edge: in the headset, a hand reaches for the marker instead of the origin.
+   - `body_size` on an `InfoPanel`: a smaller text size for a mission with a long checklist.
+
    Missions play in the order they're listed.
 
-No new code is needed. If the registry and the scene disagree (a slot in one but not the other, a slot that accepts a type no part has), the game prints exactly what's wrong when it loads.
+No new code is needed for a mission built from these fields. Build your own PC is the one mission with a script of its own, `scripts/missions/build_pc_mission.gd`, which extends `mission.gd` for its monitor message, its bonus and its results card; `balanced_bonus` only does something there. If the registry and the scene disagree (a slot in one but not the other, a slot that accepts a type no part has), the game prints exactly what's wrong when it loads.
 
 ## Run the checks
 
@@ -100,6 +124,9 @@ From the repo folder, with `godot` meaning your Godot 4.7.2 binary:
 ```bash
 godot --headless --import
 godot --headless --script res://tests/run_tests.gd       # game: snap rules, missions, registry
+godot --headless --script res://tests/run_mode_tests.gd  # cables, Set up a pre-built PC, Build your own PC
+godot --headless --script res://tests/run_menu_tests.gd  # menus, Free Play, Story roadmap
+godot --headless --script res://tests/run_save_tests.gd  # local saves
 godot --headless --script res://tests/run_api_tests.gd   # score saving, against a fake server
 ```
 

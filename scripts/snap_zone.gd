@@ -8,7 +8,7 @@ extends Area3D
 ## attempt); right type but too early, it's `blocked` (also a failed attempt).
 ## Missions only listen to the signals.
 ##
-## Two options come from the module registry:
+## These options come from the module registry:
 ## - `prerequisites`: zones that must be filled first ("plug in power last").
 ## - `pass_through`: the part only passes through. It's placed here and the zone
 ##   counts as done, but the part stays free to carry on to the next zone, like
@@ -17,11 +17,18 @@ extends Area3D
 ##   several, side by side, `stack_spacing` apart along the SnapPoint's x axis).
 ## - `working`: a part that isn't broken (Diagnose a failure). It never takes a
 ##   part; anything dropped on it is turned away with its hint.
+## - `swappable`: a full zone still takes a part of its type. The part that was
+##   in it goes back home, so the player can change their mind (`swapped`).
+## - `compat`: the name of a rule in scripts/parts/compatibility.gd. A part of
+##   the right type is also checked against the parts in this zone's
+##   prerequisites; if the rule fails it's turned away (`rejected`) and
+##   `last_problem` says why.
 ##
 ## A child named "Replaced" (e.g. the old, faulty part's mesh) is hidden once
 ## the zone is full, so the new part doesn't sit on top of the old one.
 
 const GrabbablePart := preload("res://scripts/grabbable_part.gd")
+const Compatibility := preload("res://scripts/parts/compatibility.gd")
 
 ## A part of the right type was dropped here and is now installed.
 signal snapped(zone, part)
@@ -29,6 +36,8 @@ signal snapped(zone, part)
 signal rejected(zone, part)
 ## A part of the right type came too early (a prerequisite isn't filled yet).
 signal blocked(zone, part)
+## A swappable zone gave up `old_part` for a new one. Emitted before `snapped`.
+signal swapped(zone, old_part)
 
 ## The part type this zone takes, e.g. &"ram". Matches GrabbablePart.part_type.
 @export var accepts: StringName = &"ram"
@@ -47,6 +56,17 @@ signal blocked(zone, part)
 @export var stack_spacing := 0.05
 ## See above: a part that works; nothing is installed here.
 @export var working := false
+## See above: a full zone swaps its part for a new one of the same type.
+@export var swappable := false
+## See above: the compatibility rule a part must also pass, e.g. &"cpu_socket".
+@export var compat: StringName = &""
+
+## Set by the mission once it is over: the zone takes, swaps and turns away
+## nothing more, so what is in it stays as it was when the mission ended.
+var locked := false
+## Why the last part judged was turned away by the `compat` rule ("" if it
+## wasn't): the sentence to show the student.
+var last_problem := ""
 
 ## Zones that must be filled before this one takes its part.
 var prerequisites: Array[Area3D] = []
@@ -74,7 +94,7 @@ func snap_transform() -> Transform3D:
 
 ## True when this zone would install the part right now.
 func can_take(part: GrabbablePart) -> bool:
-	return not working and not is_filled() and part.part_type == accepts and is_unlocked()
+	return not locked and not working and (not is_filled() or swappable) and part.part_type == accepts and is_unlocked()
 
 
 ## True once every prerequisite zone is filled.
@@ -91,11 +111,21 @@ func missing_prerequisites() -> Array[Area3D]:
 ## part of the right type over a slot that's already full) do nothing, so it
 ## just goes home without counting as a mistake.
 func judge(part: GrabbablePart) -> void:
-	if part.is_installed:
+	if part.is_installed or locked:
 		return
+	last_problem = ""
 	if working:
 		rejected.emit(self, part)
+	elif can_take(part) and compat_problem(part) != "":
+		last_problem = compat_problem(part)
+		rejected.emit(self, part)
 	elif can_take(part):
+		if is_filled():
+			# Swappable: the newest part makes room for this one.
+			var old: GrabbablePart = installed_parts.pop_back()
+			installed_part = installed_parts.back() if not installed_parts.is_empty() else null
+			old.uninstall()
+			swapped.emit(self, old)
 		var at := snap_transform() * Transform3D(Basis(), Vector3(stack_spacing * installed_parts.size(), 0, 0))
 		installed_parts.append(part)
 		installed_part = part
@@ -110,6 +140,31 @@ func judge(part: GrabbablePart) -> void:
 		rejected.emit(self, part)
 	elif not is_filled():
 		blocked.emit(self, part)
+
+
+## What the `compat` rule says about a part going in here, given the parts in
+## the zones this one requires ("" when there's no rule or it passes).
+func compat_problem(part: GrabbablePart) -> String:
+	if compat == &"":
+		return ""
+	var others := []
+	for zone in prerequisites:
+		for other in zone.installed_parts:
+			if not other.spec.is_empty():
+				others.append(other.spec)
+	return Compatibility.check(compat, part.spec, others)
+
+
+## Sends every installed part back home and leaves the zone empty, e.g. when
+## the part they were plugged into has been taken out.
+func eject_all() -> void:
+	var leaving := installed_parts.duplicate()
+	installed_parts.clear()
+	installed_part = null
+	for part in leaving:
+		part.uninstall()
+	if has_node("Replaced"):
+		get_node("Replaced").visible = true
 
 
 func _on_body_entered(body: Node) -> void:

@@ -15,7 +15,8 @@ signal part_dropped(part)
 ## The two controllers (set by room.gd).
 @export var left_hand: XRController3D
 @export var right_hand: XRController3D
-## How close (meters) a controller must be to a part's origin to grab it.
+## How close (meters) a controller must be to a part to grab it: to its
+## origin, or to its GrabPoint if it has one (see GrabbablePart.grab_position).
 ## Small parts like a CPU are a few centimeters, so this is generous on purpose.
 @export var grab_radius: float = 0.12
 ## Controller actions that count as "grab", from openxr_action_map.tres.
@@ -76,7 +77,7 @@ func part_near(point: Vector3) -> GrabbablePart:
 		var part := node as GrabbablePart
 		if part == null or not part.can_grab():
 			continue
-		var distance := part.global_position.distance_to(point)
+		var distance := part.grab_position().distance_to(point)
 		if distance <= best_distance:
 			best = part
 			best_distance = distance

@@ -39,9 +39,11 @@ func _tests() -> Array:
 	return [_test_screen_pixels, _test_pointer_clicks_button, _test_pointer_misses_off_screen,
 		_test_theme_placeholder_image, _test_theme_text_is_readable, _test_tag_keeps_its_size,
 		_test_ray_transform, _test_home_page, _test_login_placeholder,
-		_test_mode_picker, _test_free_play_lists_tasks, _test_free_play_cloud_empty,
+		_test_mode_picker, _test_free_play_lists_tasks, _test_free_play_lists_the_new_modes, _test_free_play_cloud_empty,
 		_test_free_play_starts_task, _test_done_task_shows_best, _test_mission_returns_to_menu,
-		_test_menu_reopens_return_page, _test_story_map_states, _test_story_map_bad_mission,
+		_test_menu_reopens_return_page, _test_story_map_states, _test_story_act_1_unlocks_in_order,
+		_test_story_act_3_starts_with_build_your_own,
+		_test_story_map_bad_mission,
 		_test_story_chapters, _test_roadmap_plays_next, _test_roadmap_cloud_planned,
 		_test_roadmap_rows_fill_the_screen]
 
@@ -248,7 +250,9 @@ func _test_free_play_lists_tasks() -> void:
 	check("Free Play opens on the Computer tab", menu.page == "free_play", menu.page)
 	var manager := root.get_node("TrainingManager")
 	var tasks: Array = manager.registry.missions_in("computer")
-	check("there are 6 Computer tasks in the registry", tasks.size() == 6, tasks.size())
+	check("the registry's Computer tasks start with the six Build a Computer ones",
+		tasks.size() >= 6 and tasks[0].full_id == "build_computer.install_ram" and tasks[5].full_id == "build_computer.diagnose_failure",
+		tasks.size())
 	var missing := []
 	for task in tasks:
 		if menu.find_button("Task_" + task.full_id.replace(".", "_")) == null:
@@ -264,6 +268,44 @@ func _test_free_play_lists_tasks() -> void:
 		if a.get_global_rect().end.y > b.get_global_rect().position.y + 0.5:
 			overlaps.append(tasks[i].id)
 	check("task cards don't overlap", overlaps.is_empty(), overlaps)
+	menu.queue_free()
+
+
+## The two Phase 2 modes are in Free Play: Build your own PC and the four
+## Set up a pre-built PC tasks, after the six that were there.
+func _test_free_play_lists_the_new_modes() -> void:
+	_opened.clear()
+	var manager := root.get_node("TrainingManager")
+	var ids: Array = manager.registry.missions_in("computer").map(func(task) -> String: return task.full_id)
+	check("Free Play's Computer list has eleven tasks, the new ones last",
+		ids.size() == 11 and ids.slice(6) == ["build_computer.build_your_own", "setup_pc.unbox", "setup_pc.connect_peripherals",
+			"setup_pc.power_on", "setup_pc.go_online"], ids)
+	var menu := await _menu()
+	menu.show_page("free_play", "computer")
+	await process_frame
+	var card: Button = menu.find_button("Task_build_computer_build_your_own")
+	check("Build your own PC has a card", card != null)
+	if card == null:
+		menu.queue_free()
+		return
+	var words := []
+	for label in card.get_parent().find_children("*", "Label", true, false):
+		words.append(label.text)
+	check("the card shows the plan's description, topic and difficulty",
+		words.has("Build your own PC") and words.has("Pick parts from three tiers and build a PC that works.")
+			and words.has("Compatibility") and words.has("Intermediate"), words)
+	# It is far down the list: scroll to it, as a player would, then click.
+	var list := menu.screen.ui_root.find_child("TaskList", true, false) as ScrollContainer
+	list.ensure_control_visible(card)
+	await process_frame
+	await process_frame
+	await _click(menu, "Task_build_computer_build_your_own")
+	check("clicking it opens the Build your own PC scene", _opened == ["res://scenes/build_pc/build_your_own.tscn"], _opened)
+	check("and it will come back to Free Play", manager.return_page == "free_play:computer" and manager.return_label == "Free Play",
+		manager.return_page)
+	manager.return_scene = ""
+	manager.return_page = ""
+	manager.return_label = ""
 	menu.queue_free()
 
 
@@ -349,15 +391,61 @@ func _test_story_map_states() -> void:
 	var done := {}
 	var is_done := func(id: String) -> bool: return done.has(id)
 	var s: Dictionary = map.states("irl", is_done)
-	check("with nothing done, the first playable task is next", s["build_computer.install_ram"] == StoryMap.NEXT, s)
-	check("later playable tasks are locked", s["build_computer.identify_components"] == StoryMap.LOCKED)
-	check("tasks without a mission are planned", s["irl.setup.unbox"] == StoryMap.PLANNED)
-	done["build_computer.install_ram"] = true
+	check("with nothing done, the first playable task is next", s["setup_pc.unbox"] == StoryMap.NEXT, s)
+	check("later playable tasks are locked", s["setup_pc.connect_peripherals"] == StoryMap.LOCKED
+		and s["build_computer.install_ram"] == StoryMap.LOCKED)
+	check("tasks without a mission are planned", s["irl.inside.swap_ssd"] == StoryMap.PLANNED)
+	done["setup_pc.unbox"] = true
 	s = map.states("irl", is_done)
-	check("finishing it makes the next one playable", s["build_computer.install_ram"] == StoryMap.DONE
-		and s["build_computer.identify_components"] == StoryMap.NEXT, s)
-	check("progress counts playable tasks only", map.progress("irl", is_done) == [1, 6], map.progress("irl", is_done))
+	check("finishing it makes the next one playable", s["setup_pc.unbox"] == StoryMap.DONE
+		and s["setup_pc.connect_peripherals"] == StoryMap.NEXT, s)
+	check("progress counts playable tasks only", map.progress("irl", is_done) == [1, 11], map.progress("irl", is_done))
 	check("the IRL chapter isn't complete yet", not map.chapter_complete("irl", is_done))
+
+
+## Act 1, "Set up a pre-built PC", is four missions that open one at a time.
+func _test_story_act_1_unlocks_in_order() -> void:
+	var manager := root.get_node("TrainingManager")
+	var map = StoryMap.load_from(manager.registry)
+	var act: Dictionary = map.chapter("irl").acts[0]
+	var ids: Array = act.tasks.map(func(task) -> String: return task.mission)
+	check("Act 1 is the four Set up a pre-built PC missions",
+		ids == ["setup_pc.unbox", "setup_pc.connect_peripherals", "setup_pc.power_on", "setup_pc.go_online"], ids)
+	check("each roadmap step takes its title from the mission",
+		act.tasks.map(func(task) -> String: return task.title) == ids.map(func(id) -> String: return manager.registry.mission(id).title))
+	var done := {}
+	var is_done := func(id: String) -> bool: return done.has(id)
+	var wrong := []
+	for at in ids.size():
+		var s: Dictionary = map.states("irl", is_done)
+		for i in ids.size():
+			var want: String = StoryMap.DONE if i < at else (StoryMap.NEXT if i == at else StoryMap.LOCKED)
+			if s[ids[i]] != want:
+				wrong.append("%s done: %s is %s" % [at, ids[i], s[ids[i]]])
+		done[ids[at]] = true
+	check("its tasks unlock in order: done ones Done, one Next, the rest Locked", wrong.is_empty(), wrong)
+	var after: Dictionary = map.states("irl", is_done)
+	check("finishing Act 1 opens the first task of Act 2",
+		ids.all(func(id) -> bool: return after[id] == StoryMap.DONE) and after["build_computer.install_ram"] == StoryMap.NEXT, after)
+	check("and counts as four of the chapter's eleven playable tasks", map.progress("irl", is_done) == [4, 11], map.progress("irl", is_done))
+
+
+## Act 3 opens with Build your own PC, under the roadmap's own title for it.
+func _test_story_act_3_starts_with_build_your_own() -> void:
+	var manager := root.get_node("TrainingManager")
+	var map = StoryMap.load_from(manager.registry)
+	var first: Dictionary = map.chapter("irl").acts[2].tasks[0]
+	check("Act 3's first task is the Build your own PC mission", first.mission == "build_computer.build_your_own", first)
+	check("the roadmap keeps its own name for it", first.title == "Pick parts that work together", first.title)
+	var done := {}
+	var is_done := func(id: String) -> bool: return done.has(id)
+	check("it is locked until the acts before it are done", map.states("irl", is_done)["build_computer.build_your_own"] == StoryMap.LOCKED)
+	for id in ["setup_pc.unbox", "setup_pc.connect_peripherals", "setup_pc.power_on", "setup_pc.go_online",
+			"build_computer.install_ram", "build_computer.identify_components"]:
+		done[id] = true
+	var s: Dictionary = map.states("irl", is_done)
+	check("then it is the next task, ahead of Assemble the system",
+		s["build_computer.build_your_own"] == StoryMap.NEXT and s["build_computer.assemble_system"] == StoryMap.LOCKED, s)
 
 
 func _test_story_map_bad_mission() -> void:
@@ -388,20 +476,23 @@ func _test_roadmap_plays_next() -> void:
 	var saves := root.get_node("SaveService")
 	saves.load_profile()
 	saves.profile.tasks.clear()
-	saves.record_task_result("build_computer.install_ram", 100, 30, 1)
+	saves.record_task_result("setup_pc.unbox", 100, 30, 1)
 	var menu := await _menu()
 	menu.show_page("roadmap", "irl")
 	await process_frame
 	var node := func(id: String) -> Node: return menu.screen.ui_root.find_child("Node_" + id.replace(".", "_"), true, false)
-	check("the done task shows as done", node.call("build_computer.install_ram").get_meta("state") == StoryMap.DONE)
-	check("the next task shows as next", node.call("build_computer.identify_components").get_meta("state") == StoryMap.NEXT)
-	check("a locked task can't be played", menu.find_button("Play_build_computer_assemble_system") == null)
-	check("a planned task can't be played", menu.find_button("Play_irl_setup_unbox") == null)
-	await _click(menu, "Play_build_computer_identify_components")
-	check("playing the next task opens its mission", _opened == ["res://scenes/build_computer/identify_components.tscn"], _opened)
+	check("the done task shows as done", node.call("setup_pc.unbox").get_meta("state") == StoryMap.DONE)
+	check("the next task shows as next", node.call("setup_pc.connect_peripherals").get_meta("state") == StoryMap.NEXT)
+	check("the tasks after it show as locked", node.call("setup_pc.power_on").get_meta("state") == StoryMap.LOCKED
+		and node.call("setup_pc.go_online").get_meta("state") == StoryMap.LOCKED)
+	check("a locked task can't be played", menu.find_button("Play_setup_pc_power_on") == null
+		and menu.find_button("Play_build_computer_install_ram") == null)
+	check("a planned task can't be played", menu.find_button("Play_irl_inside_swap_ssd") == null)
+	await _click(menu, "Play_setup_pc_connect_peripherals")
+	check("playing the next task opens its mission", _opened == ["res://scenes/setup_pc/connect_peripherals.tscn"], _opened)
 	check("it will come back to this roadmap", manager.return_page == "roadmap:irl" and manager.return_label == "Story Mode",
 		manager.return_page)
-	check("the roadmap position is saved", saves.story_current("irl") == "build_computer.identify_components")
+	check("the roadmap position is saved", saves.story_current("irl") == "setup_pc.connect_peripherals")
 	manager.return_scene = ""
 	manager.return_page = ""
 	manager.return_label = ""
@@ -425,8 +516,8 @@ func _test_roadmap_rows_fill_the_screen() -> void:
 	menu.show_page("roadmap", "irl")
 	await process_frame
 	await process_frame
-	var first := menu.screen.ui_root.find_child("Node_irl_setup_unbox", true, false) as Control
-	var last := menu.screen.ui_root.find_child("Node_irl_setup_go_online", true, false) as Control
+	var first := menu.screen.ui_root.find_child("Node_setup_pc_unbox", true, false) as Control
+	var last := menu.screen.ui_root.find_child("Node_setup_pc_go_online", true, false) as Control
 	var roadmap := menu.screen.ui_root.find_child("Roadmap", true, false) as Control
 	check("the roadmap's first act is on the page", first != null and last != null and roadmap != null)
 	if first == null or last == null or roadmap == null:

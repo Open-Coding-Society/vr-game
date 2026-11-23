@@ -14,6 +14,8 @@ extends RigidBody3D
 ## the nearest zone (which turns it away). One drop is one decision, even when
 ## a big part like a keyboard covers several slots at once.
 
+const PartsCatalog := preload("res://scripts/parts/parts_catalog.gd")
+
 ## Emitted by drop(), before a zone judges the part.
 signal dropped(part)
 ## Emitted when a SnapZone accepts the part.
@@ -23,6 +25,13 @@ signal installed(part, zone)
 @export var part_type: StringName = &"ram"
 ## The name shown to students in hints and on the success panel.
 @export var display_name: String = "RAM stick"
+## For a part that comes in several versions: its id in data/parts_catalog.json
+## (e.g. "cpu_mid"). The catalog then gives the part its type, its name, the
+## text of its Name label and its tier's colour, and `spec` holds its specs.
+@export var variant: String = ""
+
+## The part's catalog entry ({} for a part with no variant).
+var spec: Dictionary = {}
 
 var is_held := false
 var is_installed := false
@@ -38,10 +47,40 @@ func _ready() -> void:
 	freeze = true
 	freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
 	home_transform = global_transform
+	if variant != "":
+		apply_variant()
+
+
+## Makes the part the catalog's `variant`: type, name, label and tier colour.
+func apply_variant() -> void:
+	spec = PartsCatalog.shared().spec(variant)
+	if spec.is_empty():
+		push_error('%s: "%s" isn\'t a part in data/parts_catalog.json' % [name, variant])
+		return
+	part_type = StringName(spec.type)
+	display_name = spec.name
+	var tag := get_node_or_null("Name") as Label3D
+	if tag:
+		tag.text = spec.name
+	var tint := StandardMaterial3D.new()
+	tint.albedo_color = PartsCatalog.TIER_COLORS[spec.tier]
+	tint.roughness = 0.8
+	var mesh := get_node_or_null("Mesh")
+	if mesh:
+		for piece in [mesh] + mesh.find_children("*", "MeshInstance3D", true, false):
+			if piece is MeshInstance3D:
+				piece.material_override = tint
 
 
 func can_grab() -> bool:
 	return not is_installed and not is_held
+
+
+## Where a hand reaches for the part: its origin, or a child Marker3D named
+## GrabPoint, for a big part whose origin (its snap point) is at one edge.
+func grab_position() -> Vector3:
+	var point := get_node_or_null("GrabPoint") as Node3D
+	return point.global_position if point else global_position
 
 
 func grab() -> bool:
@@ -97,3 +136,10 @@ func install(zone: Node3D, at: Transform3D) -> void:
 	global_transform = at
 	is_installed = true
 	installed.emit(self, zone)
+
+
+## Called by a SnapZone that gives the part up (it was swapped for another):
+## the part is free again and goes back where it came from.
+func uninstall() -> void:
+	is_installed = false
+	return_home()

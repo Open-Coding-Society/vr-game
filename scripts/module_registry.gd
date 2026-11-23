@@ -10,9 +10,15 @@ extends RefCounted
 ## `build_computer.install_ram: slot "Motherboard/RamSlot" accepts "rom", but no
 ## part has that type`, so a typo shows up when the game starts, not mid-mission.
 
+const Compatibility := preload("res://scripts/parts/compatibility.gd")
+const PartsCatalog := preload("res://scripts/parts/parts_catalog.gd")
+
 const DEFAULT_PATH := "res://data/modules.json"
 ## Free Play's two lists. A module says which one its missions go in.
 const CATEGORIES := ["computer", "cloud"]
+## What a mission can ask for once its last slot is filled, before the success
+## panel: "boot" plays its boot_lines on the scene's monitor.
+const ON_COMPLETE := ["boot"]
 
 ## Every mission by its full id ("module.mission"), each a Dictionary with the
 ## mission's fields plus "full_id" and "module_title".
@@ -110,8 +116,20 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 	if typeof(scoring) != TYPE_DICTIONARY or not _is_whole(scoring.get("full"), 1, 1000) \
 			or not _is_whole(scoring.get("per_mistake"), 0, 1000):
 		errors.append("%s.scoring: needs whole numbers full (1-1000) and per_mistake (0-1000)" % full_id)
+	# Optional: extra points for a balanced build (Build your own PC).
+	elif scoring.has("balanced_bonus") and not _is_whole(scoring.balanced_bonus, 0, 1000):
+		errors.append("%s.scoring.balanced_bonus: must be a whole number from 0 to 1000" % full_id)
 	var types := _read_parts(full_id, m.get("parts"))
+	# With catalog_parts, the scene also has parts that take their type from
+	# data/parts_catalog.json (a `variant`), so slots can accept those types.
+	if m.has("catalog_parts") and typeof(m.catalog_parts) != TYPE_BOOL:
+		errors.append("%s.catalog_parts: must be true or false" % full_id)
+	elif m.get("catalog_parts", false):
+		var catalog = PartsCatalog.shared()
+		types.append_array(catalog.parts.values().map(func(part) -> String: return part.type))
 	_read_slots(full_id, m.get("slots"), types)
+	_read_on_complete(full_id, m)
+	_read_monitor(full_id, m)
 	if errors.size() > before:
 		return ""
 	var copy: Dictionary = m.duplicate(true)
@@ -122,9 +140,38 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 	copy.topic = str(m.get("topic", ""))
 	copy.difficulty = str(m.get("difficulty", ""))
 	copy.practice = bool(m.get("practice", false))
-	copy.scoring = {"full": int(scoring.full), "per_mistake": int(scoring.per_mistake)}
+	copy.catalog_parts = bool(m.get("catalog_parts", false))
+	copy.scoring = {"full": int(scoring.full), "per_mistake": int(scoring.per_mistake),
+		"balanced_bonus": int(scoring.get("balanced_bonus", 0))}
 	missions[full_id] = copy
 	return full_id
+
+
+## Optional mission fields: on_complete ("boot") and, with it, boot_lines (the
+## lines the monitor shows; the last one is left on the screen).
+func _read_on_complete(full_id: String, m: Dictionary) -> void:
+	if not m.has("on_complete") and not m.has("boot_lines"):
+		return
+	if not m.get("on_complete") in ON_COMPLETE:
+		errors.append("%s.on_complete: must be one of %s" % [full_id, ", ".join(ON_COMPLETE)])
+	if not _is_text_list(m.get("boot_lines")):
+		errors.append("%s.boot_lines: must be a non-empty list of text" % full_id)
+
+
+## Optional mission field "monitor": text for the scene's monitor screen.
+## "start" is shown from the beginning and "linked" once the screen's link
+## light comes on; in each, the first line is the heading.
+func _read_monitor(full_id: String, m: Dictionary) -> void:
+	if not m.has("monitor"):
+		return
+	if typeof(m.monitor) != TYPE_DICTIONARY or m.monitor.is_empty():
+		errors.append("%s.monitor: must have start or linked text" % full_id)
+		return
+	for key in m.monitor:
+		if not key in ["start", "linked"]:
+			errors.append("%s.monitor.%s: only start and linked are known" % [full_id, key])
+		elif not _is_text_list(m.monitor[key]):
+			errors.append("%s.monitor.%s: must be a non-empty list of text" % [full_id, key])
 
 
 func _read_parts(full_id: String, parts) -> Array:
@@ -171,7 +218,8 @@ func _read_slots(full_id: String, slots, part_types: Array) -> void:
 			errors.append('%s: slots need %d "%s" part(s) but only %d have that type' % [full_id, filled[type], type, part_types.count(type)])
 
 
-## Optional slot fields: role (text), pass_through (true/false) and requires
+## Optional slot fields: role (text), pass_through, working and swappable
+## (true/false), compat (a rule in scripts/parts/compatibility.gd) and requires
 ## (other slots of this mission that must be filled first, with no loops).
 func _read_slot_options(full_id: String, slots: Dictionary) -> void:
 	for path in slots:
@@ -180,9 +228,13 @@ func _read_slot_options(full_id: String, slots: Dictionary) -> void:
 			continue
 		if slot.has("role") and typeof(slot.role) != TYPE_STRING:
 			errors.append('%s: slot "%s" role must be text' % [full_id, path])
-		for flag in ["pass_through", "working"]:
+		for flag in ["pass_through", "working", "swappable"]:
 			if slot.has(flag) and typeof(slot[flag]) != TYPE_BOOL:
 				errors.append('%s: slot "%s" %s must be true or false' % [full_id, path, flag])
+		if slot.has("compat") and not slot.compat in Compatibility.RULES:
+			errors.append('%s: slot "%s" compat must be one of %s' % [full_id, path, ", ".join(Compatibility.RULES)])
+		elif slot.has("compat"):
+			_read_compat(full_id, slots, path)
 		var needs = slot.get("requires", [])
 		if typeof(needs) != TYPE_ARRAY:
 			errors.append('%s: slot "%s" requires must be a list of slot paths' % [full_id, path])
@@ -194,6 +246,24 @@ func _read_slot_options(full_id: String, slots: Dictionary) -> void:
 	for path in slots:
 		if _requires_loop(slots, path, path, {}):
 			errors.append('%s: slot "%s" is in a requires loop' % [full_id, path])
+
+
+## A compat rule has to be on a slot it can judge: one that takes the rule's
+## kind of part, and that requires the slots holding what the rule compares
+## it with. Otherwise the rule would pass everything without a word.
+func _read_compat(full_id: String, slots: Dictionary, path: String) -> void:
+	var slot: Dictionary = slots[path]
+	var needs: Dictionary = Compatibility.NEEDS[slot.compat]
+	if needs.part != "" and slot.get("accepts") != needs.part:
+		errors.append('%s: slot "%s" compat %s is for a slot that accepts %s' % [full_id, path, slot.compat, needs.part])
+	var required := []
+	var listed = slot.get("requires", [])
+	for need in listed if typeof(listed) == TYPE_ARRAY else []:
+		if slots.has(need) and typeof(slots[need]) == TYPE_DICTIONARY:
+			required.append(slots[need].get("accepts"))
+	for type in needs.others:
+		if slot.get("accepts") != type and not required.has(type):
+			errors.append('%s: slot "%s" compat %s needs a slot that accepts %s in its requires' % [full_id, path, slot.compat, type])
 
 
 ## True when following `requires` from `at` leads back to `start`.
