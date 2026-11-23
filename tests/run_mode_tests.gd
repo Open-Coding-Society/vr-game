@@ -68,7 +68,8 @@ func _tests() -> Array:
 		_test_rules_by_name, _test_matching_builds_pass, _test_balanced_builds,
 		_test_shelf_parts_load_their_specs, _test_shelf_layout, _test_part_variants,
 		_test_bonus_points, _test_swappable_zone, _test_zone_compat_rule, _test_registry_checks_slot_rules,
-		_test_registry_catalog_parts, _test_panel_body_size, _test_long_lists_are_cut_short]
+		_test_registry_catalog_parts, _test_panel_body_size, _test_long_lists_are_cut_short,
+		_test_monitor_screen_message]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -953,3 +954,16 @@ func _test_long_lists_are_cut_short() -> void:
 	check("a longer list names the first two and counts the rest",
 		Mission.name_list(["tray", "socket", "slots", "bay", "card slot", "PSU bay"]) == "tray, socket and 4 more",
 		Mission.name_list(["tray", "socket", "slots", "bay", "card slot", "PSU bay"]))
+
+
+func _test_monitor_screen_message() -> void:
+	var screen := Node3D.new()
+	screen.set_script(MonitorScreen)
+	await _fresh(screen)
+	screen.show_message(PackedStringArray(["The power supply is too small."]))
+	check("a message turns the screen on and shows only its lines",
+		screen.visible and screen.is_on and not screen.is_booting and screen.text() == "\nThe power supply is too small.", screen.text())
+	check("on the dark start-up screen, not the desktop", screen._style.bg_color.is_equal_approx(MonitorScreen.BOOT_COLOR))
+	screen.show_desktop("Desktop ready", PackedStringArray())
+	check("the desktop replaces it once the PC starts",
+		screen.text() == "Desktop ready\n" and screen._style.bg_color.is_equal_approx(MonitorScreen.DESKTOP_COLOR))

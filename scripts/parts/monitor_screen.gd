@@ -55,6 +55,15 @@ func show_desktop(new_title: String, new_lines: PackedStringArray) -> void:
 	show_text(new_title, new_lines)
 
 
+## Shows plain lines on a dark screen, as a PC does when it can't start:
+## e.g. why the build won't boot.
+func show_message(message_lines: PackedStringArray) -> void:
+	is_on = true
+	visible = true
+	_style.bg_color = BOOT_COLOR
+	show_text("", message_lines)
+
+
 ## Plays a start-up: every line but the last comes up in turn on a dark
 ## screen, then the last line is shown as the desktop.
 func play_boot(boot_lines: PackedStringArray) -> void:
