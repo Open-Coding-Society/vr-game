@@ -349,7 +349,7 @@
         {
           "id": "build_your_own",
           "title": "Build your own PC",
-          "description": "Pick parts from three tiers and build a PC that works",
+          "description": "Pick parts from three tiers and build a PC that works.",
           "topic": "Compatibility",
           "difficulty": "Intermediate",
           "scene": "res://scenes/build_pc/build_your_own.tscn",
@@ -416,7 +416,7 @@
               "requires": [
                 "Case/BoardTray"
               ],
-              "name": "storage bay",
+              "name": "storage slot",
               "hint": "Storage goes here: it keeps your files when the power is off.",
               "role": "Storage keeps the operating system and your files when the power is off."
             },

@@ -1056,7 +1056,7 @@ func _test_build_scene() -> void:
 	var boards := ["Starter", "Mid", "High"].map(func(row) -> String: return mission.get_node("Boards/" + row).display_name)
 	check("the stand holds the three motherboards", boards == ["ASRock H110 Pro BTC+", "B650", "X870E"], str(boards))
 	check("the registry lists it with the Computer tasks, with the plan's card text",
-		mission.config.description == "Pick parts from three tiers and build a PC that works"
+		mission.config.description == "Pick parts from three tiers and build a PC that works."
 			and mission.config.topic == "Compatibility" and mission.config.difficulty == "Intermediate" and mission.config.category == "computer")
 	check("the monitor is off until the PC starts", not mission.get_node("Monitor/MonitorScreen").is_on)
 

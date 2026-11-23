@@ -292,7 +292,7 @@ func _test_free_play_lists_the_new_modes() -> void:
 	for label in card.get_parent().find_children("*", "Label", true, false):
 		words.append(label.text)
 	check("the card shows the plan's description, topic and difficulty",
-		words.has("Build your own PC") and words.has("Pick parts from three tiers and build a PC that works")
+		words.has("Build your own PC") and words.has("Pick parts from three tiers and build a PC that works.")
 			and words.has("Compatibility") and words.has("Intermediate"), words)
 	# It is far down the list: scroll to it, as a player would, then click.
 	var list := menu.screen.ui_root.find_child("TaskList", true, false) as ScrollContainer
