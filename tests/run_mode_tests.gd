@@ -468,6 +468,12 @@ func _test_monitor_screen_boot() -> void:
 	screen.line_seconds = 0.0
 	screen.play_boot(PackedStringArray(["a", "b"]))
 	check("with no wait between lines the boot is over at once", not screen.is_booting and screen.text() == "b\n", screen.text())
+	screen.line_seconds = 0.03
+	screen.play_boot(PackedStringArray(["one", "two", "three"]))
+	root.remove_child(screen)
+	await create_timer(0.1).timeout
+	check("a screen taken away mid-boot stops booting and shows no more lines", not screen.is_booting and screen.text() == "\none", screen.text())
+	screen.free()
 
 
 func _test_power_wall_goes_last() -> void:
@@ -512,7 +518,8 @@ func _test_power_on_boots() -> void:
 		manager.state == manager.State.SUCCESS and screen.is_booting and "POST: checking CPU, memory, storage" in screen.text(), screen.text())
 	check("the success panel waits while it plays, with the checklist all ticked",
 		not "Mission complete!" in mission.panel.text() and "[x] wall socket (2 of 2)" in mission.panel.text(), mission.panel.text())
-	await screen.boot_finished
+	if screen.is_booting:
+		await screen.boot_finished
 	await process_frame
 	check("the boot ends on the desktop", screen.text() == "Desktop ready\n" and not screen.is_booting, screen.text())
 	check("and then the success panel comes up, with the score",

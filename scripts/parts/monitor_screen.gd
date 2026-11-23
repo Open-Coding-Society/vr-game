@@ -78,6 +78,8 @@ func play_boot(boot_lines: PackedStringArray) -> void:
 		if line_seconds > 0.0:
 			await get_tree().create_timer(line_seconds).timeout
 			if not is_inside_tree():
+				# The scene was left mid-boot: nothing more to show.
+				is_booting = false
 				return
 	if not boot_lines.is_empty():
 		show_desktop(boot_lines[boot_lines.size() - 1], PackedStringArray())
