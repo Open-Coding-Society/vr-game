@@ -61,6 +61,9 @@ signal swapped(zone, old_part)
 ## See above: the compatibility rule a part must also pass, e.g. &"cpu_socket".
 @export var compat: StringName = &""
 
+## Set by the mission once it is over: the zone takes, swaps and turns away
+## nothing more, so what is in it stays as it was when the mission ended.
+var locked := false
 ## Why the last part judged was turned away by the `compat` rule ("" if it
 ## wasn't): the sentence to show the student.
 var last_problem := ""
@@ -91,7 +94,7 @@ func snap_transform() -> Transform3D:
 
 ## True when this zone would install the part right now.
 func can_take(part: GrabbablePart) -> bool:
-	return not working and (not is_filled() or swappable) and part.part_type == accepts and is_unlocked()
+	return not locked and not working and (not is_filled() or swappable) and part.part_type == accepts and is_unlocked()
 
 
 ## True once every prerequisite zone is filled.
@@ -108,7 +111,7 @@ func missing_prerequisites() -> Array[Area3D]:
 ## part of the right type over a slot that's already full) do nothing, so it
 ## just goes home without counting as a mistake.
 func judge(part: GrabbablePart) -> void:
-	if part.is_installed:
+	if part.is_installed or locked:
 		return
 	last_problem = ""
 	if working:

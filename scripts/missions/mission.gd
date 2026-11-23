@@ -117,6 +117,10 @@ func _on_snapped(zone: SnapZone, part: GrabbablePart) -> void:
 	if manager.state != manager.State.ACTIVE:
 		return
 	if goals.all(func(z: SnapZone) -> bool: return z.is_filled()):
+		# The mission is over: what is in the slots now is what gets scored and
+		# shown, so nothing can be added or swapped while the ending plays.
+		for z in zones:
+			z.locked = true
 		# Something plays before the success panel (the monitor boots): the
 		# ticked checklist stays up while it does.
 		if config.get("on_complete", "") != "":

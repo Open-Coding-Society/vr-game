@@ -6,6 +6,10 @@ extends "res://scripts/missions/mission.gd"
 const Compatibility := preload("res://scripts/parts/compatibility.gd")
 
 
+## The build that started the PC, kept for the results card.
+var _booted: Array = []
+
+
 ## The specs of the parts now in the case, in checklist order.
 func build_specs() -> Array:
 	var specs := []
@@ -20,8 +24,10 @@ func build_specs() -> Array:
 ## passed). A balanced build, with no part more than one tier from another,
 ## earns the registry's scoring.balanced_bonus before the mission is scored.
 func _on_snapped(zone: SnapZone, part: GrabbablePart) -> void:
-	if manager.state == manager.State.ACTIVE and zone.compat == &"power" and Compatibility.is_balanced(build_specs()):
-		manager.add_bonus(config.scoring.balanced_bonus)
+	if manager.state == manager.State.ACTIVE and zone.compat == &"power":
+		_booted = build_specs()
+		if Compatibility.is_balanced(_booted):
+			manager.add_bonus(config.scoring.balanced_bonus)
 	super._on_snapped(zone, part)
 
 
@@ -37,7 +43,7 @@ func _on_rejected(zone: SnapZone, part: GrabbablePart) -> void:
 
 ## The results card lists the build, and says when it earned the bonus.
 func _result_extras() -> PackedStringArray:
-	var out := PackedStringArray(["Your build: " + Compatibility.summary(build_specs())])
+	var out := PackedStringArray(["Your build: " + Compatibility.summary(_booted)])
 	if manager.bonus > 0:
 		out.append("Balanced build: +%d" % manager.bonus)
 	return out

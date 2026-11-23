@@ -73,7 +73,8 @@ func _tests() -> Array:
 		_test_monitor_screen_message, _test_build_scene, _test_build_board_goes_first,
 		_test_build_matching_tiers_boot, _test_build_parts_that_do_not_fit, _test_build_power_rules,
 		_test_build_swapping_the_board, _test_build_monitor_says_why, _test_build_balanced_bonus,
-		_test_build_results_card, _test_big_parts_are_grabbed_by_the_middle]
+		_test_build_results_card, _test_big_parts_are_grabbed_by_the_middle,
+		_test_build_is_frozen_once_it_boots, _test_finished_mission_takes_no_more_parts]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -1211,3 +1212,46 @@ func _test_big_parts_are_grabbed_by_the_middle() -> void:
 	check("a hand over the keyboard picks the keyboard", hands.part_near(keyboard.global_position + Vector3(0, 0.03, 0)) == keyboard)
 	check("a hand away from every part picks nothing", hands.part_near(Vector3(0, 1.5, 0)) == null)
 	current_scene = null
+
+
+# ---- After review: a finished mission stays as it ended ----
+
+func _test_build_is_frozen_once_it_boots() -> void:
+	var mission := await _fresh(BuildYourOwn.instantiate())
+	var screen = mission.get_node("Monitor/MonitorScreen")
+	screen.line_seconds = 0.2
+	await _fit_all(mission, "mid")
+	await _press_power(mission)
+	check("the PC is starting up, so there is time to reach for another part",
+		manager.state == manager.State.SUCCESS and screen.is_booting, manager.state)
+	await _fit(mission, "gpu", "high")
+	check("a graphics card dropped in during the boot is not swapped in",
+		_build_part(mission, "gpu", "mid").is_installed and not _build_part(mission, "gpu", "high").is_installed
+			and mission.get_node("Finger").is_installed)
+	await _fit(mission, "board", "high")
+	check("nor is another motherboard: every part stays in the case",
+		BUILD_ORDER.all(func(kind) -> bool: return _build_part(mission, kind, "mid").is_installed))
+	if screen.is_booting:
+		await screen.boot_finished
+	await process_frame
+	check("the results card lists the build that booted, with its bonus",
+		"Your build: AMD Ryzen 5 7600 + RTX 4060 Ti" in mission.panel.text() and not "RTX 5090" in mission.panel.text()
+			and "Balanced build: +10" in mission.panel.text() and manager.score == 100, mission.panel.text())
+	await _fit(mission, "psu", "starter")
+	check("and the case stays as it was after the card is up", _build_part(mission, "psu", "mid").is_installed
+		and not _build_part(mission, "psu", "starter").is_installed and manager.mistakes == 0)
+
+
+func _test_finished_mission_takes_no_more_parts() -> void:
+	var mission := await _fresh(ConnectPeripherals.instantiate())
+	await _drag_all(mission, [["HdmiCable/EndA", "Tower/GpuHdmi"], ["HdmiCable/EndB", "Monitor/HdmiIn"],
+		["KeyboardCable/EndB", "Tower/Usb1"], ["MouseCable/EndB", "Tower/Usb2"]])
+	check("when a mission ends its slots are locked",
+		manager.state == manager.State.SUCCESS and mission.zones.all(func(z) -> bool: return z.locked))
+	var bench_part := _loose_part(mission, "Spare", "usb", Vector3(0.0, 0.9, 0.3))
+	await _settle()
+	var port: SnapZone = mission.get_node("Tower/Usb1")
+	port.swappable = true
+	await _carry_and_drop(bench_part, _over(mission, "Tower/Usb1"))
+	check("a locked slot takes nothing and counts nothing, even one that could swap",
+		not bench_part.is_installed and port.installed_part == mission.get_node("KeyboardCable/EndB") and manager.mistakes == 0)
