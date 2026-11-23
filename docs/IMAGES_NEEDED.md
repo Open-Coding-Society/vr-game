@@ -26,10 +26,12 @@ Every image below has a file name. Save the finished image as **`ui/images/<name
 | `task_execute_task.png` | Free Play: "Execute a task" | 460 × 300 | Data moving from storage, to RAM, to the CPU (arrows or a path). |
 | `task_add_capacity.png` | Free Play: "Add processing capacity" | 460 × 300 | A graphics card next to a CPU. GPU vs CPU. |
 | `task_diagnose_failure.png` | Free Play: "Diagnose a failure" | 460 × 300 | A part marked as broken (e.g. a red X or a cracked chip) next to a working one. |
-| `task_build_your_own.png` | Free Play: "Build your own PC" | 460 × 300 | A shelf of PC parts in three colours (grey, blue, green) next to an open case. |
+| `task_build_your_own.png` | Free Play: "Build your own PC" | 460 × 300 | A shelf of PC parts in three colors (grey, blue, green) next to an open case. |
 | `task_unbox.png` | Free Play: "Unbox the PC" | 460 × 300 | An open box with a PC tower, monitor, keyboard and mouse coming out of it. |
 | `task_connect_peripherals.png` | Free Play: "Connect the monitor, keyboard and mouse" | 460 × 300 | The back of a PC tower with an HDMI cable and two USB cables going in. |
 | `task_power_on.png` | Free Play: "Plug in power and watch it boot" | 460 × 300 | A power plug going into a wall socket, and a monitor lighting up. |
 | `task_go_online.png` | Free Play: "Connect to the network" | 460 × 300 | A network cable from a PC to a small router with a green light. |
+
+The five Phase 2 tasks (`task_build_your_own.png` and the four after it) have no interim icon yet, so their cards show the named placeholder.
 
 **Later:** every new task gets a `task_<mission id>.png` (460 × 300). The menu shows its placeholder until the file is there, so a missing image is easy to spot.
