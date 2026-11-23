@@ -4,7 +4,7 @@ Everything a teammate needs to get the game (and, if you want, the backend and t
 
 | Part | What you get | Time |
 |---|---|---|
-| **A. The game** | All six Build a Computer missions, playable with the mouse | ~15 min |
+| **A. The game** | The menus and every mission (eleven, in two modules), playable with the mouse | ~15 min |
 | B. The backend | Mission scores saved to your own local Flask server | ~15 min |
 | C. The progress page | The pages site's `/vr/progress/` page showing those scores | ~20 min |
 | D. Building for the Quest | The Android/Quest tools | Follow the team Drive guide |
@@ -38,9 +38,9 @@ cd vr-game
 
 1. Open Godot. In the Project Manager click **Import**, pick `vr-game/project.godot`, then **Import & Edit**. The first open takes a minute while Godot builds its `.godot/` cache.
 2. Press **F5** (or the ▶ Play button, top right).
-3. The "Install the RAM" practice opens. **Press on a part, drag it, and let go** over where it belongs. Each mission opens the next one about 6 seconds after you finish, through all six.
+3. The home menu opens. Choose **Play locally**, then **Free Play** or **Story Mode**, and pick a task. In a mission, **press on a part, drag it, and let go** over where it belongs. About 6 seconds after you finish, the game goes back to the menu.
 
-To play one mission on its own, open its scene in `scenes/build_computer/` and press **F6**.
+To play one mission on its own, open its scene in `scenes/build_computer/`, `scenes/setup_pc/` or `scenes/build_pc/` and press **F6**.
 
 ### 4. Run the checks (before you push anything)
 
@@ -68,7 +68,7 @@ $GODOT = "C:\Godot\Godot_v4.7.2-stable_win64_console.exe"
 & $GODOT --headless --script res://tests/run_api_tests.gd
 ```
 
-Each one should end with **`ALL PASSED`** (90, 208, 89, 21 and 21 checks today). Read that line, not just the exit code: Godot exits with 0 even when a test script fails to load. A few `ERROR` lines are expected; they come from tests that feed in bad data on purpose.
+Each one should end with **`ALL PASSED`** (90, 244, 89, 21 and 21 checks today). Read that line, not just the exit code: Godot exits with 0 even when a test script fails to load. A few `ERROR` lines are expected; they come from tests that feed in bad data on purpose.
 
 ### 5. Working on it
 
