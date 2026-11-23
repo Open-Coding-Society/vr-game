@@ -27,7 +27,7 @@
         {
           "title": "Act 3: Build your own PC",
           "tasks": [
-            {"id": "irl.build.pick_parts", "title": "Pick parts that work together"},
+            {"mission": "build_computer.build_your_own", "title": "Pick parts that work together"},
             {"mission": "build_computer.assemble_system"},
             {"mission": "build_computer.execute_task"},
             {"mission": "build_computer.add_capacity"},

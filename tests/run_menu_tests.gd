@@ -42,6 +42,7 @@ func _tests() -> Array:
 		_test_mode_picker, _test_free_play_lists_tasks, _test_free_play_cloud_empty,
 		_test_free_play_starts_task, _test_done_task_shows_best, _test_mission_returns_to_menu,
 		_test_menu_reopens_return_page, _test_story_map_states, _test_story_act_1_unlocks_in_order,
+		_test_story_act_3_starts_with_build_your_own,
 		_test_story_map_bad_mission,
 		_test_story_chapters, _test_roadmap_plays_next, _test_roadmap_cloud_planned,
 		_test_roadmap_rows_fill_the_screen]
@@ -360,7 +361,7 @@ func _test_story_map_states() -> void:
 	s = map.states("irl", is_done)
 	check("finishing it makes the next one playable", s["setup_pc.unbox"] == StoryMap.DONE
 		and s["setup_pc.connect_peripherals"] == StoryMap.NEXT, s)
-	check("progress counts playable tasks only", map.progress("irl", is_done) == [1, 10], map.progress("irl", is_done))
+	check("progress counts playable tasks only", map.progress("irl", is_done) == [1, 11], map.progress("irl", is_done))
 	check("the IRL chapter isn't complete yet", not map.chapter_complete("irl", is_done))
 
 
@@ -388,7 +389,25 @@ func _test_story_act_1_unlocks_in_order() -> void:
 	var after: Dictionary = map.states("irl", is_done)
 	check("finishing Act 1 opens the first task of Act 2",
 		ids.all(func(id) -> bool: return after[id] == StoryMap.DONE) and after["build_computer.install_ram"] == StoryMap.NEXT, after)
-	check("and counts as four of the chapter's ten playable tasks", map.progress("irl", is_done) == [4, 10], map.progress("irl", is_done))
+	check("and counts as four of the chapter's eleven playable tasks", map.progress("irl", is_done) == [4, 11], map.progress("irl", is_done))
+
+
+## Act 3 opens with Build your own PC, under the roadmap's own title for it.
+func _test_story_act_3_starts_with_build_your_own() -> void:
+	var manager := root.get_node("TrainingManager")
+	var map = StoryMap.load_from(manager.registry)
+	var first: Dictionary = map.chapter("irl").acts[2].tasks[0]
+	check("Act 3's first task is the Build your own PC mission", first.mission == "build_computer.build_your_own", first)
+	check("the roadmap keeps its own name for it", first.title == "Pick parts that work together", first.title)
+	var done := {}
+	var is_done := func(id: String) -> bool: return done.has(id)
+	check("it is locked until the acts before it are done", map.states("irl", is_done)["build_computer.build_your_own"] == StoryMap.LOCKED)
+	for id in ["setup_pc.unbox", "setup_pc.connect_peripherals", "setup_pc.power_on", "setup_pc.go_online",
+			"build_computer.install_ram", "build_computer.identify_components"]:
+		done[id] = true
+	var s: Dictionary = map.states("irl", is_done)
+	check("then it is the next task, ahead of Assemble the system",
+		s["build_computer.build_your_own"] == StoryMap.NEXT and s["build_computer.assemble_system"] == StoryMap.LOCKED, s)
 
 
 func _test_story_map_bad_mission() -> void:
