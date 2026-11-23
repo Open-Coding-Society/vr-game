@@ -72,7 +72,7 @@ func _tests() -> Array:
 		_test_registry_catalog_parts, _test_panel_body_size, _test_long_lists_are_cut_short,
 		_test_monitor_screen_message, _test_build_scene, _test_build_board_goes_first,
 		_test_build_matching_tiers_boot, _test_build_parts_that_do_not_fit, _test_build_power_rules,
-		_test_build_swapping_the_board]
+		_test_build_swapping_the_board, _test_build_monitor_says_why]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -1121,3 +1121,19 @@ func _test_build_swapping_the_board() -> void:
 	check("and the checklist shows them as still to do",
 		"[x] motherboard tray" in mission.panel.text() and "[  ] CPU socket" in mission.panel.text() and "[  ] memory slots" in mission.panel.text(),
 		mission.panel.text())
+
+
+func _test_build_monitor_says_why() -> void:
+	var mission := await _build_mission()
+	var screen = mission.get_node("Monitor/MonitorScreen")
+	await _fit(mission, "board", "starter")
+	await _fit(mission, "cpu", "mid")
+	check("a part that doesn't fit is explained on the panel only: the PC isn't on", not screen.is_on and manager.mistakes == 1)
+	await _fit_all(mission, "high", {"psu": "mid"})
+	await _press_power(mission)
+	check("a press of the power button that fails puts the reason on the monitor as well",
+		screen.is_on and screen.text() == "\nThe RTX 5090 needs a 12V-2x6 cable, and this power supply doesn't have one."
+			and "The RTX 5090 needs a 12V-2x6 cable" in mission.panel.text(), screen.text())
+	await _fit(mission, "psu", "high")
+	await _press_power(mission)
+	check("once it starts, the desktop replaces the message", manager.state == manager.State.SUCCESS and screen.text() == "Desktop ready\n", screen.text())
