@@ -12,6 +12,9 @@ extends SceneTree
 const Cable := preload("res://scenes/parts/cable.tscn")
 const Unbox := preload("res://scenes/setup_pc/unbox.tscn")
 const ConnectPeripherals := preload("res://scenes/setup_pc/connect_peripherals.tscn")
+const PowerOn := preload("res://scenes/setup_pc/power_on.tscn")
+const GoOnline := preload("res://scenes/setup_pc/go_online.tscn")
+const MonitorScreen := preload("res://scripts/parts/monitor_screen.gd")
 const GrabbablePart := preload("res://scripts/grabbable_part.gd")
 const SnapZone := preload("res://scripts/snap_zone.gd")
 const ModuleRegistry := preload("res://scripts/module_registry.gd")
@@ -52,7 +55,10 @@ func _tests() -> Array:
 	return [_test_cable_wire_follows_its_ends, _test_cable_end_fits_its_port_only,
 		_test_cable_requires_order, _test_cable_fixed_to_a_device,
 		_test_setup_pc_is_in_the_registry, _test_unbox_perfect_run, _test_unbox_wrong_spot,
-		_test_connect_perfect_run, _test_connect_wrong_ports, _test_long_title_fits_the_panel]
+		_test_connect_perfect_run, _test_connect_wrong_ports, _test_long_title_fits_the_panel,
+		_test_cable_fixed_at_both_ends, _test_registry_checks_on_complete, _test_monitor_screen_boot,
+		_test_power_wall_goes_last, _test_power_on_boots, _test_boot_needs_a_monitor_screen,
+		_test_go_online, _test_go_online_other_way_round]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -242,16 +248,16 @@ func _test_setup_pc_is_in_the_registry() -> void:
 	check("it has a Set up a pre-built PC module, listed with the Computer tasks",
 		setup.get("title") == "Set up a pre-built PC" and setup.get("category") == "computer", str(setup))
 	var ids: Array = setup.get("mission_ids", [])
-	check("its missions come in the order they are played",
-		ids.slice(0, 2) == ["setup_pc.unbox", "setup_pc.connect_peripherals"], str(ids))
+	check("its four missions come in the order they are played",
+		ids == ["setup_pc.unbox", "setup_pc.connect_peripherals", "setup_pc.power_on", "setup_pc.go_online"], str(ids))
 	var thin := []
 	for id in ids:
 		var m: Dictionary = registry.mission(id)
 		if m.description == "" or m.topic == "" or m.difficulty == "":
 			thin.append(id)
 	check("each one has the description, topic and difficulty Free Play shows", thin.is_empty(), str(thin))
-	check("the first two are Beginner tasks",
-		registry.mission("setup_pc.unbox").difficulty == "Beginner" and registry.mission("setup_pc.connect_peripherals").difficulty == "Beginner")
+	check("the first two are Beginner tasks and the last two Intermediate",
+		ids.map(func(id) -> String: return registry.mission(id).difficulty) == ["Beginner", "Beginner", "Intermediate", "Intermediate"])
 
 
 func _test_unbox_perfect_run() -> void:
@@ -358,3 +364,174 @@ func _test_long_title_fits_the_panel() -> void:
 		"%s %s %s" % [panel.title_size(), panel.title_width(), panel.title_room()])
 	panel.show_text("Unbox the PC", PackedStringArray(["A short title."]))
 	check("a short title keeps its full size", panel.title_size() == panel.TITLE_SIZE, panel.title_size())
+
+
+# ---- Step 3: power and the boot sequence, the network and the link light ----
+
+func _test_cable_fixed_at_both_ends() -> void:
+	var bench := Node3D.new()
+	bench.name = "Bench"
+	for spot in [["Tower", Vector3(-0.3, 0.2, 0.0)], ["Monitor", Vector3(0.3, 0.1, -0.1)]]:
+		var node := Node3D.new()
+		node.name = spot[0]
+		node.position = spot[1]
+		bench.add_child(node)
+	var cable := Cable.instantiate()
+	cable.fixed_end = NodePath("../Tower")
+	cable.fixed_end_b = NodePath("../Monitor")
+	bench.add_child(cable)
+	await _fresh(bench)
+	await process_frame
+	check("a cable that is already plugged in at both ends has no plugs to grab",
+		cable.get_node_or_null("EndA") == null and cable.get_node_or_null("EndB") == null)
+	var ends: Array = cable.wire_ends()
+	var lift := Vector3(0, cable.wire_lift, 0)
+	check("its wire joins the two things it is plugged into",
+		ends.size() == 2 and ends[0].is_equal_approx(Vector3(-0.3, 0.2, 0.0) + lift) and ends[1].is_equal_approx(Vector3(0.3, 0.1, -0.1) + lift)
+			and cable.get_node("Wire").visible, str(ends))
+
+
+## The registry's errors after `mutate` has changed the power_on mission.
+func _bad_power_on(mutate: Callable) -> PackedStringArray:
+	var data = JSON.parse_string(FileAccess.get_file_as_string("res://data/modules.json"))
+	for module in data.modules:
+		if module.id == "setup_pc":
+			for m in module.missions:
+				if m.id == "power_on":
+					mutate.call(m)
+	var registry = ModuleRegistry.new()
+	registry.read(data)
+	return registry.errors
+
+
+func _test_registry_checks_on_complete() -> void:
+	var power: Dictionary = ModuleRegistry.load_from().mission("setup_pc.power_on")
+	check("the power mission asks for a boot, with its lines in the registry",
+		power.get("on_complete") == "boot" and power.get("boot_lines", []).size() == 4, str(power.get("boot_lines")))
+	var errors := _bad_power_on(func(m): m.on_complete = "reboot")
+	check("an on_complete the game doesn't know is caught",
+		errors.size() == 1 and "setup_pc.power_on.on_complete: must be one of boot" in errors[0], "; ".join(errors))
+	errors = _bad_power_on(func(m): m.erase("boot_lines"))
+	check("a boot with no lines is caught",
+		errors.size() == 1 and "setup_pc.power_on.boot_lines: must be a non-empty list of text" in errors[0], "; ".join(errors))
+	errors = _bad_power_on(func(m): m.erase("on_complete"))
+	check("boot lines with no on_complete are caught too", errors.size() == 1 and "on_complete" in errors[0], "; ".join(errors))
+
+
+func _test_monitor_screen_boot() -> void:
+	var screen := Node3D.new()
+	screen.set_script(MonitorScreen)
+	screen.line_seconds = 0.03
+	await _fresh(screen)
+	check("a monitor's screen starts off", not screen.visible and not screen.is_on)
+	var seen := []
+	screen.play_boot(PackedStringArray(["one", "two", "three", "Desktop ready"]))
+	check("starting a boot turns the screen on", screen.visible and screen.is_on and screen.is_booting)
+	while screen.is_booting:
+		if seen.is_empty() or seen[-1] != screen.text():
+			seen.append(screen.text())
+		await process_frame
+	seen.append(screen.text())
+	check("the boot lines come up one after another, and the last one is left as the desktop",
+		seen == ["\none", "\none\ntwo", "\none\ntwo\nthree", "Desktop ready\n"], str(seen))
+	screen.line_seconds = 0.0
+	screen.play_boot(PackedStringArray(["a", "b"]))
+	check("with no wait between lines the boot is over at once", not screen.is_booting and screen.text() == "b\n", screen.text())
+
+
+func _test_power_wall_goes_last() -> void:
+	var mission := await _fresh(PowerOn.instantiate())
+	check("Plug in power loads with nothing out of place", mission.problems.is_empty(), "; ".join(mission.problems))
+	mission.get_node("Monitor/MonitorScreen").line_seconds = 0.0
+	var wall_plug: GrabbablePart = mission.get_node("TowerPower/EndB")
+	await _drag(mission, "TowerPower/EndB", _over(mission, "Wall/Socket"))
+	check("power into the wall before the tower is blocked: a mistake, and the plug goes back",
+		manager.mistakes == 1 and not wall_plug.is_installed and wall_plug.global_position.is_equal_approx(wall_plug.home_transform.origin),
+		"%s %s" % [manager.mistakes, wall_plug.global_position])
+	check("the panel says what has to come first, and why",
+		"Not yet. First finish: tower power inlet, monitor power inlet. Always plug into the wall last" in mission.panel.text(), mission.panel.text())
+	check("and the checklist marks the wall socket as waiting",
+		"[  ] wall socket (0 of 2)  (after: tower power inlet, monitor power inlet)" in mission.panel.text(), mission.panel.text())
+	await _drag(mission, "TowerPower/EndA", _over(mission, "Tower/PowerIn"))
+	await _drag(mission, "TowerPower/EndB", _over(mission, "Wall/Socket"))
+	check("with only the tower's cable in, the wall is still blocked: the monitor's comes first too",
+		manager.mistakes == 2 and "First finish: monitor power inlet." in mission.panel.text(), mission.panel.text())
+	await _drag(mission, "MonitorPower/EndA", _over(mission, "Wall/Socket"))
+	check("the end that goes into a device doesn't fit the wall",
+		manager.mistakes == 3 and "The monitor power cable doesn't go there." in mission.panel.text(), mission.panel.text())
+	await _drag_all(mission, [["MonitorPower/EndA", "Monitor/PowerIn"], ["MonitorPower/EndB", "Wall/Socket"]])
+	check("once both devices have their cable, a wall plug goes in",
+		mission.get_node("MonitorPower/EndB").is_installed and "[  ] wall socket (1 of 2)" in mission.panel.text(), mission.panel.text())
+	await _drag(mission, "TowerPower/EndB", _over(mission, "Wall/Socket"))
+	check("both wall plugs in finishes the mission, three mistakes down",
+		manager.state == manager.State.SUCCESS and manager.score == 70, "%s %s" % [manager.state, manager.score])
+	check("the two plugs sit side by side in the strip",
+		absf(wall_plug.global_position.x - mission.get_node("MonitorPower/EndB").global_position.x) > 0.05, wall_plug.global_position)
+
+
+func _test_power_on_boots() -> void:
+	var mission := await _fresh(PowerOn.instantiate())
+	var screen = mission.get_node("Monitor/MonitorScreen")
+	screen.line_seconds = 0.05
+	check("before power the monitor is off", not screen.visible and not screen.is_on)
+	await _drag_all(mission, [["TowerPower/EndA", "Tower/PowerIn"], ["MonitorPower/EndA", "Monitor/PowerIn"], ["TowerPower/EndB", "Wall/Socket"]])
+	check("with one wall plug still out, nothing boots", not screen.is_on and manager.state == manager.State.ACTIVE)
+	await _drag(mission, "MonitorPower/EndB", _over(mission, "Wall/Socket"))
+	check("the last plug starts the boot: the monitor comes on with the registry's first boot line",
+		manager.state == manager.State.SUCCESS and screen.is_booting and "POST: checking CPU, memory, storage" in screen.text(), screen.text())
+	check("the success panel waits while it plays, with the checklist all ticked",
+		not "Mission complete!" in mission.panel.text() and "[x] wall socket (2 of 2)" in mission.panel.text(), mission.panel.text())
+	await screen.boot_finished
+	await process_frame
+	check("the boot ends on the desktop", screen.text() == "Desktop ready\n" and not screen.is_booting, screen.text())
+	check("and then the success panel comes up, with the score",
+		"Mission complete!" in mission.panel.text() and "It boots!" in mission.panel.text() and "Score: 100" in mission.panel.text(),
+		mission.panel.text())
+
+
+func _test_boot_needs_a_monitor_screen() -> void:
+	# A registry that asks for a boot in a scene with no monitor screen is
+	# reported when the mission loads, like any other scene/registry mismatch.
+	var data = JSON.parse_string(FileAccess.get_file_as_string("res://data/modules.json"))
+	for module in data.modules:
+		if module.id == "setup_pc":
+			module.missions[0].on_complete = "boot"
+			module.missions[0].boot_lines = ["one", "two"]
+	var registry = ModuleRegistry.new()
+	registry.read(data)
+	manager.use_registry(registry)
+	var mission := await _fresh(Unbox.instantiate())
+	check("asking for a boot in a scene with no monitor screen is reported",
+		mission.problems.size() == 1 and "no MonitorScreen" in mission.problems[0], "; ".join(mission.problems))
+	await _drag_all(mission, [["Tower", "Desk/TowerSpot"], ["Monitor", "Desk/MonitorSpot"], ["Keyboard", "Desk/KeyboardSpot"], ["Mouse", "Desk/MouseSpot"]])
+	check("and the mission still finishes without it",
+		manager.state == manager.State.SUCCESS and "Mission complete!" in mission.panel.text(), mission.panel.text())
+
+
+func _test_go_online() -> void:
+	var mission := await _fresh(GoOnline.instantiate())
+	check("Connect to the network loads with nothing out of place", mission.problems.is_empty(), "; ".join(mission.problems))
+	var screen = mission.get_node("Monitor/MonitorScreen")
+	var light = mission.get_node("Router/Lan1Light")
+	check("the PC is on, and says it has no network", screen.is_on and screen.text() == "Desktop\nNetwork: not connected", screen.text())
+	check("the router's link light starts dark", not light.is_lit and not light.material_override.emission_enabled)
+	await _drag(mission, "EthernetCable/EndA", _over(mission, "Tower/Ethernet"))
+	check("one end in is no link yet: the light stays dark and the PC is still offline",
+		not light.is_lit and "not connected" in screen.text() and manager.state == manager.State.ACTIVE, screen.text())
+	check("the panel says what the port is for", "Yes! The network port is how the PC sends and receives data" in mission.panel.text(), mission.panel.text())
+	await _drag(mission, "EthernetCable/EndB", _over(mission, "Router/Lan1"))
+	check("with both ends in, the link light turns green",
+		light.is_lit and light.material_override.emission_enabled and light.material_override.albedo_color.is_equal_approx(light.on_color))
+	check("the monitor shows Connected", screen.text() == "Connected\nThis PC is on the network.", screen.text())
+	check("and the mission is complete at full score",
+		manager.state == manager.State.SUCCESS and manager.score == 100 and "You're online!" in mission.panel.text(), mission.panel.text())
+
+
+func _test_go_online_other_way_round() -> void:
+	var mission := await _fresh(GoOnline.instantiate())
+	var light = mission.get_node("Router/Lan1Light")
+	await _drag(mission, "EthernetCable/EndA", _over(mission, "Router/Lan1"))
+	check("the router end first works too, and the light waits for the other end",
+		mission.get_node("EthernetCable/EndA").is_installed and not light.is_lit and manager.mistakes == 0)
+	await _drag(mission, "EthernetCable/EndB", _over(mission, "Tower/Ethernet"))
+	check("then the tower end brings the link up", light.is_lit and manager.state == manager.State.SUCCESS)

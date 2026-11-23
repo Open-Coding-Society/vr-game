@@ -1,0 +1,221 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/missions/mission.gd" id="1_mission"]
+[ext_resource type="PackedScene" path="res://scenes/room.tscn" id="2_room"]
+[ext_resource type="PackedScene" path="res://scenes/setup_pc/props/tower.tscn" id="3_tower"]
+[ext_resource type="PackedScene" path="res://scenes/setup_pc/props/monitor.tscn" id="4_monitor"]
+[ext_resource type="PackedScene" path="res://scenes/setup_pc/props/keyboard.tscn" id="5_keyboard"]
+[ext_resource type="PackedScene" path="res://scenes/setup_pc/props/mouse.tscn" id="6_mouse"]
+[ext_resource type="PackedScene" path="res://scenes/parts/cable.tscn" id="7_cable"]
+[ext_resource type="Script" path="res://scripts/snap_zone.gd" id="8_snap_zone"]
+[ext_resource type="PackedScene" path="res://scenes/setup_pc/props/router.tscn" id="9_router"]
+[ext_resource type="Script" path="res://scripts/parts/link_light.gd" id="10_link_light"]
+[ext_resource type="Script" path="res://scripts/parts/monitor_screen.gd" id="11_monitor_screen"]
+[ext_resource type="Script" path="res://scripts/ui/info_panel.gd" id="12_info_panel"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_1"]
+albedo_color = Color(0.2, 0.22, 0.26, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_2"]
+material = SubResource("Mat_1")
+size = Vector3(0.03, 0.02, 0.045)
+
+[sub_resource type="StandardMaterial3D" id="Mat_3"]
+albedo_color = Color(0.9, 0.9, 0.88, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_4"]
+material = SubResource("Mat_3")
+size = Vector3(0.18, 0.03, 0.05)
+
+[sub_resource type="StandardMaterial3D" id="Mat_5"]
+albedo_color = Color(0.07, 0.07, 0.08, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_6"]
+material = SubResource("Mat_5")
+size = Vector3(0.032, 0.002, 0.03)
+
+[sub_resource type="BoxShape3D" id="Shape_7"]
+size = Vector3(0.06, 0.34, 0.07)
+
+[sub_resource type="BoxShape3D" id="Shape_8"]
+size = Vector3(0.05, 0.12, 0.08)
+
+[sub_resource type="BoxMesh" id="Mesh_9"]
+material = SubResource("Mat_3")
+size = Vector3(0.012, 0.006, 0.012)
+
+[node name="GoOnline" type="Node3D"]
+script = ExtResource("1_mission")
+mission_id = "setup_pc.go_online"
+
+[node name="Room" parent="." instance=ExtResource("2_room")]
+
+[node name="Tower" type="Node3D" parent="."]
+transform = Transform3D(0.866, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866, -0.44, 0.9, -0.165)
+
+[node name="Shape" parent="Tower" instance=ExtResource("3_tower")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
+
+[node name="Monitor" type="Node3D" parent="."]
+transform = Transform3D(0.766, 0, -0.6428, 0, 1, 0, 0.6428, 0, 0.766, 0.46, 0.9, -0.2)
+
+[node name="Shape" parent="Monitor" instance=ExtResource("4_monitor")]
+
+[node name="Keyboard" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.04, 0.9, -0.1)
+
+[node name="Shape" parent="Keyboard" instance=ExtResource("5_keyboard")]
+
+[node name="CableOut" type="Marker3D" parent="Keyboard"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.18, 0.012, 0)
+
+[node name="Mouse" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.21, 0.9, -0.1)
+
+[node name="Shape" parent="Mouse" instance=ExtResource("6_mouse")]
+
+[node name="CableOut" type="Marker3D" parent="Mouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, -0.05)
+
+[node name="HdmiPlug" type="MeshInstance3D" parent="Tower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.05, 0.125, 0.181)
+mesh = SubResource("Mesh_2")
+
+[node name="Usb1Plug" type="MeshInstance3D" parent="Tower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.06, 0.24, 0.181)
+mesh = SubResource("Mesh_2")
+
+[node name="Usb2Plug" type="MeshInstance3D" parent="Tower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.02, 0.24, 0.181)
+mesh = SubResource("Mesh_2")
+
+[node name="HdmiPlug" type="MeshInstance3D" parent="Monitor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.11, 0.0575, 0.022)
+mesh = SubResource("Mesh_2")
+
+[node name="HdmiCable" parent="." instance=ExtResource("7_cable")]
+fixed_end = NodePath("../Tower/HdmiPlug")
+fixed_end_b = NodePath("../Monitor/HdmiPlug")
+
+[node name="KeyboardCable" parent="." instance=ExtResource("7_cable")]
+fixed_end = NodePath("../Keyboard/CableOut")
+fixed_end_b = NodePath("../Tower/Usb1Plug")
+
+[node name="MouseCable" parent="." instance=ExtResource("7_cable")]
+fixed_end = NodePath("../Mouse/CableOut")
+fixed_end_b = NodePath("../Tower/Usb2Plug")
+
+[node name="PowerPlug" type="MeshInstance3D" parent="Tower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.04, 0.05, 0.181)
+mesh = SubResource("Mesh_2")
+
+[node name="PowerPlug" type="MeshInstance3D" parent="Monitor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.11, 0.0575, 0.022)
+mesh = SubResource("Mesh_2")
+
+[node name="Wall" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0.9, 0.28)
+
+[node name="Strip" type="MeshInstance3D" parent="Wall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+mesh = SubResource("Mesh_4")
+
+[node name="Socket1" type="MeshInstance3D" parent="Wall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.03, 0.031, 0)
+mesh = SubResource("Mesh_6")
+
+[node name="Socket2" type="MeshInstance3D" parent="Wall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.03, 0.031, 0)
+mesh = SubResource("Mesh_6")
+
+[node name="Label" type="Label3D" parent="Wall"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.002, -0.055)
+pixel_size = 0.0004
+text = "Wall power"
+font_size = 44
+outline_size = 8
+
+[node name="Plug1" type="MeshInstance3D" parent="Wall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.03, 0.04, 0)
+mesh = SubResource("Mesh_2")
+
+[node name="Plug2" type="MeshInstance3D" parent="Wall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.03, 0.04, 0)
+mesh = SubResource("Mesh_2")
+
+[node name="TowerPower" parent="." instance=ExtResource("7_cable")]
+fixed_end = NodePath("../Tower/PowerPlug")
+fixed_end_b = NodePath("../Wall/Plug1")
+
+[node name="MonitorPower" parent="." instance=ExtResource("7_cable")]
+fixed_end = NodePath("../Monitor/PowerPlug")
+fixed_end_b = NodePath("../Wall/Plug2")
+
+[node name="Ethernet" type="Area3D" parent="Tower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.045, 0, 0.15)
+script = ExtResource("8_snap_zone")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tower/Ethernet"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.17, 0.04)
+shape = SubResource("Shape_7")
+
+[node name="SnapPoint" type="Marker3D" parent="Tower/Ethernet"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.235, 0.031)
+
+[node name="Label" type="Label3D" parent="Tower/Ethernet"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.269, 0.012)
+pixel_size = 0.0004
+text = "LAN"
+font_size = 36
+outline_size = 8
+
+[node name="Router" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2, 0.9, 0.2)
+
+[node name="Shape" parent="Router" instance=ExtResource("9_router")]
+
+[node name="Label" type="Label3D" parent="Router"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.032, -0.008)
+pixel_size = 0.0004
+text = "Router"
+font_size = 40
+outline_size = 8
+
+[node name="Lan1" type="Area3D" parent="Router"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.02, 0, 0.045)
+script = ExtResource("8_snap_zone")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Router/Lan1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0.04)
+shape = SubResource("Shape_8")
+
+[node name="SnapPoint" type="Marker3D" parent="Router/Lan1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.004, 0.029)
+
+[node name="Lan1Light" type="MeshInstance3D" parent="Router"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.02, 0.033, 0.03)
+mesh = SubResource("Mesh_9")
+script = ExtResource("10_link_light")
+zones = Array[NodePath]([NodePath("../Lan1"), NodePath("../../Tower/Ethernet")])
+
+[node name="MonitorScreen" type="Node3D" parent="Monitor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.185, -0.002)
+script = ExtResource("11_monitor_screen")
+size = Vector2(0.34, 0.21)
+pixels_per_meter = 2400
+start_title = "Desktop"
+start_lines = PackedStringArray("Network: not connected")
+link_light = NodePath("../../Router/Lan1Light")
+linked_title = "Connected"
+linked_lines = PackedStringArray("This PC is on the network.")
+
+[node name="EthernetCable" parent="." instance=ExtResource("7_cable")]
+end_b_position = Vector3(0.16, 0.9, 0.1)
+end_a_position = Vector3(-0.06, 0.9, 0.1)
+
+[node name="InfoPanel" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.9063, 0.4226, 0, -0.4226, 0.9063, -0.02, 1.12, -0.32)
+script = ExtResource("12_info_panel")

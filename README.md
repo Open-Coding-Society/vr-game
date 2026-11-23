@@ -89,6 +89,12 @@ Never commit a password. With no account set up, the game still plays, and the s
 
    A zone with a child node named `Replaced` (the old part's mesh) hides it once the zone is full.
 
+   A mission can also have `"on_complete": "boot"` with `"boot_lines"` (a list of text). When its last slot is filled, the scene's monitor screen (a node named `MonitorScreen` using `scripts/parts/monitor_screen.gd`) shows the lines one after another before the success panel comes up, and the last line stays on the screen.
+
+   Ready-made pieces for a scene:
+   - `scenes/parts/cable.tscn`: a cable with a grabbable plug at each end (`EndA`, `EndB`), listed in the registry like any other part. Set `fixed_end` for a device's own cable (one plug), and `fixed_end_b` as well for a cable that is already plugged in (only its wire).
+   - `scripts/parts/link_light.gd`: a light that comes on once the slots in its `zones` are all filled. A monitor screen can watch one through `link_light`.
+
    Missions play in the order they're listed.
 
 No new code is needed. If the registry and the scene disagree (a slot in one but not the other, a slot that accepts a type no part has), the game prints exactly what's wrong when it loads.

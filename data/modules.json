@@ -478,6 +478,118 @@
               "role": "USB carries input into the computer: every key press and click goes down this cable."
             }
           }
+        },
+        {
+          "id": "power_on",
+          "title": "Plug in power and watch it boot",
+          "description": "Give the tower and the monitor power, plug into the wall last, and watch the PC start up.",
+          "topic": "Power and booting",
+          "difficulty": "Intermediate",
+          "scene": "res://scenes/setup_pc/power_on.tscn",
+          "intro": [
+            "Everything is connected except power.",
+            "Plug a power cable into the tower and one into the monitor. Then plug both into the wall: the wall always comes last."
+          ],
+          "success": [
+            "It boots! First the PC tests its own hardware (POST), then the BIOS finds the drive, then the operating system loads from storage into memory."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "on_complete": "boot",
+          "boot_lines": [
+            "POST: checking CPU, memory, storage... OK",
+            "BIOS: boot drive found",
+            "Starting the operating system...",
+            "Desktop ready"
+          ],
+          "parts": {
+            "TowerPower/EndA": {
+              "type": "power_plug",
+              "name": "PC power cable"
+            },
+            "TowerPower/EndB": {
+              "type": "wall_plug",
+              "name": "PC wall plug"
+            },
+            "MonitorPower/EndA": {
+              "type": "power_plug",
+              "name": "monitor power cable"
+            },
+            "MonitorPower/EndB": {
+              "type": "wall_plug",
+              "name": "monitor wall plug"
+            }
+          },
+          "slots": {
+            "Tower/PowerIn": {
+              "accepts": "power_plug",
+              "name": "tower power inlet",
+              "hint": "A power cable's device end goes in here, on the power supply at the bottom of the tower's back.",
+              "role": "The power supply turns wall power into the low voltages the parts inside the tower use."
+            },
+            "Monitor/PowerIn": {
+              "accepts": "power_plug",
+              "name": "monitor power inlet",
+              "hint": "A power cable's device end goes in here. The monitor needs power of its own.",
+              "role": "The monitor has its own power: the HDMI cable only carries the picture."
+            },
+            "Wall/Socket": {
+              "accepts": "wall_plug",
+              "capacity": 2,
+              "requires": [
+                "Tower/PowerIn",
+                "Monitor/PowerIn"
+              ],
+              "name": "wall socket",
+              "hint": "Always plug into the wall last, after everything else is connected.",
+              "role": "Power now flows from the wall to that device."
+            }
+          }
+        },
+        {
+          "id": "go_online",
+          "title": "Connect to the network",
+          "description": "Run an Ethernet cable from the PC to the router and watch the link light come on.",
+          "topic": "Networks",
+          "difficulty": "Intermediate",
+          "scene": "res://scenes/setup_pc/go_online.tscn",
+          "intro": [
+            "The PC works, but it can't reach any other computer yet.",
+            "Plug one end of the Ethernet cable into the tower and the other into the router."
+          ],
+          "success": [
+            "You're online! The cable links the PC to the router, and the router passes its messages on to other networks."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "parts": {
+            "EthernetCable/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "EthernetCable/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            }
+          },
+          "slots": {
+            "Tower/Ethernet": {
+              "accepts": "ethernet",
+              "name": "tower network port",
+              "hint": "The network (LAN) port is the square one beside the USB ports.",
+              "role": "The network port is how the PC sends and receives data over a cable."
+            },
+            "Router/Lan1": {
+              "accepts": "ethernet",
+              "name": "router LAN port",
+              "hint": "The router connects your computer to other networks, including the internet.",
+              "role": "The router connects your computer to other networks, including the internet."
+            }
+          }
         }
       ]
     }

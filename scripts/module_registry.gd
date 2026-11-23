@@ -13,6 +13,9 @@ extends RefCounted
 const DEFAULT_PATH := "res://data/modules.json"
 ## Free Play's two lists. A module says which one its missions go in.
 const CATEGORIES := ["computer", "cloud"]
+## What a mission can ask for once its last slot is filled, before the success
+## panel: "boot" plays its boot_lines on the scene's monitor.
+const ON_COMPLETE := ["boot"]
 
 ## Every mission by its full id ("module.mission"), each a Dictionary with the
 ## mission's fields plus "full_id" and "module_title".
@@ -112,6 +115,7 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 		errors.append("%s.scoring: needs whole numbers full (1-1000) and per_mistake (0-1000)" % full_id)
 	var types := _read_parts(full_id, m.get("parts"))
 	_read_slots(full_id, m.get("slots"), types)
+	_read_on_complete(full_id, m)
 	if errors.size() > before:
 		return ""
 	var copy: Dictionary = m.duplicate(true)
@@ -125,6 +129,17 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 	copy.scoring = {"full": int(scoring.full), "per_mistake": int(scoring.per_mistake)}
 	missions[full_id] = copy
 	return full_id
+
+
+## Optional mission fields: on_complete ("boot") and, with it, boot_lines (the
+## lines the monitor shows; the last one is left on the screen).
+func _read_on_complete(full_id: String, m: Dictionary) -> void:
+	if not m.has("on_complete") and not m.has("boot_lines"):
+		return
+	if not m.get("on_complete") in ON_COMPLETE:
+		errors.append("%s.on_complete: must be one of %s" % [full_id, ", ".join(ON_COMPLETE)])
+	if not _is_text_list(m.get("boot_lines")):
+		errors.append("%s.boot_lines: must be a non-empty list of text" % full_id)
 
 
 func _read_parts(full_id: String, parts) -> Array:

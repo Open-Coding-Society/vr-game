@@ -12,9 +12,12 @@ extends Node3D
 @export var end_a_position := Vector3(-0.1, 0.0, 0.0)
 @export var end_b_position := Vector3(0.1, 0.0, 0.0)
 ## For a cable that is part of a device, such as a keyboard's: the node the
-## wire comes out of. When set, the cable has one plug only (EndB), and EndA
-## is taken out.
+## wire comes out of. When set, EndA is taken out and the cable has one plug.
 @export var fixed_end: NodePath
+## For a cable that is already plugged in: the node its far end stays at. When
+## set, EndB is taken out too. With both fixed, the cable is only a wire
+## between two nodes, e.g. last mission's HDMI cable still in place.
+@export var fixed_end_b: NodePath
 ## How far above a plug's origin the wire leaves it (meters).
 @export var wire_lift := 0.012
 
@@ -32,13 +35,15 @@ func _enter_tree() -> void:
 		a.free()
 	elif a:
 		a.position = end_a_position
-	if b:
+	if b and not fixed_end_b.is_empty():
+		b.free()
+	elif b:
 		b.position = end_b_position
 
 
 func _ready() -> void:
-	_from = get_node_or_null(fixed_end) as Node3D if not fixed_end.is_empty() else get_node_or_null("EndA") as Node3D
-	_to = get_node_or_null("EndB") as Node3D
+	_from = get_node_or_null(fixed_end if not fixed_end.is_empty() else NodePath("EndA")) as Node3D
+	_to = get_node_or_null(fixed_end_b if not fixed_end_b.is_empty() else NodePath("EndB")) as Node3D
 	_stretch()
 
 

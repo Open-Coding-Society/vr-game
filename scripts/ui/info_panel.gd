@@ -23,6 +23,8 @@ var title: String = ""
 var lines: PackedStringArray = []
 
 var _viewport: SubViewport
+## The panel's background, kept so a panel with its own look can change it.
+var _style: StyleBoxFlat
 var _title_label: Label
 var _body_label: Label
 
@@ -35,13 +37,13 @@ func _ready() -> void:
 
 	var background := PanelContainer.new()
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.09, 0.12, 0.95)
-	style.border_color = Color(0.35, 0.6, 0.95)
-	style.set_border_width_all(BORDER)
-	style.set_corner_radius_all(24)
-	style.set_content_margin_all(MARGIN)
-	background.add_theme_stylebox_override("panel", style)
+	_style = StyleBoxFlat.new()
+	_style.bg_color = Color(0.08, 0.09, 0.12, 0.95)
+	_style.border_color = Color(0.35, 0.6, 0.95)
+	_style.set_border_width_all(BORDER)
+	_style.set_corner_radius_all(24)
+	_style.set_content_margin_all(MARGIN)
+	background.add_theme_stylebox_override("panel", _style)
 	_viewport.add_child(background)
 
 	var column := VBoxContainer.new()
@@ -95,6 +97,8 @@ func _refresh() -> void:
 	if _title_label == null:
 		return
 	_title_label.text = title
+	# No title, no empty row above the lines.
+	_title_label.visible = title != ""
 	_title_label.add_theme_font_size_override("font_size", title_size())
 	_body_label.text = "\n".join(lines)
 
