@@ -8,7 +8,7 @@ extends Area3D
 ## attempt); right type but too early, it's `blocked` (also a failed attempt).
 ## Missions only listen to the signals.
 ##
-## Two options come from the module registry:
+## These options come from the module registry:
 ## - `prerequisites`: zones that must be filled first ("plug in power last").
 ## - `pass_through`: the part only passes through. It's placed here and the zone
 ##   counts as done, but the part stays free to carry on to the next zone, like

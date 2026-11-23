@@ -1,8 +1,9 @@
 extends Node3D
-## The one script every mission scene uses. The scene says *where* things are;
+## The script every mission scene uses. The scene says *where* things are;
 ## data/modules.json says *what* they are, what the student reads and how the
 ## mission is scored. So a new mission is a new scene plus a registry entry,
-## with no new code (build-plan step 4).
+## with no new code (build-plan step 4). One mission, Build your own PC, adds
+## a little of its own on top: scripts/missions/build_pc_mission.gd.
 ##
 ## On load it asks the TrainingManager autoload for its mission, gives each
 ## part and slot its type, name and hint from the registry, and then turns

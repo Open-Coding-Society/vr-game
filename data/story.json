@@ -1,5 +1,5 @@
 {
-  "_comment": "Story Mode roadmap. A task with a \"mission\" is playable and uses that mission from data/modules.json; a task with only an id and title is planned (shown, not playable yet). Order matters: each chapter's playable tasks unlock one after another. From the game design plan, section 3.",
+  "_comment": "Story Mode roadmap. A task with a \"mission\" is playable and uses that mission from data/modules.json; a task with only an id and title is planned (shown, not playable yet). A task with a mission can also give its own \"title\" for the roadmap. Order matters: each chapter's playable tasks unlock one after another. From the game design plan, section 3.",
   "chapters": [
     {
       "id": "irl",
