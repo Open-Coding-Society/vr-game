@@ -16,6 +16,7 @@ const PowerOn := preload("res://scenes/setup_pc/power_on.tscn")
 const GoOnline := preload("res://scenes/setup_pc/go_online.tscn")
 const PartsShelf := preload("res://scenes/build_pc/parts_shelf.tscn")
 const MonitorScreen := preload("res://scripts/parts/monitor_screen.gd")
+const Mission := preload("res://scripts/missions/mission.gd")
 const PartsCatalog := preload("res://scripts/parts/parts_catalog.gd")
 const Compatibility := preload("res://scripts/parts/compatibility.gd")
 const GrabbablePart := preload("res://scripts/grabbable_part.gd")
@@ -67,7 +68,7 @@ func _tests() -> Array:
 		_test_rules_by_name, _test_matching_builds_pass, _test_balanced_builds,
 		_test_shelf_parts_load_their_specs, _test_shelf_layout, _test_part_variants,
 		_test_bonus_points, _test_swappable_zone, _test_zone_compat_rule, _test_registry_checks_slot_rules,
-		_test_registry_catalog_parts, _test_panel_body_size]
+		_test_registry_catalog_parts, _test_panel_body_size, _test_long_lists_are_cut_short]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -944,3 +945,11 @@ func _test_panel_body_size() -> void:
 	check("a panel draws its lines at the size it is given, 40 unless told otherwise",
 		small._body_label.get_theme_font_size("font_size") == 30 and usual._body_label.get_theme_font_size("font_size") == 40,
 		"%s %s" % [small._body_label.get_theme_font_size("font_size"), usual._body_label.get_theme_font_size("font_size")])
+
+
+func _test_long_lists_are_cut_short() -> void:
+	check("up to three names are all listed", Mission.name_list(["tray", "PSU bay", "drive bay"]) == "tray, PSU bay, drive bay")
+	check("one name is just that name", Mission.name_list(["tray"]) == "tray")
+	check("a longer list names the first two and counts the rest",
+		Mission.name_list(["tray", "socket", "slots", "bay", "card slot", "PSU bay"]) == "tray, socket and 4 more",
+		Mission.name_list(["tray", "socket", "slots", "bay", "card slot", "PSU bay"]))

@@ -161,7 +161,7 @@ func _on_blocked(zone: SnapZone, part: GrabbablePart) -> void:
 		return
 	manager.note_mistake()
 	var first := zone.missing_prerequisites().map(func(z) -> String: return z.display_name)
-	_show_checklist("Not yet. First finish: %s. %s" % [", ".join(first), zone.hint])
+	_show_checklist("Not yet. First finish: %s. %s" % [name_list(first), zone.hint])
 
 
 func _on_module_completed(_module_id: String, score: int, duration_s: int) -> void:
@@ -227,12 +227,20 @@ func _show_checklist(feedback: String) -> void:
 		if zone.capacity > 1:
 			line += " (%d of %d)" % [zone.installed_parts.size(), zone.capacity]
 		if not zone.is_filled() and not zone.is_unlocked():
-			line += "  (after: %s)" % ", ".join(zone.missing_prerequisites().map(func(z) -> String: return z.display_name))
+			line += "  (after: %s)" % name_list(zone.missing_prerequisites().map(func(z) -> String: return z.display_name))
 		out.append(line)
 	if feedback != "":
 		out.append("")
 		out.append(feedback)
 	panel.show_text(config.title, out)
+
+
+## Names for the panel: "a, b, c", or "a, b and 4 more" when the list is long
+## enough to push the rest of the panel's text out of sight.
+static func name_list(names: Array, most := 3) -> String:
+	if names.size() <= most:
+		return ", ".join(names)
+	return "%s and %d more" % [", ".join(names.slice(0, most - 1)), names.size() - most + 1]
 
 
 func _problem(text: String) -> void:
