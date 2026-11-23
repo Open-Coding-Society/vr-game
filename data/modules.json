@@ -677,6 +677,16 @@
             "full": 100,
             "per_mistake": 10
           },
+          "monitor": {
+            "start": [
+              "Desktop",
+              "Network: not connected"
+            ],
+            "linked": [
+              "Connected",
+              "This PC is on the network."
+            ]
+          },
           "parts": {
             "EthernetCable/EndA": {
               "type": "ethernet",

@@ -101,13 +101,13 @@ Never commit a password. With no account set up, the game still plays, and the s
 
    A zone with a child node named `Replaced` (the old part's mesh) hides it once the zone is full.
 
-   A mission can also have `"on_complete": "boot"` with `"boot_lines"` (a list of text). When its last slot is filled, the scene's monitor screen (a node named `MonitorScreen` using `scripts/parts/monitor_screen.gd`) shows the lines one after another before the success panel comes up, and the last line stays on the screen.
+   A mission can also have `"on_complete": "boot"` with `"boot_lines"` (a list of text). When its last slot is filled, the scene's monitor screen (a node named `MonitorScreen` using `scripts/parts/monitor_screen.gd`) shows the lines one after another before the success panel comes up, and the last line stays on the screen. A mission can also give `"monitor"` text for that screen: `start` is shown from the beginning (a PC that is already on) and `linked` once the screen's `link_light` comes on. The first line of each is its heading.
 
    A mission with `"catalog_parts": true` also uses parts from `data/parts_catalog.json`: a part whose `variant` is a catalog id (`cpu_mid`) takes its type, name, label and tier colour from there and needs no entry under `parts`. `scoring` can have a `balanced_bonus` for missions that give one. The top score should stay at 100: the score API accepts 0 to 100.
 
    Ready-made pieces for a scene:
    - `scenes/parts/cable.tscn`: a cable with a grabbable plug at each end (`EndA`, `EndB`), listed in the registry like any other part. Set `fixed_end` for a device's own cable (one plug), and `fixed_end_b` as well for a cable that is already plugged in (only its wire).
-   - `scripts/parts/link_light.gd`: a light that comes on once the slots in its `zones` are all filled. A monitor screen can watch one through `link_light`.
+   - `scripts/parts/link_light.gd`: a light that comes on once the slots in its `zones` are all filled. A monitor screen can watch one through `link_light` and then shows the registry's `monitor.linked` text.
    - `scenes/build_pc/parts_shelf.tscn`: a shelf with a CPU, RAM kit, storage drive, graphics card and power supply in each of the three tiers.
 
    Missions play in the order they're listed.

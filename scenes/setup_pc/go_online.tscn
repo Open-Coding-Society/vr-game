@@ -206,11 +206,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.185, -0.002)
 script = ExtResource("11_monitor_screen")
 size = Vector2(0.34, 0.21)
 pixels_per_meter = 2400
-start_title = "Desktop"
-start_lines = PackedStringArray("Network: not connected")
 link_light = NodePath("../../Router/Lan1Light")
-linked_title = "Connected"
-linked_lines = PackedStringArray("This PC is on the network.")
 
 [node name="EthernetCable" parent="." instance=ExtResource("7_cable")]
 end_b_position = Vector3(0.16, 0.9, 0.1)

@@ -129,6 +129,7 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 		types.append_array(catalog.parts.values().map(func(part) -> String: return part.type))
 	_read_slots(full_id, m.get("slots"), types)
 	_read_on_complete(full_id, m)
+	_read_monitor(full_id, m)
 	if errors.size() > before:
 		return ""
 	var copy: Dictionary = m.duplicate(true)
@@ -155,6 +156,22 @@ func _read_on_complete(full_id: String, m: Dictionary) -> void:
 		errors.append("%s.on_complete: must be one of %s" % [full_id, ", ".join(ON_COMPLETE)])
 	if not _is_text_list(m.get("boot_lines")):
 		errors.append("%s.boot_lines: must be a non-empty list of text" % full_id)
+
+
+## Optional mission field "monitor": text for the scene's monitor screen.
+## "start" is shown from the beginning and "linked" once the screen's link
+## light comes on; in each, the first line is the heading.
+func _read_monitor(full_id: String, m: Dictionary) -> void:
+	if not m.has("monitor"):
+		return
+	if typeof(m.monitor) != TYPE_DICTIONARY or m.monitor.is_empty():
+		errors.append("%s.monitor: must have start or linked text" % full_id)
+		return
+	for key in m.monitor:
+		if not key in ["start", "linked"]:
+			errors.append("%s.monitor.%s: only start and linked are known" % [full_id, key])
+		elif not _is_text_list(m.monitor[key]):
+			errors.append("%s.monitor.%s: must be a non-empty list of text" % [full_id, key])
 
 
 func _read_parts(full_id: String, parts) -> Array:

@@ -76,7 +76,7 @@ func _tests() -> Array:
 		_test_build_results_card, _test_big_parts_are_grabbed_by_the_middle,
 		_test_build_is_frozen_once_it_boots, _test_finished_mission_takes_no_more_parts,
 		_test_swap_empties_the_whole_chain, _test_cable_keeps_its_plugs_when_it_comes_back,
-		_test_mistyped_variant_is_a_mission_problem]
+		_test_mistyped_variant_is_a_mission_problem, _test_monitor_text_is_in_the_registry]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -1336,3 +1336,28 @@ func _test_mistyped_variant_is_a_mission_problem() -> void:
 	await _fresh(mission)
 	check("a part whose variant isn't in the catalog is reported when the mission loads, naming the part",
 		mission.problems.size() == 1 and 'part "Shelf/Mid/Cpu" has the variant "cpu_mdi"' in mission.problems[0], "; ".join(mission.problems))
+
+
+func _test_monitor_text_is_in_the_registry() -> void:
+	var online: Dictionary = ModuleRegistry.load_from().mission("setup_pc.go_online")
+	check("the network mission's monitor text is data: what it shows at the start and once the link is up",
+		online.get("monitor") == {"start": ["Desktop", "Network: not connected"], "linked": ["Connected", "This PC is on the network."]},
+		str(online.get("monitor")))
+	var errors := _bad_power_on(func(m): m.monitor = {"start": []})
+	check("monitor text with no lines is caught", errors.size() == 1 and "setup_pc.power_on.monitor.start: must be a non-empty list of text" in errors[0], "; ".join(errors))
+	errors = _bad_power_on(func(m): m.monitor = {"online": ["Connected"]})
+	check("so is a kind of monitor text the game doesn't have", errors.size() == 1 and "setup_pc.power_on.monitor.online" in errors[0], "; ".join(errors))
+	# Monitor text in a scene with no monitor screen is a scene/registry mismatch.
+	var data = JSON.parse_string(FileAccess.get_file_as_string("res://data/modules.json"))
+	for module in data.modules:
+		if module.id == "setup_pc":
+			module.missions[0].monitor = {"start": ["Desktop"]}
+	var registry = ModuleRegistry.new()
+	registry.read(data)
+	manager.use_registry(registry)
+	var mission := await _fresh(Unbox.instantiate())
+	check("monitor text for a scene with no monitor screen is reported when the mission loads",
+		mission.problems.size() == 1 and "monitor text but the scene has no MonitorScreen" in mission.problems[0], "; ".join(mission.problems))
+	manager.use_registry(ModuleRegistry.load_from())
+	var power := await _fresh(PowerOn.instantiate())
+	check("a mission with no monitor text leaves the screen off", not power.get_node("Monitor/MonitorScreen").is_on)

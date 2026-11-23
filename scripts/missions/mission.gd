@@ -41,6 +41,7 @@ func _ready() -> void:
 	_apply_registry()
 	if config.get("on_complete", "") == "boot" and _monitor_screen() == null:
 		_problem('on_complete is "boot" but the scene has no MonitorScreen (scripts/parts/monitor_screen.gd)')
+	_apply_monitor_text()
 	$Room.grabber.part_grabbed.connect(_on_part_grabbed)
 	for zone in zones:
 		zone.snapped.connect(_on_snapped)
@@ -199,6 +200,23 @@ func _on_module_completed(_module_id: String, score: int, duration_s: int) -> vo
 
 ## The mission that comes after this one ("" when it's the module's last).
 var next_mission := ""
+
+
+## Hands the registry's "monitor" text to the scene's monitor screen: what it
+## shows from the start, and what it shows once its link light comes on.
+func _apply_monitor_text() -> void:
+	var text: Dictionary = config.get("monitor", {})
+	if text.is_empty():
+		return
+	var screen := _monitor_screen()
+	if screen == null:
+		_problem("the registry has monitor text but the scene has no MonitorScreen (scripts/parts/monitor_screen.gd)")
+		return
+	if text.has("start"):
+		screen.show_desktop(text.start[0], PackedStringArray(text.start.slice(1)))
+	if text.has("linked"):
+		screen.linked_title = text.linked[0]
+		screen.linked_lines = PackedStringArray(text.linked.slice(1))
 
 
 ## The scene's monitor screen (a node named MonitorScreen with play_boot), for
