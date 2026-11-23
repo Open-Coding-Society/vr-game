@@ -782,6 +782,16 @@ func _test_shelf_layout() -> void:
 		shelf.get_node("Starter").position.z > shelf.get_node("Mid").position.z and shelf.get_node("Mid").position.z > shelf.get_node("High").position.z)
 	check("each row says which tier it is",
 		SHELF_ROWS.map(func(row) -> String: return (shelf.get_node(row[0] + "/Label") as Label3D).text) == ["Starter", "Mid", "High-end"])
+	# The row labels are scene text: they must not drift from the catalog's own names and colours.
+	var drifted := []
+	for row in SHELF_ROWS:
+		var label := shelf.get_node(row[0] + "/Label") as Label3D
+		var tint: Color = PartsCatalog.TIER_COLORS[row[1]]
+		# The scene file keeps four decimals, so compare to within a thousandth.
+		var same_tint: bool = absf(label.modulate.r - tint.r) < 0.001 and absf(label.modulate.g - tint.g) < 0.001 and absf(label.modulate.b - tint.b) < 0.001
+		if label.text != PartsCatalog.TIER_NAMES[row[1]] or not same_tint:
+			drifted.append("%s: %s %s" % [row[0], label.text, label.modulate])
+	check("each row's label has its tier's name and colour from the catalog script", drifted.is_empty(), str(drifted))
 	await _settle()
 	var touching := []
 	var parts := shelf.find_children("*", "RigidBody3D", true, false)
