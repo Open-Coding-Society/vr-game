@@ -1,0 +1,23 @@
+{
+  "_comment": "The versions of each PC part the player can pick from in Build your own PC: three tiers of each. The specs here are what scripts/parts/compatibility.gd checks. From OCSVR_Parts_List.md.",
+  "parts": {
+    "cpu_starter": {"type": "cpu", "tier": "starter", "name": "Intel Core i5-6500", "socket": "LGA1151", "watts": 65},
+    "cpu_mid": {"type": "cpu", "tier": "mid", "name": "AMD Ryzen 5 7600", "socket": "AM5", "watts": 65},
+    "cpu_high": {"type": "cpu", "tier": "high", "name": "AMD Ryzen 9 9950X", "socket": "AM5", "watts": 170},
+    "board_starter": {"type": "motherboard", "tier": "starter", "name": "ASRock H110 Pro BTC+", "socket": "LGA1151", "ram": "DDR4", "m2": true},
+    "board_mid": {"type": "motherboard", "tier": "mid", "name": "B650", "socket": "AM5", "ram": "DDR5", "m2": true},
+    "board_high": {"type": "motherboard", "tier": "high", "name": "X870E", "socket": "AM5", "ram": "DDR5", "m2": true},
+    "ram_starter": {"type": "ram", "tier": "starter", "name": "DDR4-2400 2x4 GB", "ram": "DDR4"},
+    "ram_mid": {"type": "ram", "tier": "mid", "name": "DDR5-5600 2x16 GB", "ram": "DDR5"},
+    "ram_high": {"type": "ram", "tier": "high", "name": "DDR5-6400 2x32 GB", "ram": "DDR5"},
+    "gpu_starter": {"type": "gpu", "tier": "starter", "name": "GTX 1070", "watts": 150, "plug": "pcie8"},
+    "gpu_mid": {"type": "gpu", "tier": "mid", "name": "RTX 4060 Ti", "watts": 160, "plug": "pcie8"},
+    "gpu_high": {"type": "gpu", "tier": "high", "name": "RTX 5090", "watts": 575, "plug": "12v2x6"},
+    "storage_starter": {"type": "storage", "tier": "starter", "name": "Samsung 860 EVO 250 GB (SATA)", "bus": "sata"},
+    "storage_mid": {"type": "storage", "tier": "mid", "name": "1 TB NVMe Gen4", "bus": "m2"},
+    "storage_high": {"type": "storage", "tier": "high", "name": "4 TB NVMe Gen5", "bus": "m2"},
+    "psu_starter": {"type": "psu", "tier": "starter", "name": "500 W Bronze", "watts": 500, "plugs": ["pcie8"]},
+    "psu_mid": {"type": "psu", "tier": "mid", "name": "EVGA SuperNOVA 850 P2", "watts": 850, "plugs": ["pcie8"]},
+    "psu_high": {"type": "psu", "tier": "high", "name": "Antec HCP 1300 W", "watts": 1300, "plugs": ["pcie8", "12v2x6"]}
+  }
+}

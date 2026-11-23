@@ -15,6 +15,8 @@ const ConnectPeripherals := preload("res://scenes/setup_pc/connect_peripherals.t
 const PowerOn := preload("res://scenes/setup_pc/power_on.tscn")
 const GoOnline := preload("res://scenes/setup_pc/go_online.tscn")
 const MonitorScreen := preload("res://scripts/parts/monitor_screen.gd")
+const PartsCatalog := preload("res://scripts/parts/parts_catalog.gd")
+const Compatibility := preload("res://scripts/parts/compatibility.gd")
 const GrabbablePart := preload("res://scripts/grabbable_part.gd")
 const SnapZone := preload("res://scripts/snap_zone.gd")
 const ModuleRegistry := preload("res://scripts/module_registry.gd")
@@ -58,7 +60,10 @@ func _tests() -> Array:
 		_test_connect_perfect_run, _test_connect_wrong_ports, _test_long_title_fits_the_panel,
 		_test_cable_fixed_at_both_ends, _test_registry_checks_on_complete, _test_monitor_screen_boot,
 		_test_power_wall_goes_last, _test_power_on_boots, _test_boot_needs_a_monitor_screen,
-		_test_go_online, _test_go_online_other_way_round]
+		_test_go_online, _test_go_online_other_way_round,
+		_test_parts_catalog_loads, _test_parts_catalog_catches_mistakes, _test_rule_cpu_socket,
+		_test_rule_ram_type, _test_rule_storage_slot, _test_rule_gpu_plug, _test_rule_enough_power,
+		_test_rules_by_name, _test_matching_builds_pass, _test_balanced_builds]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -535,3 +540,153 @@ func _test_go_online_other_way_round() -> void:
 		mission.get_node("EthernetCable/EndA").is_installed and not light.is_lit and manager.mistakes == 0)
 	await _drag(mission, "EthernetCable/EndB", _over(mission, "Tower/Ethernet"))
 	check("then the tower end brings the link up", light.is_lit and manager.state == manager.State.SUCCESS)
+
+
+# ---- Step 5: the parts catalog and the compatibility rules (no scene) ----
+
+## A part's specs from the real catalog.
+func _spec(id: String) -> Dictionary:
+	return PartsCatalog.shared().spec(id)
+
+
+func _test_parts_catalog_loads() -> void:
+	var catalog = PartsCatalog.load_from()
+	check("data/parts_catalog.json loads with no problems", catalog.errors.is_empty(), "; ".join(catalog.errors))
+	check("it has 18 parts", catalog.parts.size() == 18, catalog.parts.size())
+	var uneven := []
+	for type in PartsCatalog.FIELDS:
+		var tiers: Array = catalog.of_type(type).map(func(id) -> String: return catalog.spec(id).tier)
+		if tiers != PartsCatalog.TIERS:
+			uneven.append("%s: %s" % [type, tiers])
+	check("every type of part comes in the three tiers, lowest first", uneven.is_empty(), str(uneven))
+	var cpu: Dictionary = catalog.spec("cpu_mid")
+	check("a part keeps its id and its specs",
+		cpu.get("id") == "cpu_mid" and cpu.get("name") == "AMD Ryzen 5 7600" and cpu.get("socket") == "AM5" and cpu.get("watts") == 65, str(cpu))
+	check("a part the catalog doesn't have is an empty spec", catalog.spec("cpu_quantum").is_empty())
+	check("each tier has a name and a colour",
+		PartsCatalog.TIER_NAMES["high"] == "High-end" and PartsCatalog.TIER_COLORS["mid"].is_equal_approx(Color("2F81F7")))
+
+
+func _bad_catalog(mutate: Callable) -> PackedStringArray:
+	var data = JSON.parse_string(FileAccess.get_file_as_string("res://data/parts_catalog.json"))
+	mutate.call(data.parts)
+	var catalog = PartsCatalog.new()
+	catalog.read(data)
+	return catalog.errors
+
+
+func _test_parts_catalog_catches_mistakes() -> void:
+	var errors := _bad_catalog(func(parts): parts.cpu_mid.erase("socket"))
+	check("a CPU with no socket is caught, naming the field", errors.size() == 1 and errors[0] == "cpu_mid.socket: must be text", "; ".join(errors))
+	errors = _bad_catalog(func(parts): parts.psu_mid.watts = "850 W")
+	check("watts that aren't a number are caught", errors.size() == 1 and errors[0] == "psu_mid.watts: must be a number", "; ".join(errors))
+	errors = _bad_catalog(func(parts): parts.gpu_high.tier = "ultra")
+	check("a tier the game doesn't have is caught", errors.size() == 1 and "gpu_high.tier: must be one of starter, mid, high" in errors[0], "; ".join(errors))
+	errors = _bad_catalog(func(parts): parts.ram_mid.type = "memory")
+	check("a type the game doesn't have is caught", errors.size() == 1 and "ram_mid.type: must be one of" in errors[0], "; ".join(errors))
+
+
+func _test_rule_cpu_socket() -> void:
+	check("an AM5 CPU fits an AM5 board", Compatibility.cpu_socket(_spec("cpu_mid"), _spec("board_mid")) == "")
+	check("so does the high-end AM5 CPU in the mid board", Compatibility.cpu_socket(_spec("cpu_high"), _spec("board_mid")) == "")
+	check("an AM5 CPU in an LGA1151 board is refused, with both sockets named",
+		Compatibility.cpu_socket(_spec("cpu_mid"), _spec("board_starter")) == "This CPU's socket (AM5) doesn't match the motherboard (LGA1151).",
+		Compatibility.cpu_socket(_spec("cpu_mid"), _spec("board_starter")))
+	check("and the other way round",
+		Compatibility.cpu_socket(_spec("cpu_starter"), _spec("board_high")) == "This CPU's socket (LGA1151) doesn't match the motherboard (AM5).")
+
+
+func _test_rule_ram_type() -> void:
+	check("DDR4 RAM fits a DDR4 board", Compatibility.ram_type(_spec("ram_starter"), _spec("board_starter")) == "")
+	check("DDR5 RAM fits either DDR5 board",
+		Compatibility.ram_type(_spec("ram_mid"), _spec("board_high")) == "" and Compatibility.ram_type(_spec("ram_high"), _spec("board_mid")) == "")
+	check("DDR5 RAM in a DDR4 board is refused",
+		Compatibility.ram_type(_spec("ram_mid"), _spec("board_starter")) == "DDR5 RAM won't fit a DDR4 slot: the notch is in a different place.",
+		Compatibility.ram_type(_spec("ram_mid"), _spec("board_starter")))
+	check("and DDR4 RAM in a DDR5 board",
+		Compatibility.ram_type(_spec("ram_starter"), _spec("board_mid")) == "DDR4 RAM won't fit a DDR5 slot: the notch is in a different place.")
+
+
+func _test_rule_storage_slot() -> void:
+	var no_m2 := {"type": "motherboard", "tier": "starter", "name": "An old board", "socket": "LGA1151", "ram": "DDR4", "m2": false}
+	check("an M.2 drive fits a board with an M.2 slot", Compatibility.storage_slot(_spec("storage_mid"), _spec("board_mid")) == "")
+	check("a SATA drive fits a board with an M.2 slot", Compatibility.storage_slot(_spec("storage_starter"), _spec("board_high")) == "")
+	check("a SATA drive fits a board with no M.2 slot", Compatibility.storage_slot(_spec("storage_starter"), no_m2) == "")
+	check("an M.2 drive on a board with no M.2 slot is refused",
+		Compatibility.storage_slot(_spec("storage_high"), no_m2) == "This board has no M.2 slot for that drive.",
+		Compatibility.storage_slot(_spec("storage_high"), no_m2))
+
+
+func _test_rule_gpu_plug() -> void:
+	check("a card with an 8-pin plug works with a supply that has one", Compatibility.gpu_plug(_spec("gpu_mid"), _spec("psu_starter")) == "")
+	check("the RTX 5090 works with the supply that has a 12V-2x6 cable", Compatibility.gpu_plug(_spec("gpu_high"), _spec("psu_high")) == "")
+	check("the RTX 5090 with a supply that has no 12V-2x6 cable is refused",
+		Compatibility.gpu_plug(_spec("gpu_high"), _spec("psu_mid")) == "The RTX 5090 needs a 12V-2x6 cable, and this power supply doesn't have one.",
+		Compatibility.gpu_plug(_spec("gpu_high"), _spec("psu_mid")))
+
+
+func _test_rule_enough_power() -> void:
+	check("a starter CPU and card need about 394 W", is_equal_approx(Compatibility.watts_needed(_spec("cpu_starter"), _spec("gpu_starter")), 393.75),
+		Compatibility.watts_needed(_spec("cpu_starter"), _spec("gpu_starter")))
+	check("so the 500 W supply is enough", Compatibility.enough_power(_spec("cpu_starter"), _spec("gpu_starter"), _spec("psu_starter")) == "")
+	check("the high-end CPU and card (1056 W) run on the 1300 W supply",
+		Compatibility.enough_power(_spec("cpu_high"), _spec("gpu_high"), _spec("psu_high")) == "")
+	check("a supply exactly as big as needed is enough",
+		Compatibility.enough_power({"watts": 100.0}, {"watts": 200.0}, {"watts": 500.0}) == "")
+	check("the high-end CPU with a mid card is too much for 500 W, and the message says how much is needed",
+		Compatibility.enough_power(_spec("cpu_high"), _spec("gpu_mid"), _spec("psu_starter"))
+			== "The power supply is too small: the PC shuts off under load. You need about 550 W.",
+		Compatibility.enough_power(_spec("cpu_high"), _spec("gpu_mid"), _spec("psu_starter")))
+	check("the high-end CPU and card are too much for 850 W",
+		Compatibility.enough_power(_spec("cpu_high"), _spec("gpu_high"), _spec("psu_mid"))
+			== "The power supply is too small: the PC shuts off under load. You need about 1100 W.")
+
+
+func _test_rules_by_name() -> void:
+	var starter_board := [_spec("board_starter")]
+	check("a slot's rule is called by name with the parts already in",
+		Compatibility.check("cpu_socket", _spec("cpu_mid"), starter_board) == Compatibility.cpu_socket(_spec("cpu_mid"), _spec("board_starter"))
+			and Compatibility.check("ram_type", _spec("ram_mid"), starter_board) != ""
+			and Compatibility.check("storage_slot", _spec("storage_mid"), starter_board) == "")
+	check("with no motherboard in yet there is nothing to clash with", Compatibility.check("cpu_socket", _spec("cpu_mid"), []) == "")
+	var build := [_spec("board_high"), _spec("cpu_high"), _spec("ram_high"), _spec("storage_high"), _spec("gpu_high"), _spec("psu_mid")]
+	check("the power check finds the missing cable first",
+		Compatibility.check("power", {}, build) == "The RTX 5090 needs a 12V-2x6 cable, and this power supply doesn't have one.",
+		Compatibility.check("power", {}, build))
+	build[4] = _spec("gpu_mid")
+	build[5] = _spec("psu_starter")
+	check("then a supply that is too small",
+		Compatibility.check("power", {}, build) == "The power supply is too small: the PC shuts off under load. You need about 550 W.",
+		Compatibility.check("power", {}, build))
+	build[5] = _spec("psu_mid")
+	check("and passes when both are right", Compatibility.check("power", {}, build) == "")
+	check("every rule the game uses has a name", Compatibility.RULES == Compatibility.ON_DROP + Compatibility.ON_POWER + ["power"])
+
+
+## The six parts of one tier.
+func _tier_build(tier: String) -> Array:
+	return ["board", "cpu", "ram", "storage", "gpu", "psu"].map(func(kind) -> Dictionary: return _spec("%s_%s" % [kind, tier]))
+
+
+func _test_matching_builds_pass() -> void:
+	for tier in PartsCatalog.TIERS:
+		var build := _tier_build(tier)
+		var failed := []
+		for part in build:
+			for rule in Compatibility.ON_DROP:
+				if part.type == rule.split("_")[0] and Compatibility.check(rule, part, build) != "":
+					failed.append(rule)
+		if Compatibility.check("power", {}, build) != "":
+			failed.append("power")
+		check("a build with every part from the %s tier passes every rule" % tier, failed.is_empty(), str(failed))
+
+
+func _test_balanced_builds() -> void:
+	check("a build from one tier is balanced", Compatibility.is_balanced(_tier_build("mid")))
+	var build := _tier_build("mid")
+	build[5] = _spec("psu_high")
+	build[2] = _spec("ram_high")
+	check("so is one that mixes neighbouring tiers", Compatibility.is_balanced(build))
+	build[3] = _spec("storage_starter")
+	check("a starter part beside a high-end one is not", not Compatibility.is_balanced(build))
+	check("nothing at all is not a build", not Compatibility.is_balanced([]))
