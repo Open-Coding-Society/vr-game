@@ -74,7 +74,8 @@ func _tests() -> Array:
 		_test_build_matching_tiers_boot, _test_build_parts_that_do_not_fit, _test_build_power_rules,
 		_test_build_swapping_the_board, _test_build_monitor_says_why, _test_build_balanced_bonus,
 		_test_build_results_card, _test_big_parts_are_grabbed_by_the_middle,
-		_test_build_is_frozen_once_it_boots, _test_finished_mission_takes_no_more_parts]
+		_test_build_is_frozen_once_it_boots, _test_finished_mission_takes_no_more_parts,
+		_test_swap_empties_the_whole_chain]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -1279,3 +1280,26 @@ func _test_finished_mission_takes_no_more_parts() -> void:
 	await _carry_and_drop(bench_part, _over(mission, "Tower/Usb1"))
 	check("a locked slot takes nothing and counts nothing, even one that could swap",
 		not bench_part.is_installed and port.installed_part == mission.get_node("KeyboardCable/EndB") and manager.mistakes == 0)
+
+
+func _test_swap_empties_the_whole_chain() -> void:
+	# A registry where the graphics card waits on the CPU, not on the board.
+	var data = JSON.parse_string(FileAccess.get_file_as_string("res://data/modules.json"))
+	for module in data.modules:
+		for m in module.missions:
+			if m.id == "build_your_own":
+				m.slots["Case/GpuSlot"].requires = ["Case/CpuSocket"]
+	var registry = ModuleRegistry.new()
+	registry.read(data)
+	check("that registry is still a valid one", registry.errors.is_empty(), "; ".join(registry.errors))
+	manager.use_registry(registry)
+	var mission := await _build_mission()
+	await _fit(mission, "board", "mid")
+	await _fit(mission, "cpu", "mid")
+	await _fit(mission, "gpu", "mid")
+	await _fit(mission, "board", "high")
+	check("swapping the motherboard sends the CPU back, and the graphics card that was waiting on the CPU",
+		not _build_part(mission, "cpu", "mid").is_installed and not _build_part(mission, "gpu", "mid").is_installed
+			and not mission.get_node("Case/GpuSlot").is_filled() and manager.mistakes == 0)
+	check("the checklist shows the graphics card slot as waiting on the CPU again",
+		"[  ] graphics card slot  (after: CPU socket)" in mission.panel.text(), mission.panel.text())

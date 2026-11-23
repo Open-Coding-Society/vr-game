@@ -153,11 +153,18 @@ func _on_rejected(zone: SnapZone, part: GrabbablePart) -> void:
 
 
 ## A part was swapped out. Whatever was plugged into it can't stay: every slot
-## that needed this one filled first is emptied, and its parts go back home.
+## that needed this one filled first is emptied, and so on down the chain, and
+## their parts go back home.
 func _on_swapped(zone: SnapZone, _old_part: GrabbablePart) -> void:
+	_empty_dependents(zone, [zone])
+
+
+func _empty_dependents(zone: SnapZone, seen: Array) -> void:
 	for other in zones:
-		if other.prerequisites.has(zone):
+		if other.prerequisites.has(zone) and not seen.has(other):
+			seen.append(other)
 			other.eject_all()
+			_empty_dependents(other, seen)
 
 
 func _on_blocked(zone: SnapZone, part: GrabbablePart) -> void:
