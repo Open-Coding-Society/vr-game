@@ -655,6 +655,11 @@ func _test_rule_storage_slot() -> void:
 func _test_rule_gpu_plug() -> void:
 	check("a card with an 8-pin plug works with a supply that has one", Compatibility.gpu_plug(_spec("gpu_mid"), _spec("psu_starter")) == "")
 	check("the RTX 5090 works with the supply that has a 12V-2x6 cable", Compatibility.gpu_plug(_spec("gpu_high"), _spec("psu_high")) == "")
+	var hungry := {"type": "gpu", "name": "Old card", "watts": 200.0, "plug": "pcie8"}
+	var bare := {"type": "psu", "name": "Bare supply", "watts": 600.0, "plugs": []}
+	check("the message uses the right article for each cable",
+		Compatibility.gpu_plug(hungry, bare) == "The Old card needs an 8-pin PCIe cable, and this power supply doesn't have one.",
+		Compatibility.gpu_plug(hungry, bare))
 	check("the RTX 5090 with a supply that has no 12V-2x6 cable is refused",
 		Compatibility.gpu_plug(_spec("gpu_high"), _spec("psu_mid")) == "The RTX 5090 needs a 12V-2x6 cable, and this power supply doesn't have one.",
 		Compatibility.gpu_plug(_spec("gpu_high"), _spec("psu_mid")))
@@ -1208,21 +1213,24 @@ func _test_build_balanced_bonus() -> void:
 
 func _test_build_results_card() -> void:
 	check("a build is summed up by its parts' names, CPU and graphics card first",
-		Compatibility.summary(_tier_build("mid")) == "AMD Ryzen 5 7600 + RTX 4060 Ti + DDR5-5600 2x16 GB + 1 TB NVMe Gen4 + B650 + EVGA SuperNOVA 850 P2",
+		Compatibility.summary(_tier_build("mid")) == "AMD Ryzen 5 7600, RTX 4060 Ti, DDR5-5600 2x16 GB, 1 TB NVMe Gen4, B650, EVGA SuperNOVA 850 P2",
 		Compatibility.summary(_tier_build("mid")))
-	check("a part that is missing is left out", Compatibility.summary([_spec("psu_high"), _spec("cpu_starter")]) == "Intel Core i5-6500 + Antec HCP 1300 W")
+	check("a name that ends in a plus sign still reads clearly",
+		"ASRock H110 Pro BTC+, 500 W Bronze" in Compatibility.summary(_tier_build("starter")), Compatibility.summary(_tier_build("starter")))
+	check("the rules and the catalog share one list of tiers", Compatibility.TIERS == PartsCatalog.TIERS)
+	check("a part that is missing is left out", Compatibility.summary([_spec("psu_high"), _spec("cpu_starter")]) == "Intel Core i5-6500, Antec HCP 1300 W")
 	var mission := await _build_mission()
 	await _fit_all(mission, "mid")
 	await _press_power(mission)
 	check("the success panel lists the build",
-		"Your build: AMD Ryzen 5 7600 + RTX 4060 Ti + DDR5-5600 2x16 GB + 1 TB NVMe Gen4 + B650 + EVGA SuperNOVA 850 P2" in mission.panel.text(),
+		"Your build: AMD Ryzen 5 7600, RTX 4060 Ti, DDR5-5600 2x16 GB, 1 TB NVMe Gen4, B650, EVGA SuperNOVA 850 P2" in mission.panel.text(),
 		mission.panel.text())
 	check("with the bonus and the score", "Balanced build: +10" in mission.panel.text() and "Score: 100" in mission.panel.text(), mission.panel.text())
 	mission = await _build_mission()
 	await _fit_all(mission, "mid", {"storage": "starter", "psu": "high"})
 	await _press_power(mission)
 	check("a build with no bonus lists its parts and its score only",
-		"Your build: AMD Ryzen 5 7600 + RTX 4060 Ti + DDR5-5600 2x16 GB + Samsung 860 EVO 250 GB (SATA) + B650 + Antec HCP 1300 W" in mission.panel.text()
+		"Your build: AMD Ryzen 5 7600, RTX 4060 Ti, DDR5-5600 2x16 GB, Samsung 860 EVO 250 GB (SATA), B650, Antec HCP 1300 W" in mission.panel.text()
 			and not "Balanced build" in mission.panel.text() and "Score: 90" in mission.panel.text(), mission.panel.text())
 	var other := await _fresh(Unbox.instantiate())
 	check("other missions add nothing of their own to the success panel", other._result_extras().is_empty())
@@ -1269,7 +1277,7 @@ func _test_build_is_frozen_once_it_boots() -> void:
 		await screen.boot_finished
 	await process_frame
 	check("the results card lists the build that booted, with its bonus",
-		"Your build: AMD Ryzen 5 7600 + RTX 4060 Ti" in mission.panel.text() and not "RTX 5090" in mission.panel.text()
+		"Your build: AMD Ryzen 5 7600, RTX 4060 Ti" in mission.panel.text() and not "RTX 5090" in mission.panel.text()
 			and "Balanced build: +10" in mission.panel.text() and manager.score == 100, mission.panel.text())
 	await _fit(mission, "psu", "starter")
 	check("and the case stays as it was after the card is up", _build_part(mission, "psu", "mid").is_installed

@@ -8,6 +8,8 @@ extends RefCounted
 ## `compat` rule calls it for a part dropped on it, with the specs of the
 ## parts already installed as `others`.
 
+const PartsCatalog := preload("res://scripts/parts/parts_catalog.gd")
+
 ## Rules for a part going into its slot: these are about what physically fits.
 const ON_DROP := ["cpu_socket", "ram_type", "storage_slot"]
 ## Rules for switching the PC on. "power" runs both, in this order.
@@ -33,11 +35,11 @@ const HEADROOM := 1.25
 ## Power supplies come in steps of this many watts, so advice is rounded up to one.
 const WATTS_STEP := 50.0
 ## Lowest tier first: a build is balanced when its tiers are neighbours.
-const TIERS := ["starter", "mid", "high"]
+const TIERS := PartsCatalog.TIERS
 ## The order parts are named in a build's summary.
 const SUMMARY_ORDER := ["cpu", "gpu", "ram", "storage", "motherboard", "psu"]
-## How a power plug is written in a message.
-const PLUG_NAMES := {"pcie8": "8-pin PCIe", "12v2x6": "12V-2x6"}
+## How the cable for a power plug is written in a message, with its article.
+const PLUG_NAMES := {"pcie8": "an 8-pin PCIe", "12v2x6": "a 12V-2x6"}
 
 
 ## Runs a rule by name. `part` is the part being checked (for "power" it can
@@ -89,7 +91,7 @@ static func storage_slot(storage: Dictionary, board: Dictionary) -> String:
 static func gpu_plug(gpu: Dictionary, psu: Dictionary) -> String:
 	if gpu.is_empty() or psu.is_empty() or gpu.plug in psu.plugs:
 		return ""
-	return "The %s needs a %s cable, and this power supply doesn't have one." % [gpu.name, PLUG_NAMES.get(gpu.plug, gpu.plug)]
+	return "The %s needs %s cable, and this power supply doesn't have one." % [gpu.name, PLUG_NAMES.get(gpu.plug, "a " + gpu.plug)]
 
 
 ## The power supply must cover what the parts draw, with room to spare.
@@ -114,14 +116,15 @@ static func is_balanced(parts: Array) -> bool:
 
 ## A build in one line for a results card: the parts' names, the ones a
 ## student compares first (CPU, graphics card) in front.
-## e.g. "AMD Ryzen 5 7600 + RTX 4060 Ti + DDR5-5600 2x16 GB + ..."
+## e.g. "AMD Ryzen 5 7600, RTX 4060 Ti, DDR5-5600 2x16 GB, ..." (commas, since
+## a part's own name can end in a plus sign).
 static func summary(parts: Array) -> String:
 	var names := []
 	for type in SUMMARY_ORDER:
 		var part := of_type(parts, type)
 		if not part.is_empty():
 			names.append(part.name)
-	return " + ".join(names)
+	return ", ".join(names)
 
 
 ## The first of `parts` that is of `type`, or {}.
