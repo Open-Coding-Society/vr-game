@@ -1,0 +1,28 @@
+[gd_scene format=3]
+
+
+[sub_resource type="StandardMaterial3D" id="Mat_1"]
+albedo_color = Color(0.17, 0.18, 0.21, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_2"]
+material = SubResource("Mat_1")
+size = Vector3(0.06, 0.03, 0.1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_3"]
+albedo_color = Color(0.75, 0.77, 0.8, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_4"]
+material = SubResource("Mat_3")
+size = Vector3(0.01, 0.006, 0.025)
+
+[node name="MouseShape" type="Node3D"]
+
+[node name="Body" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+mesh = SubResource("Mesh_2")
+
+[node name="Wheel" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.031, -0.022)
+mesh = SubResource("Mesh_4")

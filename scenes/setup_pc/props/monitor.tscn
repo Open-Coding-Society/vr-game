@@ -1,0 +1,76 @@
+[gd_scene format=3]
+
+
+[sub_resource type="StandardMaterial3D" id="Mat_1"]
+albedo_color = Color(0.17, 0.18, 0.21, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_2"]
+material = SubResource("Mat_1")
+size = Vector3(0.2, 0.012, 0.14)
+
+[sub_resource type="BoxMesh" id="Mesh_3"]
+material = SubResource("Mat_1")
+size = Vector3(0.03, 0.07, 0.02)
+
+[sub_resource type="StandardMaterial3D" id="Mat_4"]
+albedo_color = Color(0.07, 0.07, 0.08, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_5"]
+material = SubResource("Mat_4")
+size = Vector3(0.36, 0.23, 0.02)
+
+[sub_resource type="StandardMaterial3D" id="Mat_6"]
+albedo_color = Color(0.05, 0.07, 0.1, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_7"]
+material = SubResource("Mat_6")
+size = Vector3(0.34, 0.21, 0.002)
+
+[sub_resource type="StandardMaterial3D" id="Mat_8"]
+albedo_color = Color(0.25, 0.26, 0.3, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_9"]
+material = SubResource("Mat_8")
+size = Vector3(0.3, 0.025, 0.02)
+
+[sub_resource type="BoxMesh" id="Mesh_10"]
+material = SubResource("Mat_4")
+size = Vector3(0.03, 0.012, 0.004)
+
+[sub_resource type="BoxMesh" id="Mesh_11"]
+material = SubResource("Mat_4")
+size = Vector3(0.03, 0.02, 0.004)
+
+[node name="MonitorShape" type="Node3D"]
+
+[node name="Base" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, 0)
+mesh = SubResource("Mesh_2")
+
+[node name="Neck" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.045, -0.035)
+mesh = SubResource("Mesh_3")
+
+[node name="Panel" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.185, -0.015)
+mesh = SubResource("Mesh_5")
+
+[node name="Screen" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.185, -0.004)
+mesh = SubResource("Mesh_7")
+
+[node name="PortStrip" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0575, -0.015)
+mesh = SubResource("Mesh_9")
+
+[node name="HdmiPort" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.11, 0.0575, -0.004)
+mesh = SubResource("Mesh_10")
+
+[node name="PowerPort" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.11, 0.0575, -0.004)
+mesh = SubResource("Mesh_11")

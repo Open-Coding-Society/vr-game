@@ -11,6 +11,14 @@ extends Node3D
 ## Pixels per meter for the text texture; higher is sharper and costs more.
 @export var pixels_per_meter := 2000
 
+## The title's text size, and the smallest a long title is shrunk to so that
+## it still fits on one line (pixels in the text texture).
+const TITLE_SIZE := 64
+const TITLE_SIZE_MIN := 40
+## Space between the panel's edge and its text, and the border's width.
+const MARGIN := 48
+const BORDER := 6
+
 var title: String = ""
 var lines: PackedStringArray = []
 
@@ -30,9 +38,9 @@ func _ready() -> void:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.08, 0.09, 0.12, 0.95)
 	style.border_color = Color(0.35, 0.6, 0.95)
-	style.set_border_width_all(6)
+	style.set_border_width_all(BORDER)
 	style.set_corner_radius_all(24)
-	style.set_content_margin_all(48)
+	style.set_content_margin_all(MARGIN)
 	background.add_theme_stylebox_override("panel", style)
 	_viewport.add_child(background)
 
@@ -41,7 +49,11 @@ func _ready() -> void:
 	background.add_child(column)
 
 	_title_label = Label.new()
-	_title_label.add_theme_font_size_override("font_size", 64)
+	_title_label.add_theme_font_size_override("font_size", TITLE_SIZE)
+	# A title never makes the panel wider than its texture: it's shrunk to fit
+	# (see _refresh) and, if still too long, cut short with "...".
+	_title_label.clip_text = true
+	_title_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_title_label.add_theme_color_override("font_color", Color(1, 1, 1))
 	column.add_child(_title_label)
 
@@ -83,4 +95,25 @@ func _refresh() -> void:
 	if _title_label == null:
 		return
 	_title_label.text = title
+	_title_label.add_theme_font_size_override("font_size", title_size())
 	_body_label.text = "\n".join(lines)
+
+
+## The text size the title is drawn at: TITLE_SIZE, or smaller for a title
+## that would not fit on one line.
+func title_size() -> int:
+	var text_size := TITLE_SIZE
+	while text_size > TITLE_SIZE_MIN and title_width(text_size) > title_room():
+		text_size -= 2
+	return text_size
+
+
+## How wide the title is at a text size (the size it's drawn at by default).
+func title_width(text_size := 0) -> float:
+	var font := _title_label.get_theme_font("font")
+	return font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, text_size if text_size > 0 else title_size()).x
+
+
+## How wide a title can be (pixels in the text texture).
+func title_room() -> float:
+	return _viewport.size.x - 2.0 * (MARGIN + BORDER)

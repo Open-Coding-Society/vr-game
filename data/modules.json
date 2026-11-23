@@ -347,6 +347,139 @@
           }
         }
       ]
+    },
+    {
+      "id": "setup_pc",
+      "title": "Set up a pre-built PC",
+      "category": "computer",
+      "missions": [
+        {
+          "id": "unbox",
+          "title": "Unbox the PC",
+          "description": "Lift the tower, monitor, keyboard and mouse out of the box and set each one on the desk.",
+          "topic": "Input and output",
+          "difficulty": "Beginner",
+          "scene": "res://scenes/setup_pc/unbox.tscn",
+          "intro": [
+            "A new PC comes as four things: the tower, a monitor, a keyboard and a mouse.",
+            "Lift each one out of the box and put it on its marked spot on the desk."
+          ],
+          "success": [
+            "Unboxed! The tower does the computing, the monitor shows the output, and the keyboard and mouse are how you give it input."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "parts": {
+            "Tower": {
+              "type": "tower",
+              "name": "PC tower"
+            },
+            "Monitor": {
+              "type": "monitor",
+              "name": "monitor"
+            },
+            "Keyboard": {
+              "type": "keyboard",
+              "name": "keyboard"
+            },
+            "Mouse": {
+              "type": "mouse",
+              "name": "mouse"
+            }
+          },
+          "slots": {
+            "Desk/TowerSpot": {
+              "accepts": "tower",
+              "name": "tower spot",
+              "hint": "This spot is for the tower, the big case the other parts plug into.",
+              "role": "The tower is the computer itself: the processor, memory and storage are inside it."
+            },
+            "Desk/MonitorSpot": {
+              "accepts": "monitor",
+              "name": "monitor spot",
+              "hint": "This spot is for the monitor, the screen you look at.",
+              "role": "The monitor is an output device: it shows you what the computer is doing."
+            },
+            "Desk/KeyboardSpot": {
+              "accepts": "keyboard",
+              "name": "keyboard spot",
+              "hint": "This spot is for the keyboard, the one you type on.",
+              "role": "The keyboard is an input device: it sends what you type into the computer."
+            },
+            "Desk/MouseSpot": {
+              "accepts": "mouse",
+              "name": "mouse spot",
+              "hint": "This spot is for the mouse, the one you point and click with.",
+              "role": "The mouse is an input device: it sends your moves and clicks into the computer."
+            }
+          }
+        },
+        {
+          "id": "connect_peripherals",
+          "title": "Connect the monitor, keyboard and mouse",
+          "description": "Run an HDMI cable from the PC to the monitor, and plug the keyboard and mouse into USB ports.",
+          "topic": "Ports and cables",
+          "difficulty": "Beginner",
+          "scene": "res://scenes/setup_pc/connect_peripherals.tscn",
+          "intro": [
+            "The tower is turned round so you can reach the ports on its back.",
+            "Plug the HDMI cable into the tower and the monitor, then plug the keyboard and the mouse into the USB ports."
+          ],
+          "success": [
+            "Connected! HDMI carries the picture out to the monitor, and USB brings your typing and clicks in."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "parts": {
+            "HdmiCable/EndA": {
+              "type": "hdmi",
+              "name": "HDMI plug"
+            },
+            "HdmiCable/EndB": {
+              "type": "hdmi",
+              "name": "HDMI plug"
+            },
+            "KeyboardCable/EndB": {
+              "type": "usb",
+              "name": "keyboard plug"
+            },
+            "MouseCable/EndB": {
+              "type": "usb",
+              "name": "mouse plug"
+            }
+          },
+          "slots": {
+            "Tower/GpuHdmi": {
+              "accepts": "hdmi",
+              "name": "graphics card HDMI port",
+              "hint": "The picture comes from the graphics card's port, the one lower down on the back.",
+              "role": "The graphics card makes the picture and sends it out through this port."
+            },
+            "Monitor/HdmiIn": {
+              "accepts": "hdmi",
+              "name": "monitor HDMI port",
+              "hint": "The monitor's HDMI port takes the picture that comes from the computer.",
+              "role": "The picture comes into the monitor here, so the monitor is an output device."
+            },
+            "Tower/Usb1": {
+              "accepts": "usb",
+              "name": "first USB port",
+              "hint": "Keyboard and mouse are input devices: they send information into the computer.",
+              "role": "USB carries input into the computer: every key press and click goes down this cable."
+            },
+            "Tower/Usb2": {
+              "accepts": "usb",
+              "name": "second USB port",
+              "hint": "Keyboard and mouse are input devices: they send information into the computer.",
+              "role": "USB carries input into the computer: every key press and click goes down this cable."
+            }
+          }
+        }
+      ]
     }
   ]
 }

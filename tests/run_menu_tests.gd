@@ -248,7 +248,9 @@ func _test_free_play_lists_tasks() -> void:
 	check("Free Play opens on the Computer tab", menu.page == "free_play", menu.page)
 	var manager := root.get_node("TrainingManager")
 	var tasks: Array = manager.registry.missions_in("computer")
-	check("there are 6 Computer tasks in the registry", tasks.size() == 6, tasks.size())
+	check("the registry's Computer tasks start with the six Build a Computer ones",
+		tasks.size() >= 6 and tasks[0].full_id == "build_computer.install_ram" and tasks[5].full_id == "build_computer.diagnose_failure",
+		tasks.size())
 	var missing := []
 	for task in tasks:
 		if menu.find_button("Task_" + task.full_id.replace(".", "_")) == null:

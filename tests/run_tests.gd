@@ -122,8 +122,8 @@ func _place(scene: Node3D, part_name: String, to: Vector3) -> void:
 func _test_registry_loads() -> void:
 	var registry = ModuleRegistry.load_from()
 	check("data/modules.json loads with no problems", registry.errors.is_empty(), "; ".join(registry.errors))
-	check("it lists the six Build a Computer missions in order",
-		registry.modules.size() == 1 and registry.modules[0].mission_ids == ["build_computer.install_ram",
+	check("it lists the six Build a Computer missions first, in order",
+		registry.modules[0].mission_ids == ["build_computer.install_ram",
 			"build_computer.identify_components", "build_computer.assemble_system", "build_computer.execute_task",
 			"build_computer.add_capacity", "build_computer.diagnose_failure"],
 		str(registry.modules))
