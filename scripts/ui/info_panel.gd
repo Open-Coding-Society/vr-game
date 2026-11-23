@@ -10,6 +10,9 @@ extends Node3D
 @export var size := Vector2(0.6, 0.32)
 ## Pixels per meter for the text texture; higher is sharper and costs more.
 @export var pixels_per_meter := 2000
+## The text size of the lines under the title (pixels in the text texture).
+## A mission with a long checklist can use a smaller size to fit more lines.
+@export var body_size := 40
 
 ## The title's text size, and the smallest a long title is shrunk to so that
 ## it still fits on one line (pixels in the text texture).
@@ -60,7 +63,7 @@ func _ready() -> void:
 	column.add_child(_title_label)
 
 	_body_label = Label.new()
-	_body_label.add_theme_font_size_override("font_size", 40)
+	_body_label.add_theme_font_size_override("font_size", body_size)
 	_body_label.add_theme_color_override("font_color", Color(0.88, 0.9, 0.95))
 	_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_body_label.size_flags_vertical = Control.SIZE_EXPAND_FILL

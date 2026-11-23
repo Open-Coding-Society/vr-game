@@ -67,7 +67,7 @@ func _tests() -> Array:
 		_test_rules_by_name, _test_matching_builds_pass, _test_balanced_builds,
 		_test_shelf_parts_load_their_specs, _test_shelf_layout, _test_part_variants,
 		_test_bonus_points, _test_swappable_zone, _test_zone_compat_rule, _test_registry_checks_slot_rules,
-		_test_registry_catalog_parts]
+		_test_registry_catalog_parts, _test_panel_body_size]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -927,3 +927,20 @@ func _test_registry_catalog_parts() -> void:
 		errors.size() == 1 and "setup_pc.power_on.catalog_parts: must be true or false" in errors[0], "; ".join(errors))
 	check("a mission says whether it uses the catalog",
 		ModuleRegistry.load_from().mission("setup_pc.power_on").catalog_parts == false)
+
+
+func _test_panel_body_size() -> void:
+	var holder := Node3D.new()
+	var small := Node3D.new()
+	small.set_script(preload("res://scripts/ui/info_panel.gd"))
+	small.name = "Small"
+	small.body_size = 30
+	holder.add_child(small)
+	var usual := Node3D.new()
+	usual.set_script(preload("res://scripts/ui/info_panel.gd"))
+	usual.name = "Usual"
+	holder.add_child(usual)
+	await _fresh(holder)
+	check("a panel draws its lines at the size it is given, 40 unless told otherwise",
+		small._body_label.get_theme_font_size("font_size") == 30 and usual._body_label.get_theme_font_size("font_size") == 40,
+		"%s %s" % [small._body_label.get_theme_font_size("font_size"), usual._body_label.get_theme_font_size("font_size")])
