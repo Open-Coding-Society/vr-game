@@ -76,7 +76,8 @@ func _tests() -> Array:
 		_test_build_results_card, _test_big_parts_are_grabbed_by_the_middle,
 		_test_build_is_frozen_once_it_boots, _test_finished_mission_takes_no_more_parts,
 		_test_swap_empties_the_whole_chain, _test_cable_keeps_its_plugs_when_it_comes_back,
-		_test_mistyped_variant_is_a_mission_problem, _test_monitor_text_is_in_the_registry]
+		_test_mistyped_variant_is_a_mission_problem, _test_monitor_text_is_in_the_registry,
+		_test_build_near_misses_on_the_board]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -1361,3 +1362,23 @@ func _test_monitor_text_is_in_the_registry() -> void:
 	manager.use_registry(ModuleRegistry.load_from())
 	var power := await _fresh(PowerOn.instantiate())
 	check("a mission with no monitor text leaves the screen off", not power.get_node("Monitor/MonitorScreen").is_on)
+
+
+func _test_build_near_misses_on_the_board() -> void:
+	var mission := await _build_mission()
+	await _fit(mission, "board", "mid")
+	var socket: SnapZone = mission.get_node("Case/CpuSocket")
+	var slots: SnapZone = mission.get_node("Case/RamSlots")
+	# The corner of the board nearest the CPU's spot, well off the socket itself.
+	var off_the_socket: Vector3 = socket.snap_transform().origin + Vector3(-0.035, 0.0, -0.03)
+	await _drag(mission, "Shelf/Mid/Cpu", off_the_socket)
+	check("a CPU let go on its part of the board, off the socket, still goes into the socket with no mistake",
+		_build_part(mission, "cpu", "mid").is_installed and socket.is_filled() and manager.mistakes == 0, manager.mistakes)
+	await _drag(mission, "Shelf/High/Cpu", slots.snap_transform().origin + Vector3(0.03, 0.0, 0.0))
+	check("a CPU on the memory side of the board is told what that side is for",
+		manager.mistakes == 1 and "The AMD Ryzen 9 9950X doesn't go there. The long slots take memory (RAM)" in mission.panel.text(),
+		mission.panel.text())
+	var tray: SnapZone = mission.get_node("Case/BoardTray")
+	await _drag(mission, "Shelf/Mid/Ram", tray.global_position + Vector3(0.0, 0.0, 0.105))
+	check("a part on the board's name strip is told every part has its own place",
+		manager.mistakes == 2 and "This tray holds the motherboard. Every other part has its own place" in mission.panel.text(), mission.panel.text())

@@ -37,21 +37,21 @@ material = SubResource("Mat_6")
 size = Vector3(0.25, 0.001, 0.25)
 
 [sub_resource type="BoxShape3D" id="Shape_8"]
-size = Vector3(0.07, 0.12, 0.07)
+size = Vector3(0.102, 0.12, 0.087)
 
 [sub_resource type="BoxMesh" id="Mesh_9"]
 material = SubResource("Mat_6")
 size = Vector3(0.07, 0.001, 0.07)
 
 [sub_resource type="BoxShape3D" id="Shape_10"]
-size = Vector3(0.14, 0.12, 0.05)
+size = Vector3(0.142, 0.12, 0.087)
 
 [sub_resource type="BoxMesh" id="Mesh_11"]
 material = SubResource("Mat_6")
 size = Vector3(0.14, 0.001, 0.05)
 
 [sub_resource type="BoxShape3D" id="Shape_12"]
-size = Vector3(0.21, 0.12, 0.105)
+size = Vector3(0.244, 0.12, 0.11)
 
 [sub_resource type="BoxMesh" id="Mesh_13"]
 material = SubResource("Mat_6")
@@ -195,7 +195,7 @@ font_size = 44
 outline_size = 8
 
 [node name="CpuSocket" type="Area3D" parent="Case"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.175, 0, -0.075)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.176, 0, -0.0785)
 script = ExtResource("5_snap_zone")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Case/CpuSocket"]
@@ -203,21 +203,21 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
 shape = SubResource("Shape_8")
 
 [node name="SnapPoint" type="Marker3D" parent="Case/CpuSocket"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.001, 0.01, 0.0035)
 
 [node name="Mesh" type="MeshInstance3D" parent="Case/CpuSocket"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0046, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.001, 0.0046, 0.0035)
 mesh = SubResource("Mesh_9")
 
 [node name="Label" type="Label3D" parent="Case/CpuSocket"]
-transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.0055, 0)
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0.001, 0.0055, 0.0035)
 pixel_size = 0.0004
 text = "CPU"
 font_size = 40
 outline_size = 8
 
 [node name="RamSlots" type="Area3D" parent="Case"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.06, 0, -0.09)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.054, 0, -0.0785)
 script = ExtResource("5_snap_zone")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Case/RamSlots"]
@@ -225,14 +225,14 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
 shape = SubResource("Shape_10")
 
 [node name="SnapPoint" type="Marker3D" parent="Case/RamSlots"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.006, 0.01, -0.0115)
 
 [node name="Mesh" type="MeshInstance3D" parent="Case/RamSlots"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0046, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.006, 0.0046, -0.0115)
 mesh = SubResource("Mesh_11")
 
 [node name="Label" type="Label3D" parent="Case/RamSlots"]
-transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.0055, 0)
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -0.006, 0.0055, -0.0115)
 pixel_size = 0.0004
 text = "Memory"
 font_size = 40

@@ -384,7 +384,7 @@
               "accepts": "motherboard",
               "swappable": true,
               "name": "motherboard tray",
-              "hint": "The motherboard goes in first: every other part plugs into it.",
+              "hint": "This tray holds the motherboard. Every other part has its own place on the board or beside it.",
               "role": "The motherboard joins every part together. Its socket and slots decide what fits."
             },
             "Case/CpuSocket": {
