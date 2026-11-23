@@ -13,6 +13,18 @@ const ON_DROP := ["cpu_socket", "ram_type", "storage_slot"]
 ## Rules for switching the PC on. "power" runs both, in this order.
 const ON_POWER := ["gpu_plug", "enough_power"]
 const RULES := ["cpu_socket", "ram_type", "storage_slot", "gpu_plug", "enough_power", "power"]
+## What each rule needs to do its job, so the registry can tell when a rule is
+## on the wrong slot: the type of part it judges ("" for any, e.g. the finger
+## on the power button), and the types it compares against, which must be in
+## the slots the rule's slot requires.
+const NEEDS := {
+	"cpu_socket": {"part": "cpu", "others": ["motherboard"]},
+	"ram_type": {"part": "ram", "others": ["motherboard"]},
+	"storage_slot": {"part": "storage", "others": ["motherboard"]},
+	"gpu_plug": {"part": "", "others": ["gpu", "psu"]},
+	"enough_power": {"part": "", "others": ["cpu", "gpu", "psu"]},
+	"power": {"part": "", "others": ["cpu", "gpu", "psu"]},
+}
 
 ## What the rest of the PC draws on top of the CPU and the graphics card
 ## (watts), and how much bigger than the total a power supply should be.
@@ -33,11 +45,11 @@ const PLUG_NAMES := {"pcie8": "8-pin PCIe", "12v2x6": "12V-2x6"}
 static func check(rule: String, part: Dictionary, others: Array) -> String:
 	match rule:
 		"cpu_socket":
-			return cpu_socket(part, of_type(others, "motherboard"))
+			return cpu_socket(_pick(part, others, "cpu"), of_type(others, "motherboard"))
 		"ram_type":
-			return ram_type(part, of_type(others, "motherboard"))
+			return ram_type(_pick(part, others, "ram"), of_type(others, "motherboard"))
 		"storage_slot":
-			return storage_slot(part, of_type(others, "motherboard"))
+			return storage_slot(_pick(part, others, "storage"), of_type(others, "motherboard"))
 		"gpu_plug":
 			return gpu_plug(_pick(part, others, "gpu"), _pick(part, others, "psu"))
 		"enough_power":

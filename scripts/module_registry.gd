@@ -216,6 +216,8 @@ func _read_slot_options(full_id: String, slots: Dictionary) -> void:
 				errors.append('%s: slot "%s" %s must be true or false' % [full_id, path, flag])
 		if slot.has("compat") and not slot.compat in Compatibility.RULES:
 			errors.append('%s: slot "%s" compat must be one of %s' % [full_id, path, ", ".join(Compatibility.RULES)])
+		elif slot.has("compat"):
+			_read_compat(full_id, slots, path)
 		var needs = slot.get("requires", [])
 		if typeof(needs) != TYPE_ARRAY:
 			errors.append('%s: slot "%s" requires must be a list of slot paths' % [full_id, path])
@@ -227,6 +229,24 @@ func _read_slot_options(full_id: String, slots: Dictionary) -> void:
 	for path in slots:
 		if _requires_loop(slots, path, path, {}):
 			errors.append('%s: slot "%s" is in a requires loop' % [full_id, path])
+
+
+## A compat rule has to be on a slot it can judge: one that takes the rule's
+## kind of part, and that requires the slots holding what the rule compares
+## it with. Otherwise the rule would pass everything without a word.
+func _read_compat(full_id: String, slots: Dictionary, path: String) -> void:
+	var slot: Dictionary = slots[path]
+	var needs: Dictionary = Compatibility.NEEDS[slot.compat]
+	if needs.part != "" and slot.get("accepts") != needs.part:
+		errors.append('%s: slot "%s" compat %s is for a slot that accepts %s' % [full_id, path, slot.compat, needs.part])
+	var required := []
+	var listed = slot.get("requires", [])
+	for need in listed if typeof(listed) == TYPE_ARRAY else []:
+		if slots.has(need) and typeof(slots[need]) == TYPE_DICTIONARY:
+			required.append(slots[need].get("accepts"))
+	for type in needs.others:
+		if slot.get("accepts") != type and not required.has(type):
+			errors.append('%s: slot "%s" compat %s needs a slot that accepts %s in its requires' % [full_id, path, slot.compat, type])
 
 
 ## True when following `requires` from `at` leads back to `start`.

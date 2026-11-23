@@ -422,6 +422,18 @@ func _bad_power_on(mutate: Callable) -> PackedStringArray:
 	return registry.errors
 
 
+## The registry's errors after `mutate` has changed the Build your own PC mission.
+func _bad_build(mutate: Callable) -> PackedStringArray:
+	var data = JSON.parse_string(FileAccess.get_file_as_string("res://data/modules.json"))
+	for module in data.modules:
+		for m in module.missions:
+			if m.id == "build_your_own":
+				mutate.call(m)
+	var registry = ModuleRegistry.new()
+	registry.read(data)
+	return registry.errors
+
+
 func _test_registry_checks_on_complete() -> void:
 	var power: Dictionary = ModuleRegistry.load_from().mission("setup_pc.power_on")
 	check("the power mission asks for a boot, with its lines in the registry",
@@ -915,10 +927,22 @@ func _test_registry_checks_slot_rules() -> void:
 	errors = _bad_power_on(func(m): m.slots["Tower/PowerIn"].swappable = "yes")
 	check("swappable must be true or false",
 		errors.size() == 1 and 'slot "Tower/PowerIn" swappable must be true or false' in errors[0], "; ".join(errors))
-	errors = _bad_power_on(func(m):
-		m.slots["Tower/PowerIn"].compat = "power"
-		m.slots["Tower/PowerIn"].swappable = true)
-	check("a known rule and a true or false swappable are fine", errors.is_empty(), "; ".join(errors))
+	errors = _bad_power_on(func(m): m.slots["Tower/PowerIn"].swappable = true)
+	check("a true or false swappable is fine", errors.is_empty(), "; ".join(errors))
+	check("the build mission's own rules are all on slots that fit them", ModuleRegistry.load_from().errors.is_empty())
+	errors = _bad_build(func(m): m.slots["Case/RamSlots"].compat = "cpu_socket")
+	check("a rule on a slot for another kind of part is caught",
+		errors.size() == 1 and 'slot "Case/RamSlots" compat cpu_socket is for a slot that accepts cpu' in errors[0], "; ".join(errors))
+	errors = _bad_build(func(m): m.slots["Case/CpuSocket"].requires = [])
+	check("a rule whose slot doesn't require the part it compares with is caught",
+		errors.size() == 1 and 'slot "Case/CpuSocket" compat cpu_socket needs a slot that accepts motherboard in its requires' in errors[0],
+		"; ".join(errors))
+	errors = _bad_build(func(m): m.slots["Case/PowerButton"].requires = ["Case/BoardTray", "Case/CpuSocket", "Case/GpuSlot"])
+	check("the power rule needs the power supply's slot too",
+		errors.size() == 1 and 'slot "Case/PowerButton" compat power needs a slot that accepts psu' in errors[0], "; ".join(errors))
+	var ram: Dictionary = PartsCatalog.shared().spec("ram_mid")
+	check("a rule handed a part of another kind passes it rather than failing on a spec it doesn't have",
+		Compatibility.check("cpu_socket", ram, [PartsCatalog.shared().spec("board_starter")]) == "")
 
 
 func _test_registry_catalog_parts() -> void:
