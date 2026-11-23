@@ -3,6 +3,27 @@ extends "res://scripts/missions/mission.gd"
 ## does. What fits where is still data: the slots' `compat` rules are in
 ## data/modules.json and the parts' specs in data/parts_catalog.json.
 
+const Compatibility := preload("res://scripts/parts/compatibility.gd")
+
+
+## The specs of the parts now in the case, in checklist order.
+func build_specs() -> Array:
+	var specs := []
+	for zone in goals:
+		for part in zone.installed_parts:
+			if not part.spec.is_empty():
+				specs.append(part.spec)
+	return specs
+
+
+## The PC started (the finger went onto the power button, so the power rules
+## passed). A balanced build, with no part more than one tier from another,
+## earns the registry's scoring.balanced_bonus before the mission is scored.
+func _on_snapped(zone: SnapZone, part: GrabbablePart) -> void:
+	if manager.state == manager.State.ACTIVE and zone.compat == &"power" and Compatibility.is_balanced(build_specs()):
+		manager.add_bonus(config.scoring.balanced_bonus)
+	super._on_snapped(zone, part)
+
 
 ## A press of the power button that fails a power rule: the reason goes on
 ## the monitor too, as a PC that won't start would show it.

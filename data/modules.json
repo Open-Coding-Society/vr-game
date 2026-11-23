@@ -361,8 +361,9 @@
             "It boots! Every part in this PC works with the others."
           ],
           "scoring": {
-            "full": 100,
-            "per_mistake": 10
+            "full": 90,
+            "per_mistake": 10,
+            "balanced_bonus": 10
           },
           "catalog_parts": true,
           "on_complete": "boot",

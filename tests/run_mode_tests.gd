@@ -72,7 +72,7 @@ func _tests() -> Array:
 		_test_registry_catalog_parts, _test_panel_body_size, _test_long_lists_are_cut_short,
 		_test_monitor_screen_message, _test_build_scene, _test_build_board_goes_first,
 		_test_build_matching_tiers_boot, _test_build_parts_that_do_not_fit, _test_build_power_rules,
-		_test_build_swapping_the_board, _test_build_monitor_says_why]
+		_test_build_swapping_the_board, _test_build_monitor_says_why, _test_build_balanced_bonus]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -1137,3 +1137,34 @@ func _test_build_monitor_says_why() -> void:
 	await _fit(mission, "psu", "high")
 	await _press_power(mission)
 	check("once it starts, the desktop replaces the message", manager.state == manager.State.SUCCESS and screen.text() == "Desktop ready\n", screen.text())
+
+
+func _test_build_balanced_bonus() -> void:
+	var scoring: Dictionary = ModuleRegistry.load_from().mission("build_computer.build_your_own").scoring
+	check("the registry scores a working build at 90, with 10 more for a balanced one",
+		scoring.full == 90 and scoring.per_mistake == 10 and scoring.balanced_bonus == 10, str(scoring))
+	check("missions with no bonus have a bonus of zero", ModuleRegistry.load_from().mission("setup_pc.unbox").scoring.balanced_bonus == 0)
+	var errors := _bad_power_on(func(m): m.scoring.balanced_bonus = 2.5)
+	check("a bonus that isn't a whole number is caught",
+		errors.size() == 1 and "setup_pc.power_on.scoring.balanced_bonus: must be a whole number" in errors[0], "; ".join(errors))
+	var mission := await _build_mission()
+	await _fit_all(mission, "mid")
+	check("nothing is added before the PC starts", manager.bonus == 0 and manager.score == 90, manager.score)
+	await _press_power(mission)
+	check("a build from one tier is balanced: 90 plus the bonus is 100",
+		manager.state == manager.State.SUCCESS and manager.bonus == 10 and manager.score == 100, "%s %s" % [manager.bonus, manager.score])
+	mission = await _build_mission()
+	await _fit_all(mission, "mid", {"cpu": "high", "ram": "high", "psu": "high"})
+	await _press_power(mission)
+	check("mixing neighbouring tiers is still balanced", manager.state == manager.State.SUCCESS and manager.score == 100, manager.score)
+	mission = await _build_mission()
+	await _fit_all(mission, "mid", {"storage": "starter", "psu": "high"})
+	await _press_power(mission)
+	check("a starter part beside a high-end one works but earns no bonus: 90",
+		manager.state == manager.State.SUCCESS and manager.bonus == 0 and manager.score == 90, "%s %s" % [manager.bonus, manager.score])
+	mission = await _build_mission()
+	await _fit(mission, "cpu", "starter")
+	await _fit_all(mission, "starter")
+	await _press_power(mission)
+	check("a mistake on the way still costs its points: a balanced build after one mistake is 90",
+		manager.state == manager.State.SUCCESS and manager.mistakes == 1 and manager.score == 90, "%s %s" % [manager.mistakes, manager.score])

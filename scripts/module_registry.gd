@@ -116,6 +116,9 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 	if typeof(scoring) != TYPE_DICTIONARY or not _is_whole(scoring.get("full"), 1, 1000) \
 			or not _is_whole(scoring.get("per_mistake"), 0, 1000):
 		errors.append("%s.scoring: needs whole numbers full (1-1000) and per_mistake (0-1000)" % full_id)
+	# Optional: extra points for a balanced build (Build your own PC).
+	elif scoring.has("balanced_bonus") and not _is_whole(scoring.balanced_bonus, 0, 1000):
+		errors.append("%s.scoring.balanced_bonus: must be a whole number from 0 to 1000" % full_id)
 	var types := _read_parts(full_id, m.get("parts"))
 	# With catalog_parts, the scene also has parts that take their type from
 	# data/parts_catalog.json (a `variant`), so slots can accept those types.
@@ -137,7 +140,8 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 	copy.difficulty = str(m.get("difficulty", ""))
 	copy.practice = bool(m.get("practice", false))
 	copy.catalog_parts = bool(m.get("catalog_parts", false))
-	copy.scoring = {"full": int(scoring.full), "per_mistake": int(scoring.per_mistake)}
+	copy.scoring = {"full": int(scoring.full), "per_mistake": int(scoring.per_mistake),
+		"balanced_bonus": int(scoring.get("balanced_bonus", 0))}
 	missions[full_id] = copy
 	return full_id
 
