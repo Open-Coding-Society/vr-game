@@ -75,7 +75,8 @@ func _tests() -> Array:
 		_test_build_swapping_the_board, _test_build_monitor_says_why, _test_build_balanced_bonus,
 		_test_build_results_card, _test_big_parts_are_grabbed_by_the_middle,
 		_test_build_is_frozen_once_it_boots, _test_finished_mission_takes_no_more_parts,
-		_test_swap_empties_the_whole_chain, _test_cable_keeps_its_plugs_when_it_comes_back]
+		_test_swap_empties_the_whole_chain, _test_cable_keeps_its_plugs_when_it_comes_back,
+		_test_mistyped_variant_is_a_mission_problem]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -1325,3 +1326,13 @@ func _test_cable_keeps_its_plugs_when_it_comes_back() -> void:
 	await _settle()
 	check("a cable taken out of the scene and put back keeps its plug in the port",
 		plug.is_installed and plug.global_position.is_equal_approx(port.snap_transform().origin), plug.global_position)
+
+
+func _test_mistyped_variant_is_a_mission_problem() -> void:
+	# The part's variant has to be wrong before the scene loads, as a typo in the
+	# scene file would be.
+	var mission: Node3D = BuildYourOwn.instantiate()
+	mission.get_node("Shelf/Mid/Cpu").variant = "cpu_mdi"
+	await _fresh(mission)
+	check("a part whose variant isn't in the catalog is reported when the mission loads, naming the part",
+		mission.problems.size() == 1 and 'part "Shelf/Mid/Cpu" has the variant "cpu_mdi"' in mission.problems[0], "; ".join(mission.problems))

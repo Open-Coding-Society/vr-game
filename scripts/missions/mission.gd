@@ -102,6 +102,8 @@ func _apply_registry() -> void:
 	for node in find_children("*", "Node3D", true, false):
 		if node is GrabbablePart and not parts.has(node) and config.catalog_parts and node.variant != "":
 			parts.append(node)
+			if node.spec.is_empty():
+				_problem('part "%s" has the variant "%s", which isn\'t in data/parts_catalog.json' % [get_path_to(node), node.variant])
 		elif (node is SnapZone and not zones.has(node)) or (node is GrabbablePart and not parts.has(node)):
 			_problem('"%s" is in the scene but not in the registry' % get_path_to(node))
 
