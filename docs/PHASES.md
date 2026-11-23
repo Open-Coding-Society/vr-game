@@ -8,7 +8,7 @@ The team builds the game **one person at a time**, in this order (the build orde
 |---|---|---|---|
 | 0 | Aryan | Play in the Quest headset: VR grabber, XR rig, OpenXR, Quest plugin and export | Done (in this branch); the Quest playtest is still open |
 | **1** | **Aryan** | **Home menu with a placeholder OCS login, plus the menu system the next phases build on: save system, mode picker, Free Play list, Story roadmap shell** | **This branch (`phase-1-menus`)** |
-| 2 | Chetan | Two game modes, with placeholder models | Next |
+| 2 | Chetan | Two game modes, with placeholder models: Story IRL Act 1 "Set up a pre-built PC" and Free Play "Build your own PC" | Built on `phase-2-modes`; waiting for review and merge |
 | 3 | Kashyap | One more mode | Waiting |
 | 4 | Ryden | Assigned later | Waiting |
 | 5 | Aaditya | Finish the game | Waiting |
@@ -36,6 +36,27 @@ The team builds the game **one person at a time**, in this order (the build orde
 | 6 | Free Play: Computer and Cloud tabs and scrollable task cards from `data/modules.json` (title, description, topic, difficulty, ✔ and best score). Start any task; it returns to Free Play when done. | `run_menu_tests.gd`, `run_tests.gd` |
 | 7 | Story Mode shell: pick the IRL or Cloud chapter, then a roadmap of acts and tasks from `data/story.json` (done, next, locked). Existing missions are playable from it; the rest are marked planned. | `run_menu_tests.gd` |
 | 8 | `docs/IMAGES_NEEDED.md`: every menu image with its size and a short description. Placeholders show until the real images are added. | n/a |
+
+## Phase 2 steps
+
+From `OCSVR_Phase2_Plan.md` in the team Drive. New checks are in `tests/run_mode_tests.gd` unless another file is named.
+
+| # | Step | Checked by |
+|---|---|---|
+| 1 | Two-ended cables: `scenes/parts/cable.tscn` and `scripts/parts/cable.gd` | A plug fits a port of its type only; `requires` sets the order |
+| 2 | "Set up a pre-built PC" missions 1 and 2: unbox the PC, connect the monitor, keyboard and mouse | Full runs through the mouse; wrong spots and wrong ports are turned away |
+| 3 | Missions 3 and 4: plug in power and watch it boot (`monitor_screen.gd`, `on_complete` and `boot_lines` in the registry), connect to the network (`link_light.gd`) | The wall socket is blocked until both devices have their cable; the boot lines play in order; the link light needs both ends |
+| 4 | Story IRL Act 1 plays the four missions | `run_menu_tests.gd`: the act's tasks unlock in order |
+| 5 | `data/parts_catalog.json` and `scripts/parts/compatibility.gd` | Every rule passes and fails with its message, with no scene |
+| 6 | `scenes/build_pc/parts_shelf.tscn` and `variant` on `GrabbablePart` | Each shelf part loads its specs, label and tier colour |
+| 7 | "Build your own PC": the scene, `compat` and `swappable` slots, the power button, the balanced bonus and the results card | Matching builds boot; each mismatch shows its message; parts can be swapped |
+| 8 | Free Play and Story Act 3 play it | `run_menu_tests.gd`: the card is listed and launches; `tools/e2e_menu_flow.gd` plays both modes |
+
+Where Phase 2 differs from its plan:
+- **Score:** Build your own PC gives 90 for a PC that works and 10 more for a balanced build, so the top score is 100. The plan said "+10" on top of 100, but the score API accepts 0 to 100.
+- **Memory:** the catalog's RAM entries are kits of two sticks, so one kit fills the memory slots.
+- **Link light:** it comes on when both ends of the network cable are in, not the router end alone.
+- **Wall socket:** it is a power strip on the desk, since the room's wall is out of reach.
 
 ## Rules (from the build plan)
 
