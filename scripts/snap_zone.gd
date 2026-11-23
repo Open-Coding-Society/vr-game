@@ -17,6 +17,8 @@ extends Area3D
 ##   several, side by side, `stack_spacing` apart along the SnapPoint's x axis).
 ## - `working`: a part that isn't broken (Diagnose a failure). It never takes a
 ##   part; anything dropped on it is turned away with its hint.
+## - `swappable`: a full zone still takes a part of its type. The part that was
+##   in it goes back home, so the player can change their mind (`swapped`).
 ##
 ## A child named "Replaced" (e.g. the old, faulty part's mesh) is hidden once
 ## the zone is full, so the new part doesn't sit on top of the old one.
@@ -29,6 +31,8 @@ signal snapped(zone, part)
 signal rejected(zone, part)
 ## A part of the right type came too early (a prerequisite isn't filled yet).
 signal blocked(zone, part)
+## A swappable zone gave up `old_part` for a new one. Emitted before `snapped`.
+signal swapped(zone, old_part)
 
 ## The part type this zone takes, e.g. &"ram". Matches GrabbablePart.part_type.
 @export var accepts: StringName = &"ram"
@@ -47,6 +51,8 @@ signal blocked(zone, part)
 @export var stack_spacing := 0.05
 ## See above: a part that works; nothing is installed here.
 @export var working := false
+## See above: a full zone swaps its part for a new one of the same type.
+@export var swappable := false
 
 ## Zones that must be filled before this one takes its part.
 var prerequisites: Array[Area3D] = []
@@ -74,7 +80,7 @@ func snap_transform() -> Transform3D:
 
 ## True when this zone would install the part right now.
 func can_take(part: GrabbablePart) -> bool:
-	return not working and not is_filled() and part.part_type == accepts and is_unlocked()
+	return not working and (not is_filled() or swappable) and part.part_type == accepts and is_unlocked()
 
 
 ## True once every prerequisite zone is filled.
@@ -96,6 +102,12 @@ func judge(part: GrabbablePart) -> void:
 	if working:
 		rejected.emit(self, part)
 	elif can_take(part):
+		if is_filled():
+			# Swappable: the newest part makes room for this one.
+			var old: GrabbablePart = installed_parts.pop_back()
+			installed_part = installed_parts.back() if not installed_parts.is_empty() else null
+			old.uninstall()
+			swapped.emit(self, old)
 		var at := snap_transform() * Transform3D(Basis(), Vector3(stack_spacing * installed_parts.size(), 0, 0))
 		installed_parts.append(part)
 		installed_part = part
@@ -110,6 +122,18 @@ func judge(part: GrabbablePart) -> void:
 		rejected.emit(self, part)
 	elif not is_filled():
 		blocked.emit(self, part)
+
+
+## Sends every installed part back home and leaves the zone empty, e.g. when
+## the part they were plugged into has been taken out.
+func eject_all() -> void:
+	var leaving := installed_parts.duplicate()
+	installed_parts.clear()
+	installed_part = null
+	for part in leaving:
+		part.uninstall()
+	if has_node("Replaced"):
+		get_node("Replaced").visible = true
 
 
 func _on_body_entered(body: Node) -> void:

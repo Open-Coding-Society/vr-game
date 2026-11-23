@@ -129,3 +129,10 @@ func install(zone: Node3D, at: Transform3D) -> void:
 	global_transform = at
 	is_installed = true
 	installed.emit(self, zone)
+
+
+## Called by a SnapZone that gives the part up (it was swapped for another):
+## the part is free again and goes back where it came from.
+func uninstall() -> void:
+	is_installed = false
+	return_home()

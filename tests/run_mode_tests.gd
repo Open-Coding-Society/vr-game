@@ -66,7 +66,7 @@ func _tests() -> Array:
 		_test_rule_ram_type, _test_rule_storage_slot, _test_rule_gpu_plug, _test_rule_enough_power,
 		_test_rules_by_name, _test_matching_builds_pass, _test_balanced_builds,
 		_test_shelf_parts_load_their_specs, _test_shelf_layout, _test_part_variants,
-		_test_bonus_points]
+		_test_bonus_points, _test_swappable_zone]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -809,3 +809,55 @@ func _test_bonus_points() -> void:
 	check("and a later mistake doesn't lose it", manager.score == 85 and manager.mistakes == 2, manager.score)
 	manager.begin("setup_pc.unbox")
 	check("the next mission starts with no bonus", manager.bonus == 0 and manager.score == 100, manager.score)
+
+
+## A loose part made in code, of `type`, at `at`.
+func _loose_part(parent: Node3D, part_name: String, type: String, at: Vector3) -> GrabbablePart:
+	var part := RigidBody3D.new()
+	part.set_script(GrabbablePart)
+	part.name = part_name
+	part.position = at
+	part.part_type = StringName(type)
+	part.display_name = part_name
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(0.04, 0.04, 0.04)
+	shape.shape = box
+	part.add_child(shape)
+	parent.add_child(part)
+	return part
+
+
+func _test_swappable_zone() -> void:
+	var bench := Node3D.new()
+	bench.name = "Bench"
+	var bay := _port(bench, "PsuBay", "psu", Vector3(0.0, 0.0, -0.3))
+	var first := _loose_part(bench, "First", "psu", Vector3(-0.3, 0.0, 0.2))
+	var second := _loose_part(bench, "Second", "psu", Vector3(0.0, 0.0, 0.2))
+	var gpu := _loose_part(bench, "Card", "gpu", Vector3(0.3, 0.0, 0.2))
+	await _fresh(bench)
+	await _carry_and_drop(first, bay.global_position)
+	await _carry_and_drop(second, bay.global_position)
+	check("a full slot that isn't swappable leaves a second part of its type out",
+		first.is_installed and not second.is_installed and bay.installed_part == first)
+	bay.swappable = true
+	var given_up := []
+	var order := []
+	bay.swapped.connect(func(_zone, old) -> void:
+		given_up.append(old)
+		order.append("swapped"))
+	bay.snapped.connect(func(_zone, _part) -> void: order.append("snapped"))
+	await _carry_and_drop(second, bay.global_position)
+	check("a swappable slot takes the new part and sends the old one back to where it came from",
+		second.is_installed and bay.installed_part == second and bay.installed_parts == [second] and given_up == [first]
+			and not first.is_installed and first.global_position.is_equal_approx(first.home_transform.origin), first.global_position)
+	check("the swap is announced before the new part's install", order == ["swapped", "snapped"], str(order))
+	check("the part that came out can be picked up again", first.can_grab())
+	var turned_away := [0]
+	bay.rejected.connect(func(_zone, _part) -> void: turned_away[0] += 1)
+	await _carry_and_drop(gpu, bay.global_position)
+	check("a swappable slot still turns away a part of the wrong type", turned_away[0] == 1 and not gpu.is_installed and bay.installed_part == second)
+	bay.eject_all()
+	check("emptying a slot sends its part home and leaves it ready for another",
+		not bay.is_filled() and bay.installed_part == null and not second.is_installed
+			and second.global_position.is_equal_approx(second.home_transform.origin))
