@@ -19,11 +19,16 @@ extends Area3D
 ##   part; anything dropped on it is turned away with its hint.
 ## - `swappable`: a full zone still takes a part of its type. The part that was
 ##   in it goes back home, so the player can change their mind (`swapped`).
+## - `compat`: the name of a rule in scripts/parts/compatibility.gd. A part of
+##   the right type is also checked against the parts in this zone's
+##   prerequisites; if the rule fails it's turned away (`rejected`) and
+##   `last_problem` says why.
 ##
 ## A child named "Replaced" (e.g. the old, faulty part's mesh) is hidden once
 ## the zone is full, so the new part doesn't sit on top of the old one.
 
 const GrabbablePart := preload("res://scripts/grabbable_part.gd")
+const Compatibility := preload("res://scripts/parts/compatibility.gd")
 
 ## A part of the right type was dropped here and is now installed.
 signal snapped(zone, part)
@@ -53,6 +58,12 @@ signal swapped(zone, old_part)
 @export var working := false
 ## See above: a full zone swaps its part for a new one of the same type.
 @export var swappable := false
+## See above: the compatibility rule a part must also pass, e.g. &"cpu_socket".
+@export var compat: StringName = &""
+
+## Why the last part judged was turned away by the `compat` rule ("" if it
+## wasn't): the sentence to show the student.
+var last_problem := ""
 
 ## Zones that must be filled before this one takes its part.
 var prerequisites: Array[Area3D] = []
@@ -99,7 +110,11 @@ func missing_prerequisites() -> Array[Area3D]:
 func judge(part: GrabbablePart) -> void:
 	if part.is_installed:
 		return
+	last_problem = ""
 	if working:
+		rejected.emit(self, part)
+	elif can_take(part) and compat_problem(part) != "":
+		last_problem = compat_problem(part)
 		rejected.emit(self, part)
 	elif can_take(part):
 		if is_filled():
@@ -122,6 +137,19 @@ func judge(part: GrabbablePart) -> void:
 		rejected.emit(self, part)
 	elif not is_filled():
 		blocked.emit(self, part)
+
+
+## What the `compat` rule says about a part going in here, given the parts in
+## the zones this one requires ("" when there's no rule or it passes).
+func compat_problem(part: GrabbablePart) -> String:
+	if compat == &"":
+		return ""
+	var others := []
+	for zone in prerequisites:
+		for other in zone.installed_parts:
+			if not other.spec.is_empty():
+				others.append(other.spec)
+	return Compatibility.check(compat, part.spec, others)
 
 
 ## Sends every installed part back home and leaves the zone empty, e.g. when

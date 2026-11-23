@@ -66,7 +66,7 @@ func _tests() -> Array:
 		_test_rule_ram_type, _test_rule_storage_slot, _test_rule_gpu_plug, _test_rule_enough_power,
 		_test_rules_by_name, _test_matching_builds_pass, _test_balanced_builds,
 		_test_shelf_parts_load_their_specs, _test_shelf_layout, _test_part_variants,
-		_test_bonus_points, _test_swappable_zone]
+		_test_bonus_points, _test_swappable_zone, _test_zone_compat_rule]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -861,3 +861,38 @@ func _test_swappable_zone() -> void:
 	check("emptying a slot sends its part home and leaves it ready for another",
 		not bay.is_filled() and bay.installed_part == null and not second.is_installed
 			and second.global_position.is_equal_approx(second.home_transform.origin))
+
+
+## A loose part made in code from the catalog's `variant`.
+func _catalog_part(parent: Node3D, variant: String, at: Vector3) -> GrabbablePart:
+	var part := _loose_part(parent, variant, "", at)
+	part.variant = variant
+	return part
+
+
+func _test_zone_compat_rule() -> void:
+	var bench := Node3D.new()
+	bench.name = "Bench"
+	var tray := _port(bench, "BoardTray", "motherboard", Vector3(-0.3, 0.0, -0.3))
+	var socket := _port(bench, "CpuSocket", "cpu", Vector3(0.0, 0.0, -0.3))
+	socket.prerequisites.append(tray)
+	socket.compat = &"cpu_socket"
+	var board := _catalog_part(bench, "board_starter", Vector3(-0.3, 0.0, 0.2))
+	var wrong := _catalog_part(bench, "cpu_mid", Vector3(0.0, 0.0, 0.2))
+	var right := _catalog_part(bench, "cpu_starter", Vector3(0.3, 0.0, 0.2))
+	await _fresh(bench)
+	await _carry_and_drop(board, tray.global_position)
+	var turned_away := [0]
+	socket.rejected.connect(func(_zone, _part) -> void: turned_away[0] += 1)
+	await _carry_and_drop(wrong, socket.global_position)
+	check("a CPU whose socket doesn't match the board in the slot it needs is turned away",
+		turned_away[0] == 1 and not wrong.is_installed and wrong.global_position.is_equal_approx(wrong.home_transform.origin))
+	check("the zone keeps the rule's message for the mission to show",
+		socket.last_problem == "This CPU's socket (AM5) doesn't match the motherboard (LGA1151).", socket.last_problem)
+	await _carry_and_drop(right, socket.global_position)
+	check("the CPU that matches goes in, and the message is cleared",
+		right.is_installed and socket.installed_part == right and socket.last_problem == "" and turned_away[0] == 1)
+	socket.swappable = true
+	await _carry_and_drop(wrong, socket.global_position)
+	check("a swap for a part that fails the rule is refused, and the part that was in stays",
+		turned_away[0] == 2 and socket.installed_part == right and right.is_installed and not wrong.is_installed)
