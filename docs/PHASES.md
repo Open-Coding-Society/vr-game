@@ -6,9 +6,9 @@ The team builds the game **one person at a time**, in this order (the build orde
 
 | # | Who | What | Status |
 |---|---|---|---|
-| 0 | Aryan | Play in the Quest headset: VR grabber, XR rig, OpenXR, Quest plugin and export | Done (in this branch); the Quest playtest is still open |
-| **1** | **Aryan** | **Home menu with a placeholder OCS login, plus the menu system the next phases build on: save system, mode picker, Free Play list, Story roadmap shell** | **This branch (`phase-1-menus`)** |
-| 2 | Chetan | Two game modes, with placeholder models: Story IRL Act 1 "Set up a pre-built PC" and Free Play "Build your own PC" | Built on `phase-2-modes`; waiting for review and merge |
+| 0 | Aryan | Play in the Quest headset: VR grabber, XR rig, OpenXR, Quest plugin and export | Done; the Quest playtest is still open |
+| 1 | Aryan | Home menu with a placeholder OCS login, plus the menu system the next phases build on: save system, mode picker, Free Play list, Story roadmap shell | Done; merged into `main` |
+| **2** | **Chetan** | **Two game modes, with placeholder models: Story IRL Act 1 "Set up a pre-built PC" and Free Play "Build your own PC"** | **Built on `phase-2-modes`; waiting for review and merge** |
 | 3 | Kashyap | One more mode | Waiting |
 | 4 | Ryden | Assigned later | Waiting |
 | 5 | Aaditya | Finish the game | Waiting |
@@ -57,6 +57,10 @@ Where Phase 2 differs from its plan:
 - **Memory:** the catalog's RAM entries are kits of two sticks, so one kit fills the memory slots.
 - **Link light:** it comes on when both ends of the network cable are in, not the router end alone.
 - **Wall socket:** it is a power strip on the desk, since the room's wall is out of reach.
+- **Power cable ends:** the plan's one `power` plug type is two here, `power_plug` for the end that goes into a device and `wall_plug` for the other, so the ends can't be mixed up. The monitor has its own power slot, `Monitor/PowerIn`.
+- **Storage rule:** all three motherboards in the catalog have an M.2 slot, so "This board has no M.2 slot for that drive." can't come up in play yet. The rule is written and tested for the day a board without one is added.
+- **Free Play order:** the new tasks are listed after the six that were there, so the list's first task is unchanged.
+- **Commits:** steps 1 to 6 are one commit each. From step 7 on there is one commit per change, and so for the fixes after review.
 
 ## Rules (from the build plan)
 
