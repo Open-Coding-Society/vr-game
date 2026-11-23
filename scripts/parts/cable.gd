@@ -1,8 +1,9 @@
 extends Node3D
 ## A cable: a plug at each end and a wire between them. Each plug is a
 ## GrabbablePart, so the grab layer and the SnapZones treat it like any other
-## part: a mission's registry gives each end its type ("hdmi", "usb", "power",
-## "ethernet") and a port is a SnapZone that accepts that type.
+## part: a mission's registry gives each end its type ("hdmi", "usb",
+## "ethernet", or "power_plug" and "wall_plug" for the two ends of a power
+## cable) and a port is a SnapZone that accepts that type.
 ##
 ## This script only looks after the wire, stretching it between the two ends
 ## every frame, and puts the ends where the mission scene wants them.
@@ -23,11 +24,17 @@ extends Node3D
 
 var _from: Node3D
 var _to: Node3D
+## The plugs are put at their start positions the first time only, so a cable
+## that leaves the scene tree and comes back keeps its plugs where they are.
+var _placed := false
 
 @onready var wire: MeshInstance3D = $Wire
 
 
 func _enter_tree() -> void:
+	if _placed:
+		return
+	_placed = true
 	# This runs before the plugs' own _ready, which is when a part notes its home.
 	var a := get_node_or_null("EndA") as Node3D
 	var b := get_node_or_null("EndB") as Node3D

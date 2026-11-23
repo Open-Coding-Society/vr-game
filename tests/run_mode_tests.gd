@@ -75,7 +75,7 @@ func _tests() -> Array:
 		_test_build_swapping_the_board, _test_build_monitor_says_why, _test_build_balanced_bonus,
 		_test_build_results_card, _test_big_parts_are_grabbed_by_the_middle,
 		_test_build_is_frozen_once_it_boots, _test_finished_mission_takes_no_more_parts,
-		_test_swap_empties_the_whole_chain]
+		_test_swap_empties_the_whole_chain, _test_cable_keeps_its_plugs_when_it_comes_back]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -1310,3 +1310,18 @@ func _test_swap_empties_the_whole_chain() -> void:
 			and not mission.get_node("Case/GpuSlot").is_filled() and manager.mistakes == 0)
 	check("the checklist shows the graphics card slot as waiting on the CPU again",
 		"[  ] graphics card slot  (after: CPU socket)" in mission.panel.text(), mission.panel.text())
+
+
+func _test_cable_keeps_its_plugs_when_it_comes_back() -> void:
+	var made := await _bench_with_cable("hdmi")
+	var bench: Node3D = made[0]
+	var cable: Node3D = made[1]
+	var port := _port(bench, "HdmiPort", "hdmi", Vector3(0.0, 0.0, -0.3))
+	await _settle()
+	var plug: GrabbablePart = cable.get_node("EndB")
+	await _carry_and_drop(plug, port.global_position)
+	bench.remove_child(cable)
+	bench.add_child(cable)
+	await _settle()
+	check("a cable taken out of the scene and put back keeps its plug in the port",
+		plug.is_installed and plug.global_position.is_equal_approx(port.snap_transform().origin), plug.global_position)
