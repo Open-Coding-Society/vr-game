@@ -3,7 +3,8 @@ extends SceneTree
 ## window, not --headless): Home -> Play locally -> Free Play -> start a
 ## mission -> finish it -> back on the Free Play page. Then Story Mode -> IRL
 ## -> the roadmap's first task -> finish it -> back on the roadmap with the
-## next task open. Exit 0 when it all works.
+## next task open. Then Free Play again -> Build your own PC -> build a PC
+## that works -> back on Free Play. Exit 0 when it all works.
 ##
 ##   godot --path . --script res://tools/e2e_menu_flow.gd
 
@@ -78,6 +79,38 @@ func _story_leg(menu: Node, manager: Node, saves: Node) -> void:
 		and back.find_button("Play_setup_pc_connect_peripherals") != null)
 
 
+## Free Play: start Build your own PC, build the mid tier PC and come back.
+func _build_leg(menu: Node, manager: Node, saves: Node) -> void:
+	menu.show_page("free_play", "computer")
+	await _wait()
+	var card: Button = menu.find_button("Task_build_computer_build_your_own")
+	check("Free Play has a Build your own PC card", card != null)
+	if card == null:
+		return
+	(menu.screen.ui_root.find_child("TaskList", true, false) as ScrollContainer).ensure_control_visible(card)
+	await _wait()
+	await _click(menu, "Task_build_computer_build_your_own")
+	await _wait(20)
+	var mission := current_scene
+	check("the card opens Build your own PC", mission != null and mission.scene_file_path == "res://scenes/build_pc/build_your_own.tscn",
+		mission.scene_file_path if mission else "none")
+	if mission == null or mission.scene_file_path != "res://scenes/build_pc/build_your_own.tscn":
+		return
+	mission.get_node("Monitor/MonitorScreen").line_seconds = 0.1
+	for pair in [["Boards/Mid", "Case/BoardTray"], ["Shelf/Mid/Cpu", "Case/CpuSocket"], ["Shelf/Mid/Ram", "Case/RamSlots"],
+			["Shelf/Mid/Storage", "Case/StorageBay"], ["Shelf/Mid/Gpu", "Case/GpuSlot"], ["Shelf/Mid/Psu", "Case/PsuBay"],
+			["Finger", "Case/PowerButton"]]:
+		await _put(mission, manager, pair[0], pair[1])
+	check("a mid tier build boots and finishes the mission with the balanced bonus",
+		manager.state == manager.State.SUCCESS and manager.score == 100, "%s %s" % [manager.state, manager.score])
+	await create_timer(2.0).timeout
+	await _wait(10)
+	var back := current_scene
+	check("after the build the game is back on Free Play", back != null and back.scene_file_path == "res://scenes/menus/menu.tscn"
+		and back.page == "free_play", back.page if back and back.scene_file_path == "res://scenes/menus/menu.tscn" else "not the menu")
+	check("the build was saved", saves.is_task_done("build_computer.build_your_own"))
+
+
 func _run() -> void:
 	var saves := root.get_node("SaveService")
 	saves.use_backend(preload("res://scripts/save/local_save_backend.gd").new("user://test_e2e_save.json"))
@@ -119,6 +152,7 @@ func _run() -> void:
 	check("it reopened Free Play", back != null and back.page == "free_play", back.page if back else "")
 	check("the finished task was saved", saves.is_task_done("build_computer.install_ram"))
 	await _story_leg(back, manager, saves)
+	await _build_leg(current_scene, manager, saves)
 	print("\n%s" % ("E2E PASSED" if _failures == 0 else "%d FAILED" % _failures))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_e2e_save.json"))
 	quit(0 if _failures == 0 else 1)
