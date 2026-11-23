@@ -14,6 +14,7 @@ const Unbox := preload("res://scenes/setup_pc/unbox.tscn")
 const ConnectPeripherals := preload("res://scenes/setup_pc/connect_peripherals.tscn")
 const PowerOn := preload("res://scenes/setup_pc/power_on.tscn")
 const GoOnline := preload("res://scenes/setup_pc/go_online.tscn")
+const PartsShelf := preload("res://scenes/build_pc/parts_shelf.tscn")
 const MonitorScreen := preload("res://scripts/parts/monitor_screen.gd")
 const PartsCatalog := preload("res://scripts/parts/parts_catalog.gd")
 const Compatibility := preload("res://scripts/parts/compatibility.gd")
@@ -63,7 +64,8 @@ func _tests() -> Array:
 		_test_go_online, _test_go_online_other_way_round,
 		_test_parts_catalog_loads, _test_parts_catalog_catches_mistakes, _test_rule_cpu_socket,
 		_test_rule_ram_type, _test_rule_storage_slot, _test_rule_gpu_plug, _test_rule_enough_power,
-		_test_rules_by_name, _test_matching_builds_pass, _test_balanced_builds]
+		_test_rules_by_name, _test_matching_builds_pass, _test_balanced_builds,
+		_test_shelf_parts_load_their_specs, _test_shelf_layout, _test_part_variants]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -690,3 +692,103 @@ func _test_balanced_builds() -> void:
 	build[3] = _spec("storage_starter")
 	check("a starter part beside a high-end one is not", not Compatibility.is_balanced(build))
 	check("nothing at all is not a build", not Compatibility.is_balanced([]))
+
+
+# ---- Step 6: the parts shelf, and a part's `variant` ----
+
+const SHELF_ROWS := [["Starter", "starter"], ["Mid", "mid"], ["High", "high"]]
+const SHELF_KINDS := [["Cpu", "cpu"], ["Ram", "ram"], ["Storage", "storage"], ["Gpu", "gpu"], ["Psu", "psu"]]
+
+
+## The colour a part is drawn in: its Mesh's, or its Mesh's first piece.
+func _part_color(part: Node) -> Color:
+	var mesh := part.get_node("Mesh")
+	var piece: MeshInstance3D = mesh if mesh is MeshInstance3D else mesh.find_children("*", "MeshInstance3D", true, false)[0]
+	return piece.material_override.albedo_color if piece.material_override else Color.BLACK
+
+
+func _test_shelf_parts_load_their_specs() -> void:
+	var shelf := await _fresh(PartsShelf.instantiate())
+	var catalog = PartsCatalog.shared()
+	check("the shelf holds 15 parts: five kinds in three tiers",
+		shelf.find_children("*", "RigidBody3D", true, false).size() == 15, shelf.find_children("*", "RigidBody3D", true, false).size())
+	var specs := []
+	var labels := []
+	var colors := []
+	for row in SHELF_ROWS:
+		for kind in SHELF_KINDS:
+			var where := "%s/%s" % [row[0], kind[0]]
+			var part: GrabbablePart = shelf.get_node_or_null(where)
+			var want: Dictionary = catalog.spec("%s_%s" % [kind[1], row[1]])
+			if part == null or want.is_empty():
+				specs.append(where + " is missing")
+				continue
+			if part.spec != want or part.part_type != StringName(kind[1]) or part.display_name != want.name:
+				specs.append("%s: %s %s" % [where, part.part_type, part.spec])
+			if (part.get_node("Name") as Label3D).text != want.name:
+				labels.append("%s: %s" % [where, (part.get_node("Name") as Label3D).text])
+			if not _part_color(part).is_equal_approx(PartsCatalog.TIER_COLORS[row[1]]):
+				colors.append("%s: %s" % [where, _part_color(part)])
+	check("each shelf part has its catalog specs, type and name", specs.is_empty(), str(specs))
+	check("each part's label shows its name", labels.is_empty(), str(labels))
+	check("each part is drawn in its tier's colour", colors.is_empty(), str(colors))
+	var psu: GrabbablePart = shelf.get_node("High/Psu")
+	check("for example the high-end power supply",
+		psu.display_name == "Antec HCP 1300 W" and psu.spec.watts == 1300 and psu.spec.plugs == ["pcie8", "12v2x6"]
+			and _part_color(psu).is_equal_approx(Color("3FB950")), str(psu.spec))
+
+
+func _test_shelf_layout() -> void:
+	var shelf := await _fresh(PartsShelf.instantiate())
+	check("the rows run Starter, Mid, High-end from the front of the desk to the back",
+		shelf.get_node("Starter").position.z > shelf.get_node("Mid").position.z and shelf.get_node("Mid").position.z > shelf.get_node("High").position.z)
+	check("each row says which tier it is",
+		SHELF_ROWS.map(func(row) -> String: return (shelf.get_node(row[0] + "/Label") as Label3D).text) == ["Starter", "Mid", "High-end"])
+	await _settle()
+	var touching := []
+	var parts := shelf.find_children("*", "RigidBody3D", true, false)
+	for i in parts.size():
+		for j in range(i + 1, parts.size()):
+			var a := _grab_box(parts[i])
+			var b := _grab_box(parts[j])
+			if a.intersects(b):
+				touching.append("%s and %s" % [shelf.get_path_to(parts[i]), shelf.get_path_to(parts[j])])
+	check("no two parts' grab shapes overlap, so each can be picked up on its own", touching.is_empty(), str(touching))
+	var part: GrabbablePart = shelf.get_node("Mid/Gpu")
+	await _carry_and_drop(part, Vector3(0.0, 0.5, 0.6))
+	check("a shelf part let go away from any slot goes back to its place",
+		not part.is_installed and part.global_position.is_equal_approx(part.home_transform.origin), part.global_position)
+
+
+## A part's grab shape as a box in world space (the shelf's parts aren't turned).
+func _grab_box(part: Node3D) -> AABB:
+	var shape: CollisionShape3D = part.get_node("CollisionShape3D")
+	var size: Vector3 = (shape.shape as BoxShape3D).size
+	return AABB(shape.global_position - size * 0.5, size)
+
+
+func _test_part_variants() -> void:
+	var plain := RigidBody3D.new()
+	plain.set_script(GrabbablePart)
+	plain.part_type = &"hdmi"
+	plain.display_name = "HDMI plug"
+	await _fresh(plain)
+	check("a part with no variant keeps the type and name it was given, and has no specs",
+		plain.part_type == &"hdmi" and plain.display_name == "HDMI plug" and plain.spec.is_empty())
+	var odd := RigidBody3D.new()
+	odd.set_script(GrabbablePart)
+	odd.name = "Odd"
+	odd.variant = "cpu_quantum"
+	await _fresh(odd)
+	check("a variant the catalog doesn't have leaves the part as it was (and logs an error)",
+		odd.spec.is_empty() and odd.part_type == &"ram")
+	var cpu := RigidBody3D.new()
+	cpu.set_script(GrabbablePart)
+	cpu.variant = "cpu_high"
+	var tag := Label3D.new()
+	tag.name = "Name"
+	cpu.add_child(tag)
+	await _fresh(cpu)
+	check("a variant gives any part its type, name, label and specs, with or without a mesh",
+		cpu.part_type == &"cpu" and cpu.display_name == "AMD Ryzen 9 9950X" and tag.text == "AMD Ryzen 9 9950X" and cpu.spec.socket == "AM5",
+		str(cpu.spec))

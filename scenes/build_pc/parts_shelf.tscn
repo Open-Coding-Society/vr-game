@@ -1,0 +1,434 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/grabbable_part.gd" id="1_grabbable_part"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_1"]
+albedo_color = Color(0.85, 0.82, 0.76, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_2"]
+material = SubResource("Mat_1")
+size = Vector3(0.98, 0.002, 0.1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_3"]
+albedo_color = Color(0.6, 0.62, 0.66, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_4"]
+material = SubResource("Mat_3")
+size = Vector3(0.04, 0.006, 0.04)
+
+[sub_resource type="BoxShape3D" id="Shape_5"]
+size = Vector3(0.06, 0.03, 0.06)
+
+[sub_resource type="BoxMesh" id="Mesh_6"]
+material = SubResource("Mat_3")
+size = Vector3(0.133, 0.03, 0.006)
+
+[sub_resource type="BoxShape3D" id="Shape_7"]
+size = Vector3(0.14, 0.04, 0.05)
+
+[sub_resource type="BoxMesh" id="Mesh_8"]
+material = SubResource("Mat_3")
+size = Vector3(0.08, 0.004, 0.022)
+
+[sub_resource type="BoxShape3D" id="Shape_9"]
+size = Vector3(0.1, 0.03, 0.07)
+
+[sub_resource type="BoxMesh" id="Mesh_10"]
+material = SubResource("Mat_3")
+size = Vector3(0.2, 0.04, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shape_11"]
+size = Vector3(0.2, 0.04, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_12"]
+material = SubResource("Mat_3")
+size = Vector3(0.14, 0.08, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shape_13"]
+size = Vector3(0.14, 0.08, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_14"]
+material = SubResource("Mat_3")
+size = Vector3(0.1, 0.008, 0.07)
+
+[node name="PartsShelf" type="Node3D"]
+
+[node name="High" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.105)
+
+[node name="Board" type="MeshInstance3D" parent="High"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.01, 0.001, 0)
+mesh = SubResource("Mesh_2")
+
+[node name="Label" type="Label3D" parent="High"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -0.445, 0.003, 0)
+pixel_size = 0.0004
+text = "High-end"
+font_size = 56
+outline_size = 10
+modulate = Color(0.2471, 0.7255, 0.3137, 1)
+
+[node name="Cpu" type="RigidBody3D" parent="High"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.335, 0.002, -0.02)
+script = ExtResource("1_grabbable_part")
+variant = "cpu_high"
+
+[node name="Mesh" type="MeshInstance3D" parent="High/Cpu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.003, 0)
+mesh = SubResource("Mesh_4")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="High/Cpu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_5")
+
+[node name="Name" type="Label3D" parent="High/Cpu"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.001, 0.046)
+pixel_size = 0.0004
+font_size = 40
+outline_size = 10
+autowrap_mode = 3
+width = 312
+
+[node name="Ram" type="RigidBody3D" parent="High"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.19, 0.002, -0.02)
+script = ExtResource("1_grabbable_part")
+variant = "ram_high"
+
+[node name="Mesh" type="Node3D" parent="High/Ram"]
+
+[node name="StickA" type="MeshInstance3D" parent="High/Ram/Mesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, -0.01)
+mesh = SubResource("Mesh_6")
+
+[node name="StickB" type="MeshInstance3D" parent="High/Ram/Mesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0.01)
+mesh = SubResource("Mesh_6")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="High/Ram"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+shape = SubResource("Shape_7")
+
+[node name="Name" type="Label3D" parent="High/Ram"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.001, 0.039)
+pixel_size = 0.0004
+font_size = 40
+outline_size = 10
+autowrap_mode = 3
+width = 388
+
+[node name="Storage" type="RigidBody3D" parent="High"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.035, 0.002, -0.02)
+script = ExtResource("1_grabbable_part")
+variant = "storage_high"
+
+[node name="Mesh" type="MeshInstance3D" parent="High/Storage"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.002, 0)
+mesh = SubResource("Mesh_8")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="High/Storage"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_9")
+
+[node name="Name" type="Label3D" parent="High/Storage"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.001, 0.037)
+pixel_size = 0.0004
+font_size = 40
+outline_size = 10
+autowrap_mode = 3
+width = 362
+
+[node name="Gpu" type="RigidBody3D" parent="High"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.155, 0.002, 0)
+script = ExtResource("1_grabbable_part")
+variant = "gpu_high"
+
+[node name="Mesh" type="MeshInstance3D" parent="High/Gpu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+mesh = SubResource("Mesh_10")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="High/Gpu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+shape = SubResource("Shape_11")
+
+[node name="Name" type="Label3D" parent="High/Gpu"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.041, 0)
+pixel_size = 0.0004
+font_size = 40
+outline_size = 10
+autowrap_mode = 3
+width = 475
+
+[node name="Psu" type="RigidBody3D" parent="High"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.375, 0.002, 0)
+script = ExtResource("1_grabbable_part")
+variant = "psu_high"
+
+[node name="Mesh" type="MeshInstance3D" parent="High/Psu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+mesh = SubResource("Mesh_12")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="High/Psu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+shape = SubResource("Shape_13")
+
+[node name="Name" type="Label3D" parent="High/Psu"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.081, 0)
+pixel_size = 0.0004
+font_size = 40
+outline_size = 10
+autowrap_mode = 3
+width = 330
+
+[node name="Mid" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Board" type="MeshInstance3D" parent="Mid"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.01, 0.001, 0)
+mesh = SubResource("Mesh_2")
+
+[node name="Label" type="Label3D" parent="Mid"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -0.445, 0.003, 0)
+pixel_size = 0.0004
+text = "Mid"
+font_size = 56
+outline_size = 10
+modulate = Color(0.1843, 0.5059, 0.9686, 1)
+
+[node name="Cpu" type="RigidBody3D" parent="Mid"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.335, 0.002, -0.02)
+script = ExtResource("1_grabbable_part")
+variant = "cpu_mid"
+
+[node name="Mesh" type="MeshInstance3D" parent="Mid/Cpu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.003, 0)
+mesh = SubResource("Mesh_4")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Mid/Cpu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_5")
+
+[node name="Name" type="Label3D" parent="Mid/Cpu"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.001, 0.046)
+pixel_size = 0.0004
+font_size = 40
+outline_size = 10
+autowrap_mode = 3
+width = 312
+
+[node name="Ram" type="RigidBody3D" parent="Mid"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.19, 0.002, -0.02)
+script = ExtResource("1_grabbable_part")
+variant = "ram_mid"
+
+[node name="Mesh" type="Node3D" parent="Mid/Ram"]
+
+[node name="StickA" type="MeshInstance3D" parent="Mid/Ram/Mesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, -0.01)
+mesh = SubResource("Mesh_6")
+
+[node name="StickB" type="MeshInstance3D" parent="Mid/Ram/Mesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0.01)
+mesh = SubResource("Mesh_6")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Mid/Ram"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+shape = SubResource("Shape_7")
+
+[node name="Name" type="Label3D" parent="Mid/Ram"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.001, 0.039)
+pixel_size = 0.0004
+font_size = 40
+outline_size = 10
+autowrap_mode = 3
+width = 388
+
+[node name="Storage" type="RigidBody3D" parent="Mid"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.035, 0.002, -0.02)
+script = ExtResource("1_grabbable_part")
+variant = "storage_mid"
+
+[node name="Mesh" type="MeshInstance3D" parent="Mid/Storage"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.002, 0)
+mesh = SubResource("Mesh_8")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Mid/Storage"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_9")
+
+[node name="Name" type="Label3D" parent="Mid/Storage"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.001, 0.037)
+pixel_size = 0.0004
+font_size = 40
+outline_size = 10
+autowrap_mode = 3
+width = 362
+
+[node name="Gpu" type="RigidBody3D" parent="Mid"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.155, 0.002, 0)
+script = ExtResource("1_grabbable_part")
+variant = "gpu_mid"
+
+[node name="Mesh" type="MeshInstance3D" parent="Mid/Gpu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+mesh = SubResource("Mesh_10")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Mid/Gpu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+shape = SubResource("Shape_11")
+
+[node name="Name" type="Label3D" parent="Mid/Gpu"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.041, 0)
+pixel_size = 0.0004
+font_size = 40
+outline_size = 10
+autowrap_mode = 3
+width = 475
+
+[node name="Psu" type="RigidBody3D" parent="Mid"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.375, 0.002, 0)
+script = ExtResource("1_grabbable_part")
+variant = "psu_mid"
+
+[node name="Mesh" type="MeshInstance3D" parent="Mid/Psu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+mesh = SubResource("Mesh_12")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Mid/Psu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+shape = SubResource("Shape_13")
+
+[node name="Name" type="Label3D" parent="Mid/Psu"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.081, 0)
+pixel_size = 0.0004
+font_size = 40
+outline_size = 10
+autowrap_mode = 3
+width = 330
+
+[node name="Starter" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.105)
+
+[node name="Board" type="MeshInstance3D" parent="Starter"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.01, 0.001, 0)
+mesh = SubResource("Mesh_2")
+
+[node name="Label" type="Label3D" parent="Starter"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -0.445, 0.003, 0)
+pixel_size = 0.0004
+text = "Starter"
+font_size = 56
+outline_size = 10
+modulate = Color(0.6039, 0.6431, 0.698, 1)
+
+[node name="Cpu" type="RigidBody3D" parent="Starter"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.335, 0.002, -0.02)
+script = ExtResource("1_grabbable_part")
+variant = "cpu_starter"
+
+[node name="Mesh" type="MeshInstance3D" parent="Starter/Cpu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.003, 0)
+mesh = SubResource("Mesh_4")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Starter/Cpu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_5")
+
+[node name="Name" type="Label3D" parent="Starter/Cpu"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.001, 0.046)
+pixel_size = 0.0004
+font_size = 40
+outline_size = 10
+autowrap_mode = 3
+width = 312
+
+[node name="Ram" type="RigidBody3D" parent="Starter"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.19, 0.002, -0.02)
+script = ExtResource("1_grabbable_part")
+variant = "ram_starter"
+
+[node name="Mesh" type="Node3D" parent="Starter/Ram"]
+
+[node name="StickA" type="MeshInstance3D" parent="Starter/Ram/Mesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, -0.01)
+mesh = SubResource("Mesh_6")
+
+[node name="StickB" type="MeshInstance3D" parent="Starter/Ram/Mesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0.01)
+mesh = SubResource("Mesh_6")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Starter/Ram"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+shape = SubResource("Shape_7")
+
+[node name="Name" type="Label3D" parent="Starter/Ram"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.001, 0.039)
+pixel_size = 0.0004
+font_size = 40
+outline_size = 10
+autowrap_mode = 3
+width = 388
+
+[node name="Storage" type="RigidBody3D" parent="Starter"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.035, 0.002, 0)
+script = ExtResource("1_grabbable_part")
+variant = "storage_starter"
+
+[node name="Mesh" type="MeshInstance3D" parent="Starter/Storage"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.004, 0)
+mesh = SubResource("Mesh_14")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Starter/Storage"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_9")
+
+[node name="Name" type="Label3D" parent="Starter/Storage"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.009, 0)
+pixel_size = 0.0004
+font_size = 40
+outline_size = 10
+autowrap_mode = 3
+width = 238
+
+[node name="Gpu" type="RigidBody3D" parent="Starter"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.155, 0.002, 0)
+script = ExtResource("1_grabbable_part")
+variant = "gpu_starter"
+
+[node name="Mesh" type="MeshInstance3D" parent="Starter/Gpu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+mesh = SubResource("Mesh_10")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Starter/Gpu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+shape = SubResource("Shape_11")
+
+[node name="Name" type="Label3D" parent="Starter/Gpu"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.041, 0)
+pixel_size = 0.0004
+font_size = 40
+outline_size = 10
+autowrap_mode = 3
+width = 475
+
+[node name="Psu" type="RigidBody3D" parent="Starter"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.375, 0.002, 0)
+script = ExtResource("1_grabbable_part")
+variant = "psu_starter"
+
+[node name="Mesh" type="MeshInstance3D" parent="Starter/Psu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+mesh = SubResource("Mesh_12")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Starter/Psu"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+shape = SubResource("Shape_13")
+
+[node name="Name" type="Label3D" parent="Starter/Psu"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.081, 0)
+pixel_size = 0.0004
+font_size = 40
+outline_size = 10
+autowrap_mode = 3
+width = 330
