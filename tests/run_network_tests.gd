@@ -66,7 +66,9 @@ func _tests() -> Array:
 		_test_goal_mission_ignores_full_slots, _test_cable_start_ports,
 		_test_build_network_is_in_the_registry, _test_network_scenes_load, _test_connect_two,
 		_test_connect_two_power_socket_is_a_mistake, _test_unplugging_in_a_mission, _test_switch_any_ports,
-		_test_router_starts_cabled, _test_router_wan_lan_swapped, _test_router_perfect_run]
+		_test_router_starts_cabled, _test_router_wan_lan_swapped, _test_router_perfect_run,
+		_test_packet_is_cheap, _test_send_packets_scene, _test_packets_follow_the_path, _test_packets_reordered,
+		_test_packets_pause_at_switch, _test_packet_cap, _test_message_needs_the_outbox, _test_registry_checks_messages]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -849,3 +851,136 @@ func _test_router_perfect_run() -> void:
 	check("router: every PC reaches the internet", ["pc_a", "pc_b", "pc_c"].all(func(id) -> bool: return mission.graph.path(id, "internet").size() == 4))
 	check("router: and the mission is done, with no mistakes", manager.state == manager.State.SUCCESS and manager.score == 100, manager.score)
 	check("router: the PCs' screens say they're online", mission.devices.pc_c.screen().lines.has("Internet: online"), mission.devices.pc_c.screen().lines)
+
+
+# --- Step 6: packets you can see ----------------------------------------------
+
+const SEND_PACKETS := "res://scenes/network/send_packets.tscn"
+
+
+## Loads Send data and watch the packets, with its packets stepped by hand.
+func _packets_mission() -> Node3D:
+	var mission := await _mission(SEND_PACKETS)
+	mission.flow.set_process(false)
+	return mission
+
+
+## Steps the packets until `done` is true or `seconds` of game time pass.
+func _run_flow(flow: Node, done: Callable, seconds := 30.0, dt := 0.05) -> void:
+	var t := 0.0
+	while t < seconds and not done.call():
+		flow.step(dt)
+		t += dt
+
+
+func _test_packet_is_cheap() -> void:
+	var packet: Node = load("res://scenes/network/packet.tscn").instantiate()
+	check("packet: a plain Node3D with no physics", packet.get_class() == "Node3D" and packet.find_children("*", "PhysicsBody3D", true, false).is_empty())
+	var mesh := packet.get_node("Mesh") as MeshInstance3D
+	check("packet: a small white cube", mesh.mesh is BoxMesh and (mesh.mesh as BoxMesh).size.x <= 0.02
+		and ((mesh.mesh as BoxMesh).material as StandardMaterial3D).albedo_color == Color.WHITE)
+	packet.free()
+
+
+func _test_send_packets_scene() -> void:
+	var mission := await _packets_mission()
+	check("send packets: the scene loads with no problems", mission.problems.is_empty(), mission.problems)
+	check("send packets: it has packets", mission.flow != null and mission.flow.mission == mission)
+	check("send packets: the PCs start cabled to the switch", mission.graph.all_connected(["pc_a", "pc_b", "pc_c"]))
+	check("send packets: the registry says the message goes to PC C in 4 packets", mission.config.parts.Message.to == "pc_c" and mission.config.parts.Message.packets == 4)
+	await _drag(mission, "Message", _over(mission, "PcA/Outbox"))
+	check("send packets: dropping the card in PC A's Outbox sends 4 packets", mission.flow.live.size() == 4, mission.flow.live.size())
+	check("send packets: PC A's screen says they are on their way", mission.devices.pc_a.screen().lines.has("To PC C: 0 of 4 packets arrived"), mission.devices.pc_a.screen().lines)
+	await _run_flow(mission.flow, func() -> bool: return manager.state == manager.State.SUCCESS)
+	check("send packets: once all 4 arrive the mission is done", manager.state == manager.State.SUCCESS and manager.score == 100, manager.state)
+	var screen: Node = mission.devices.pc_c.screen()
+	check("send packets: PC C's screen shows them in order", screen.lines.has("In order: 1, 2, 3, 4"), screen.lines)
+	check("send packets: and then the message", screen.lines.has('"Hello from PC A!"') and screen.title == "From PC A", screen.lines)
+	check("send packets: no packets are left on the cables", mission.flow.live.is_empty() and mission.flow.get_child_count() == 0)
+
+
+func _test_packets_follow_the_path() -> void:
+	var mission := await _packets_mission()
+	var flow: Node = mission.flow
+	flow.pause_s = 0.0
+	flow.delay_spread = 0.0
+	flow.send("pc_a", "pc_c", 1, "hi")
+	var p: Dictionary = flow.live[0]
+	var stops := ["pc_a"]
+	var on_cable := true
+	var a: Vector3 = mission.zone_of["pc_a:eth0"].snap_transform().origin
+	var b: Vector3 = mission.zone_of["switch:port1"].snap_transform().origin
+	for i in 400:
+		if flow.live.is_empty():
+			break
+		flow.step(0.02)
+		if flow.live.is_empty():
+			break
+		if stops.back() != p.at:
+			stops.append(p.at)
+		if p.at == "pc_a" and p.dist > 0.0:
+			# On the first cable, the packet is on the line between its two ports.
+			var pos: Vector3 = p.node.global_position - Vector3(0, flow.lift, 0)
+			var t := clampf((pos - a).dot(b - a) / (b - a).length_squared(), 0.0, 1.0)
+			on_cable = on_cable and pos.distance_to(a.lerp(b, t)) < 0.002
+	stops.append("pc_c")
+	check("packets: a packet goes hop by hop along path()", stops == mission.graph.path("pc_a", "pc_c"), stops)
+	check("packets: it moves along the cable's line", on_cable)
+	check("packets: and arrives", flow.arrived_count("pc_a", "pc_c") == 1)
+
+
+func _test_packets_reordered() -> void:
+	var mission := await _packets_mission()
+	var flow: Node = mission.flow
+	flow.next_delays = [0.6, 0.0, 0.4, 0.2]
+	var order := []
+	flow.packet_arrived.connect(func(_f, _t, i) -> void: order.append(i))
+	await _drag(mission, "Message", _over(mission, "PcA/Outbox"))
+	await _run_flow(flow, func() -> bool: return order.size() == 4)
+	check("packets: with different start delays they arrive out of order", order == [2, 4, 3, 1], order)
+	check("packets: PC C puts them back in order", mission.devices.pc_c.screen().lines.has("In order: 1, 2, 3, 4"))
+	check("packets: and lists them as they came", mission.devices.pc_c.screen().lines.has("Arrived: 2, 4, 3, 1"), mission.devices.pc_c.screen().lines)
+	var halfway := await _packets_mission()
+	halfway.flow.next_delays = [0.0, 0.0, 0.0, 10.0]
+	await _drag(halfway, "Message", _over(halfway, "PcA/Outbox"))
+	await _run_flow(halfway.flow, func() -> bool: return halfway.flow.arrived_count("pc_a", "pc_c") == 3)
+	check("packets: with one still missing, its place is a gap", halfway.devices.pc_c.screen().lines.has("In order: 1, 2, 3, _"), halfway.devices.pc_c.screen().lines)
+	check("packets: and the mission isn't done yet", manager.state == manager.State.ACTIVE)
+
+
+func _test_packets_pause_at_switch() -> void:
+	var mission := await _packets_mission()
+	var flow: Node = mission.flow
+	flow.delay_spread = 0.0
+	flow.send("pc_a", "pc_c", 1, "hi")
+	var p: Dictionary = flow.live[0]
+	await _run_flow(flow, func() -> bool: return p.at == "switch", 30.0, 0.01)
+	check("packets: a packet waits a moment at the switch", p.at == "switch" and p.wait > 0.0, p.wait)
+
+
+func _test_packet_cap() -> void:
+	var mission := await _packets_mission()
+	var flow: Node = mission.flow
+	flow.send("pc_a", "pc_c", 20, "one")
+	flow.send("pc_b", "pc_c", 15, "two")
+	check("packet cap: no more than 20 on the cables at once", flow.live.size() == 20 and flow.queued.size() == 15)
+	var most := [0]
+	await _run_flow(flow, func() -> bool:
+		most[0] = maxi(most[0], flow.get_child_count())
+		return flow.arrived_count("pc_b", "pc_c") == 15, 120.0)
+	check("packet cap: the rest wait their turn, and everything arrives", flow.arrived_count("pc_a", "pc_c") == 20 and flow.arrived_count("pc_b", "pc_c") == 15)
+	check("packet cap: never more than 20 packet meshes", flow.peak <= 20 and most[0] <= 20, [flow.peak, most[0]])
+
+
+func _test_message_needs_the_outbox() -> void:
+	var mission := await _packets_mission()
+	await _drag(mission, "Message", _over(mission, "PcB/Eth0"))
+	check("message: a card dropped on a LAN port is turned away", not mission.get_node("Message").is_installed and manager.mistakes == 1)
+	check("message: and nothing is sent", mission.flow.live.is_empty())
+
+
+func _test_registry_checks_messages() -> void:
+	var r = _registry_with({"parts": {"C/EndA": {"type": "ethernet", "name": "plug"}, "Card": {"type": "message", "name": "card", "packets": 4}}})
+	check("registry: a message card needs who it goes to", r.errors.size() == 1 and r.errors[0].contains('"to"'), r.errors)
+	r = _registry_with({"parts": {"C/EndA": {"type": "ethernet", "name": "plug"}, "Card": {"type": "message", "name": "card", "to": "pc_c", "packets": 50}}})
+	check("registry: a message card has 1 to 20 packets", r.errors.size() == 1 and r.errors[0].contains("packets"), r.errors)

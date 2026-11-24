@@ -1150,6 +1150,178 @@
               "removable": true
             }
           }
+        },
+        {
+          "id": "send_packets",
+          "title": "Send data and watch the packets",
+          "description": "Send a message from PC A to PC C and watch it travel as numbered packets.",
+          "topic": "Packets",
+          "difficulty": "Intermediate",
+          "image": "task_build_network_send_packets",
+          "scene": "res://scenes/network/send_packets.tscn",
+          "intro": [
+            "The PCs are cabled to the switch. Now send something!",
+            "Drop the message card into PC A's Outbox. It's addressed to PC C."
+          ],
+          "success": [
+            "Every packet arrived, and PC C put them back in order.",
+            "Data is split into packets. Each one carries the address it's going to, and they can arrive out of order."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "goal": {
+            "delivered": {
+              "from": "pc_a",
+              "to": "pc_c",
+              "packets": 4
+            }
+          },
+          "parts": {
+            "CableA/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableA/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Message": {
+              "type": "message",
+              "name": "message to PC C",
+              "to": "pc_c",
+              "packets": 4,
+              "text": "Hello from PC A!"
+            }
+          },
+          "slots": {
+            "PcA/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC A LAN port",
+              "hint": "Data is split into packets. Each one carries the address it's going to, and they can arrive out of order.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcA/Power": {
+              "working": true,
+              "name": "PC A power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcB/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC B LAN port",
+              "hint": "Data is split into packets. Each one carries the address it's going to, and they can arrive out of order.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcB/Power": {
+              "working": true,
+              "name": "PC B power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcC/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC C LAN port",
+              "hint": "Data is split into packets. Each one carries the address it's going to, and they can arrive out of order.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcC/Power": {
+              "working": true,
+              "name": "PC C power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "Switch/Port1": {
+              "accepts": "ethernet",
+              "name": "Switch port 1",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port2": {
+              "accepts": "ethernet",
+              "name": "Switch port 2",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port3": {
+              "accepts": "ethernet",
+              "name": "Switch port 3",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port4": {
+              "accepts": "ethernet",
+              "name": "Switch port 4",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port5": {
+              "accepts": "ethernet",
+              "name": "Switch port 5",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port6": {
+              "accepts": "ethernet",
+              "name": "Switch port 6",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port7": {
+              "accepts": "ethernet",
+              "name": "Switch port 7",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port8": {
+              "accepts": "ethernet",
+              "name": "Switch port 8",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "PcA/Outbox": {
+              "accepts": "message",
+              "name": "PC A's Outbox",
+              "hint": "Drop the message card in PC A's Outbox to send it.",
+              "role": "PC A splits the message into numbered packets and sends each one to PC C."
+            }
+          }
         }
       ]
     }

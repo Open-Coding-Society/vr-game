@@ -230,7 +230,21 @@ func _read_parts(full_id: String, parts) -> Array:
 			errors.append('%s: part "%s" needs a type in lower_snake_case and a name' % [full_id, path])
 		else:
 			types.append(part.type)
+			_read_message(full_id, path, part)
 	return types
+
+
+## A message card (Build a Network) says who it goes to, and optionally how
+## many packets it's split into (1-20) and its text.
+func _read_message(full_id: String, path: String, part: Dictionary) -> void:
+	if not part.has("to") and not part.has("packets") and not part.has("text"):
+		return
+	if typeof(part.get("to")) != TYPE_STRING or part.to == "":
+		errors.append('%s: part "%s" needs "to", the device the message goes to' % [full_id, path])
+	if part.has("packets") and not _is_whole(part.packets, 1, 20):
+		errors.append('%s: part "%s" packets must be a whole number from 1 to 20' % [full_id, path])
+	if part.has("text") and typeof(part.text) != TYPE_STRING:
+		errors.append('%s: part "%s" text must be text' % [full_id, path])
 
 
 func _read_slots(full_id: String, slots, part_types: Array) -> void:

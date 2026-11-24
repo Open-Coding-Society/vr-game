@@ -42,6 +42,9 @@ var job_counts: Dictionary = {}
 var finished := false
 ## Screens something else is writing on (a packet flow), by device id.
 var screens_in_use: Dictionary = {}
+## The scene's packets (scripts/network/packet_flow.gd, a child named
+## PacketFlow), or null in a mission without them.
+var flow: Node = null
 
 
 func _ready() -> void:
@@ -49,6 +52,11 @@ func _ready() -> void:
 	if config.is_empty():
 		return
 	_build_network()
+	flow = find_child("PacketFlow", true, false)
+	if flow:
+		flow.setup(self)
+		flow.packet_arrived.connect(func(from_id, to_id, _i) -> void: note_packet_arrived(from_id, to_id))
+		flow.message_delivered.connect(func(from_id, to_id, packets, _text) -> void: note_delivered(from_id, to_id, packets))
 	for cable in cables:
 		cable.plug_in_start_ports()
 	_changed()
@@ -109,6 +117,16 @@ func goal_devices() -> Array:
 			"cut_then_restore":
 				out.append_array(value.map(func(p) -> String: return NetworkGraph.device_of(p)))
 	return out
+
+
+## A message card dropped into a device's Outbox (a part whose registry entry
+## says who it is "to") is sent as packets.
+func _on_snapped(zone: SnapZone, part: GrabbablePart) -> void:
+	super(zone, part)
+	var entry: Dictionary = config.parts.get(str(get_path_to(part)), {})
+	var device := zone.get_parent()
+	if entry.has("to") and flow and device.get_script() == NetworkDevice and manager.state == manager.State.ACTIVE:
+		flow.send(device.device_id, entry.to, int(entry.get("packets", 4)), str(entry.get("text", "")))
 
 
 func _on_cable_plugged(_cable: Node, zone_a: Area3D, zone_b: Area3D) -> void:
