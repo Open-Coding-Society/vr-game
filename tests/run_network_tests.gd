@@ -68,7 +68,11 @@ func _tests() -> Array:
 		_test_connect_two_power_socket_is_a_mistake, _test_unplugging_in_a_mission, _test_switch_any_ports,
 		_test_router_starts_cabled, _test_router_wan_lan_swapped, _test_router_perfect_run,
 		_test_packet_is_cheap, _test_send_packets_scene, _test_packets_follow_the_path, _test_packets_reordered,
-		_test_packets_pause_at_switch, _test_packet_cap, _test_message_needs_the_outbox, _test_registry_checks_messages]
+		_test_packets_pause_at_switch, _test_packet_cap, _test_message_needs_the_outbox, _test_registry_checks_messages,
+		_test_interrupt_scene, _test_interrupt_cut_and_restore, _test_interrupt_other_cable_is_not_the_cut,
+		_test_message_waits_for_a_cut_link, _test_redundancy_scene, _test_redundancy_second_path,
+		_test_redundancy_loop_on_one_switch_fails, _test_redundancy_really_cuts, _test_redundancy_ring_and_line,
+		_test_registry_checks_streams]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -984,3 +988,139 @@ func _test_registry_checks_messages() -> void:
 	check("registry: a message card needs who it goes to", r.errors.size() == 1 and r.errors[0].contains('"to"'), r.errors)
 	r = _registry_with({"parts": {"C/EndA": {"type": "ethernet", "name": "plug"}, "Card": {"type": "message", "name": "card", "to": "pc_c", "packets": 50}}})
 	check("registry: a message card has 1 to 20 packets", r.errors.size() == 1 and r.errors[0].contains("packets"), r.errors)
+
+
+# --- Step 7: interrupt a connection, add redundancy ---------------------------
+
+const INTERRUPT := "res://scenes/network/interrupt.tscn"
+const REDUNDANCY := "res://scenes/network/redundancy.tscn"
+
+
+func _interrupt_mission() -> Node3D:
+	var mission := await _mission(INTERRUPT)
+	mission.flow.set_process(false)
+	mission.flow.next_delays = []
+	mission.flow.delay_spread = 0.0
+	return mission
+
+
+func _test_interrupt_scene() -> void:
+	var mission := await _interrupt_mission()
+	check("interrupt: the scene loads with no problems", mission.problems.is_empty(), mission.problems)
+	check("interrupt: everything starts cabled", mission.graph.path("pc_a", "server") == ["pc_a", "switch", "server"])
+	check("interrupt: packets are flowing from PC A to the server", mission.flow.streams.size() == 1)
+	await _run_flow(mission.flow, func() -> bool: return mission.flow.arrived_count("pc_a", "server") >= 2)
+	check("interrupt: and arriving", mission.flow.arrived_count("pc_a", "server") >= 2)
+	check("interrupt: PC A's screen counts them", "\n".join(mission.devices.pc_a.screen().lines).contains("Packets arrived"), mission.devices.pc_a.screen().lines)
+
+
+func _test_interrupt_cut_and_restore() -> void:
+	var mission := await _interrupt_mission()
+	var flow: Node = mission.flow
+	await _run_flow(flow, func() -> bool: return flow.arrived_count("pc_a", "server") >= 1)
+	await _drag(mission, "MarkedCable/EndB", Vector3(0.3, 0.9, 0.3))
+	check("interrupt: the marked cable is out", mission.was_cut and mission.graph.path("pc_a", "server").is_empty())
+	var light: MeshInstance3D = mission.devices.switch.port_light(mission.get_node("Switch/Port3"))
+	check("interrupt: its link light turns red", light.shown_color() == light.cut_color)
+	var before: int = flow.arrived_count("pc_a", "server")
+	await _run_flow(flow, func() -> bool: return false, 6.0)
+	check("interrupt: no packets get through while it's out", flow.arrived_count("pc_a", "server") == before, [before, flow.arrived_count("pc_a", "server")])
+	check("interrupt: they wait at the switch", flow.live.any(func(p) -> bool: return p.at == "switch" and p.stuck))
+	check("interrupt: PC A's screen says Connection lost", mission.devices.pc_a.screen().lines.has("Connection lost"), mission.devices.pc_a.screen().lines)
+	check("interrupt: and no more than 20 packets pile up", flow.live.size() + flow.queued.size() <= 20)
+	check("interrupt: not done while it's out", manager.state == manager.State.ACTIVE)
+	await _plug(mission, "MarkedCable/EndB", "Server/Eth0")
+	check("interrupt: plugged back in, the link is restored and green", mission.restored and light.is_lit and light.shown_color() == light.on_color)
+	await _run_flow(flow, func() -> bool: return manager.state == manager.State.SUCCESS)
+	check("interrupt: the packets resume, and that finishes it", flow.arrived_count("pc_a", "server") > before and manager.state == manager.State.SUCCESS)
+	check("interrupt: pulling a cable out wasn't a mistake", manager.score == 100, manager.score)
+	check("interrupt: the flow stops when the mission is done", flow.streams.is_empty())
+
+
+func _test_interrupt_other_cable_is_not_the_cut() -> void:
+	var mission := await _interrupt_mission()
+	await _drag(mission, "CableB/EndB", Vector3(0.0, 0.9, 0.3))
+	check("interrupt: pulling PC B's cable isn't the marked one", not mission.was_cut)
+	var light: MeshInstance3D = mission.devices.switch.port_light(mission.get_node("Switch/Port2"))
+	check("interrupt: its light just goes dark, not red", not light.is_lit and not light.is_cut)
+
+
+func _test_message_waits_for_a_cut_link() -> void:
+	var mission := await _packets_mission()
+	var flow: Node = mission.flow
+	flow.delay_spread = 0.0
+	await _drag(mission, "CableC/EndA", Vector3(0.2, 0.9, 0.3))
+	await _drag(mission, "Message", _over(mission, "PcA/Outbox"))
+	await _run_flow(flow, func() -> bool: return false, 8.0)
+	check("packets: with PC C unplugged, a message waits (no packet arrives)", flow.arrived_count("pc_a", "pc_c") == 0 and flow.is_lost("pc_a"))
+	await _plug(mission, "CableC/EndA", "PcC/Eth0")
+	await _run_flow(flow, func() -> bool: return manager.state == manager.State.SUCCESS)
+	check("packets: plugged back in, it carries on and arrives", flow.arrived_count("pc_a", "pc_c") == 4 and manager.state == manager.State.SUCCESS)
+
+
+func _redundancy_mission() -> Node3D:
+	var mission := await _mission(REDUNDANCY)
+	mission.cut_step_s = 0.0
+	return mission
+
+
+func _test_redundancy_scene() -> void:
+	var mission := await _redundancy_mission()
+	check("redundancy: the scene loads with no problems", mission.problems.is_empty(), mission.problems)
+	check("redundancy: all four PCs start connected", mission.graph.all_connected(["pc_a", "pc_b", "pc_c", "pc_d"]))
+	check("redundancy: through one switch-to-switch cable", mission.graph.bridges().has(["sw1:port8", "sw2:port8"]))
+
+
+func _test_redundancy_second_path() -> void:
+	var mission := await _redundancy_mission()
+	await _plug(mission, "Spare/EndA", "Sw1/Port7")
+	check("redundancy: one end in tests nothing yet", manager.state == manager.State.ACTIVE and mission.cut_report.is_empty())
+	await _plug(mission, "Spare/EndB", "Sw2/Port6")
+	check("redundancy: a second cable between the switches passes the test", manager.state == manager.State.SUCCESS, mission.cut_report)
+	check("redundancy: the test cut both switch-to-switch cables", mission.cut_report.size() == 2, mission.cut_report)
+	check("redundancy: and says every PC stayed connected", Array(mission.cut_report).all(func(l) -> bool: return l.ends_with("still connected")), mission.cut_report)
+	check("redundancy: it names the cables", mission.cut_report[0].contains("Switch 1 port 8") and mission.cut_report[0].contains("Switch 2 port 8"), mission.cut_report)
+
+
+func _test_redundancy_loop_on_one_switch_fails() -> void:
+	var mission := await _redundancy_mission()
+	var results := []
+	mission.cuts_tested.connect(func(ok) -> void: results.append(ok))
+	await _plug(mission, "Spare/EndA", "Sw1/Port5")
+	await _plug(mission, "Spare/EndB", "Sw1/Port6")
+	check("redundancy: a cable from a switch back to itself isn't a second path", results == [false] and manager.state == manager.State.ACTIVE, results)
+	check("redundancy: the test shows which cut splits the network", "\n".join(mission.cut_report).contains("PC C and PC D cut off"), mission.cut_report)
+	check("redundancy: and the panel says so", "\n".join(mission.panel.lines).contains("Add a second path"), mission.panel.lines)
+	await _drag(mission, "Spare/EndB", Vector3(0.0, 0.9, 0.3))
+	await _plug(mission, "Spare/EndB", "Sw2/Port3")
+	check("redundancy: moved to the other switch, it passes", manager.state == manager.State.SUCCESS and results.back() == true, results)
+
+
+func _test_redundancy_really_cuts() -> void:
+	var mission := await _redundancy_mission()
+	mission.cut_step_s = 0.3
+	var done := []
+	mission.cuts_tested.connect(func(ok) -> void: done.append(ok))
+	await _plug(mission, "Spare/EndA", "Sw1/Port7")
+	await _plug(mission, "Spare/EndB", "Sw2/Port7")
+	var first: MeshInstance3D = mission.devices.sw1.port_light(mission.get_node("Sw1/Port8"))
+	check("redundancy: while testing, the cable being cut shows red", mission.testing_cuts and first.shown_color() == first.cut_color)
+	check("redundancy: and the mission isn't done mid-test", manager.state == manager.State.ACTIVE)
+	while done.is_empty():
+		await process_frame
+	check("redundancy: after the test every link is green again", first.is_lit and not first.is_cut)
+	check("redundancy: and every cable is still up", mission.graph.links.all(func(l) -> bool: return l.up))
+	check("redundancy: then it's done", manager.state == manager.State.SUCCESS)
+
+
+func _test_redundancy_ring_and_line() -> void:
+	var ring := _ring()
+	check("redundancy check: a ring of switches passes", ring.survives_any_single_cut(["pc_a", "pc_b", "pc_c"], true))
+	check("redundancy check: a line fails", not _line().survives_any_single_cut(["pc_a", "pc_b"], true))
+	var r := _line().cut_results(["pc_a", "pc_b"], true)
+	check("redundancy check: in a line only the switch-to-switch cable is tested (PCs' own are skipped)", r.size() == 1 and r[0].cut_off == ["pc_b"], r)
+
+
+func _test_registry_checks_streams() -> void:
+	var r = _registry_with({"stream": {"from": "pc_a"}})
+	check("registry: a stream needs from and to", r.errors.size() == 1 and r.errors[0].contains(".stream"), r.errors)

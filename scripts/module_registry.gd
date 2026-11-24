@@ -135,6 +135,9 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 	_read_on_complete(full_id, m)
 	_read_monitor(full_id, m)
 	_read_goal(full_id, m)
+	if m.has("stream") and (typeof(m.stream) != TYPE_DICTIONARY or typeof(m.stream.get("from")) != TYPE_STRING
+			or typeof(m.stream.get("to")) != TYPE_STRING):
+		errors.append("%s.stream: must be {from, to}, the devices packets keep flowing between" % full_id)
 	if errors.size() > before:
 		return ""
 	var copy: Dictionary = m.duplicate(true)

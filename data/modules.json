@@ -1322,6 +1322,429 @@
               "role": "PC A splits the message into numbered packets and sends each one to PC C."
             }
           }
+        },
+        {
+          "id": "interrupt",
+          "title": "Interrupt a connection",
+          "description": "Pull out a cable while packets are flowing, watch them stop, then plug it back in.",
+          "topic": "Fault tolerance",
+          "difficulty": "Intermediate",
+          "image": "task_build_network_interrupt",
+          "scene": "res://scenes/network/interrupt.tscn",
+          "intro": [
+            "Packets are flowing from PC A to the server, through the switch.",
+            "Pull out the marked cable, watch what happens, then plug it back in."
+          ],
+          "success": [
+            "The packets got through again once the cable was back.",
+            "With only one path, one broken cable stops everything after it."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "goal": {
+            "cut_then_restore": [
+              "switch:port3",
+              "server:eth0"
+            ]
+          },
+          "stream": {
+            "from": "pc_a",
+            "to": "server"
+          },
+          "parts": {
+            "CableA/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableA/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "MarkedCable/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "MarkedCable/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            }
+          },
+          "slots": {
+            "PcA/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC A LAN port",
+              "hint": "With only one path, one broken cable stops everything after it.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcA/Power": {
+              "working": true,
+              "name": "PC A power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcB/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC B LAN port",
+              "hint": "With only one path, one broken cable stops everything after it.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcB/Power": {
+              "working": true,
+              "name": "PC B power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "Switch/Port1": {
+              "accepts": "ethernet",
+              "name": "Switch port 1",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port2": {
+              "accepts": "ethernet",
+              "name": "Switch port 2",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port3": {
+              "accepts": "ethernet",
+              "name": "Switch port 3",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port4": {
+              "accepts": "ethernet",
+              "name": "Switch port 4",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port5": {
+              "accepts": "ethernet",
+              "name": "Switch port 5",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port6": {
+              "accepts": "ethernet",
+              "name": "Switch port 6",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port7": {
+              "accepts": "ethernet",
+              "name": "Switch port 7",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port8": {
+              "accepts": "ethernet",
+              "name": "Switch port 8",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Server/Eth0": {
+              "accepts": "ethernet",
+              "name": "Server LAN port",
+              "hint": "With only one path, one broken cable stops everything after it.",
+              "role": "The server's LAN port is its only way into the network.",
+              "optional": true,
+              "removable": true
+            },
+            "Server/Power": {
+              "working": true,
+              "name": "Server power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            }
+          }
+        },
+        {
+          "id": "redundancy",
+          "title": "Add redundancy",
+          "description": "Add a second path so that cutting any one cable doesn't split the network.",
+          "topic": "Fault tolerance",
+          "difficulty": "Advanced",
+          "image": "task_build_network_redundancy",
+          "scene": "res://scenes/network/redundancy.tscn",
+          "intro": [
+            "Two switches, two PCs on each, and one cable between the switches.",
+            "If that cable breaks, the network splits in two. Use the spare cable to add a second path."
+          ],
+          "success": [
+            "Cut any one cable between the switches and every PC is still connected.",
+            "Fault tolerance: a second path means the network keeps working when one part fails."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "goal": {
+            "survives_any_single_cut": [
+              "pc_a",
+              "pc_b",
+              "pc_c",
+              "pc_d"
+            ]
+          },
+          "parts": {
+            "CableA/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableA/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableD/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableD/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Link/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Link/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Spare/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Spare/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            }
+          },
+          "slots": {
+            "PcA/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC A LAN port",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcA/Power": {
+              "working": true,
+              "name": "PC A power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcB/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC B LAN port",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcB/Power": {
+              "working": true,
+              "name": "PC B power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcC/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC C LAN port",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcC/Power": {
+              "working": true,
+              "name": "PC C power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcD/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC D LAN port",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcD/Power": {
+              "working": true,
+              "name": "PC D power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "Sw1/Port1": {
+              "accepts": "ethernet",
+              "name": "Switch 1 port 1",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw1/Port2": {
+              "accepts": "ethernet",
+              "name": "Switch 1 port 2",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw1/Port3": {
+              "accepts": "ethernet",
+              "name": "Switch 1 port 3",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw1/Port4": {
+              "accepts": "ethernet",
+              "name": "Switch 1 port 4",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw1/Port5": {
+              "accepts": "ethernet",
+              "name": "Switch 1 port 5",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw1/Port6": {
+              "accepts": "ethernet",
+              "name": "Switch 1 port 6",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw1/Port7": {
+              "accepts": "ethernet",
+              "name": "Switch 1 port 7",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw1/Port8": {
+              "accepts": "ethernet",
+              "name": "Switch 1 port 8",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw2/Port1": {
+              "accepts": "ethernet",
+              "name": "Switch 2 port 1",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw2/Port2": {
+              "accepts": "ethernet",
+              "name": "Switch 2 port 2",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw2/Port3": {
+              "accepts": "ethernet",
+              "name": "Switch 2 port 3",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw2/Port4": {
+              "accepts": "ethernet",
+              "name": "Switch 2 port 4",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw2/Port5": {
+              "accepts": "ethernet",
+              "name": "Switch 2 port 5",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw2/Port6": {
+              "accepts": "ethernet",
+              "name": "Switch 2 port 6",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw2/Port7": {
+              "accepts": "ethernet",
+              "name": "Switch 2 port 7",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw2/Port8": {
+              "accepts": "ethernet",
+              "name": "Switch 2 port 8",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            }
+          }
         }
       ]
     }

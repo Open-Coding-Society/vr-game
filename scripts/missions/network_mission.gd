@@ -19,6 +19,11 @@ const NetworkDevice := preload("res://scripts/network/network_device.gd")
 
 ## The network changed: a cable went in or came out.
 signal network_changed
+## The redundancy check has cut every link in turn and shown the results.
+signal cuts_tested(passed: bool)
+
+## How long the redundancy check shows each cut (seconds). Tests set 0.
+@export var cut_step_s := 0.8
 
 var graph := NetworkGraph.new()
 ## Device id -> its node.
@@ -42,6 +47,14 @@ var job_counts: Dictionary = {}
 var finished := false
 ## Screens something else is writing on (a packet flow), by device id.
 var screens_in_use: Dictionary = {}
+## The redundancy check: what each cut did, one line per link, and whether
+## it is running now.
+var cut_report := PackedStringArray()
+var testing_cuts := false
+var _retest := false
+## What the redundancy check last told the player, kept on the panel when a
+## plug's own "Yes!" text comes after it.
+var _cut_note := ""
 ## The scene's packets (scripts/network/packet_flow.gd, a child named
 ## PacketFlow), or null in a mission without them.
 var flow: Node = null
@@ -59,6 +72,9 @@ func _ready() -> void:
 		flow.message_delivered.connect(func(from_id, to_id, packets, _text) -> void: note_delivered(from_id, to_id, packets))
 	for cable in cables:
 		cable.plug_in_start_ports()
+	var stream: Dictionary = config.get("stream", {})
+	if flow and not stream.is_empty():
+		flow.stream(stream.from, stream.to)
 	_changed()
 
 
@@ -123,6 +139,8 @@ func goal_devices() -> Array:
 ## says who it is "to") is sent as packets.
 func _on_snapped(zone: SnapZone, part: GrabbablePart) -> void:
 	super(zone, part)
+	if _cut_note != "" and not finished and manager.state == manager.State.ACTIVE:
+		_show_checklist(_cut_note)
 	var entry: Dictionary = config.parts.get(str(get_path_to(part)), {})
 	var device := zone.get_parent()
 	if entry.has("to") and flow and device.get_script() == NetworkDevice and manager.state == manager.State.ACTIVE:
@@ -182,7 +200,9 @@ func _changed() -> void:
 	network_changed.emit()
 	if manager == null:
 		return  # not in a scene (a test checking the goals on their own)
-	if not finished and manager.state == manager.State.ACTIVE:
+	if config.get("goal", {}).has("survives_any_single_cut"):
+		_redundancy_changed()
+	elif not finished and manager.state == manager.State.ACTIVE:
 		if goal_met():
 			_finish()
 		else:
@@ -191,9 +211,70 @@ func _changed() -> void:
 
 func _finish() -> void:
 	finished = true
+	if flow:
+		flow.stop_streams()
 	for z in zones:
 		z.locked = true
 	manager.complete()
+
+
+# --- The redundancy check -----------------------------------------------------
+
+## Once the devices are all connected, the game tests the network for real:
+## it cuts each link in turn (its lights go red), says what that cut did,
+## and puts it back. If no one cut splits them, the mission is done.
+func _redundancy_changed() -> void:
+	if finished or manager.state != manager.State.ACTIVE:
+		return
+	var ids: Array = config.goal.survives_any_single_cut
+	_cut_note = ""
+	if not graph.all_connected(ids):
+		cut_report.clear()
+		_show_checklist("")
+		return
+	if testing_cuts:
+		_retest = true
+		return
+	_test_cuts(ids)
+
+
+func _test_cuts(ids: Array) -> void:
+	testing_cuts = true
+	cut_report.clear()
+	var passed := true
+	for result in graph.cut_results(ids, true):
+		_show_port(result.a, "cut")
+		_show_port(result.b, "cut")
+		var what := "still connected" if result.ok else "%s cut off" % _names(result.cut_off)
+		cut_report.append("%s %s: %s" % ["[x]" if result.ok else "[  ]", _link_name(result.a, result.b), what])
+		passed = passed and result.ok
+		_show_checklist("Testing: cutting each cable in turn...")
+		if cut_step_s > 0.0:
+			await get_tree().create_timer(cut_step_s).timeout
+			if not is_inside_tree():
+				return
+		_show_port(result.a, "up" if graph.is_link_up(result.a, result.b) else "off")
+		_show_port(result.b, "up" if graph.is_link_up(result.a, result.b) else "off")
+	testing_cuts = false
+	if _retest:
+		# The network changed while it was being tested: test it again.
+		_retest = false
+		_redundancy_changed()
+		return
+	passed = passed and _goal_survives_any_single_cut(ids)
+	cuts_tested.emit(passed)
+	if passed:
+		_finish()
+	else:
+		_cut_note = "One cut still splits the network. Add a second path around it."
+		_show_checklist(_cut_note)
+
+
+## "Switch 1 port 8 to Switch 2 port 8".
+func _link_name(a: String, b: String) -> String:
+	var za: Area3D = zone_of.get(a)
+	var zb: Area3D = zone_of.get(b)
+	return "%s to %s" % [za.display_name if za else a, zb.display_name if zb else b]
 
 
 # --- The goals: one small check for each kind --------------------------------
@@ -275,7 +356,8 @@ func _status_lines() -> PackedStringArray:
 	elif goal.has("survives_any_single_cut"):
 		var ids: Array = goal.survives_any_single_cut
 		out.append(_tick(graph.all_connected(ids)) + "%s are connected" % _names(ids))
-		out.append(_tick(_goal_survives_any_single_cut(ids)) + "They stay connected when any one cable is cut")
+		out.append(_tick(finished) + "They stay connected when any one cable is cut")
+		out.append_array(cut_report)
 	elif goal.has("jobs_done"):
 		var total := 0
 		var used := 0

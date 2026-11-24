@@ -143,7 +143,8 @@ func survives_any_single_cut(ids: Array, skip_own_cables := false) -> bool:
 
 
 ## What happens to `ids` when each working link is cut in turn:
-## [{a, b, ok}], ok meaning they all still reach each other. The redundancy
+## [{a, b, ok, cut_off}], ok meaning they all still reach each other, and
+## cut_off the ones the first of `ids` can no longer reach. The redundancy
 ## mission shows these one by one.
 func cut_results(ids: Array, skip_own_cables := false) -> Array:
 	var out := []
@@ -151,7 +152,8 @@ func cut_results(ids: Array, skip_own_cables := false) -> Array:
 		if not link.up or (skip_own_cables and is_own_cable(link)):
 			continue
 		link.up = false
-		out.append({"a": link.a, "b": link.b, "ok": all_connected(ids)})
+		var cut_off := ids.filter(func(id) -> bool: return id != ids[0] and path(ids[0], id).is_empty())
+		out.append({"a": link.a, "b": link.b, "ok": all_connected(ids), "cut_off": cut_off})
 		link.up = true
 	return out
 

@@ -53,6 +53,8 @@ var streams: Array = []
 var peak := 0
 ## Delays (seconds) to use, in order, before random ones (tests set them).
 var next_delays: Array = []
+## Packets that have arrived: "from>to" -> how many.
+var _arrived: Dictionary = {}
 
 var _rng := RandomNumberGenerator.new()
 
@@ -88,14 +90,7 @@ func stop_streams() -> void:
 
 ## Every packet that has arrived from one device to another so far.
 func arrived_count(from_id: String, to_id: String) -> int:
-	var n := 0
-	for m in messages:
-		if m.from == from_id and m.to == to_id:
-			n += m.arrived.size()
-	for s in streams:
-		if s.from == from_id and s.to == to_id:
-			n += s.arrived
-	return n
+	return _arrived.get("%s>%s" % [from_id, to_id], 0)
 
 
 ## True when some packet from `from_id` is stopped by a broken link.
@@ -212,6 +207,8 @@ func _arrive(p: Dictionary) -> void:
 	live.erase(p)
 	remove_child(p.node)
 	p.node.queue_free()
+	var key := "%s>%s" % [p.from, p.to]
+	_arrived[key] = _arrived.get(key, 0) + 1
 	if p.has("stream"):
 		p.stream.arrived += 1
 	else:
