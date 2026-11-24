@@ -73,9 +73,24 @@ func _build_network() -> void:
 			cables.append(node)
 			node.plugged.connect(_on_cable_plugged)
 			node.unplugged.connect(_on_cable_unplugged)
+			_label_one_end(node)
 	for id in goal_devices():
 		if not devices.has(id):
 			_problem('the goal names "%s", but no device in the scene has that device_id' % id)
+
+
+## With many cables on a desk, a label over every plug is a pile of text: a
+## cable's name shows over its first end only, and only while that end is
+## loose.
+func _label_one_end(cable: Node) -> void:
+	var b_tag := cable.get_node_or_null("EndB/Name") as Label3D
+	if b_tag:
+		b_tag.visible = false
+	var a_end := cable.get_node_or_null("EndA")
+	var a_tag := cable.get_node_or_null("EndA/Name") as Label3D
+	if a_end and a_tag and a_end.has_signal("installed"):
+		a_end.installed.connect(func(_part, _zone) -> void: a_tag.visible = false)
+		a_end.removed.connect(func(_part, _zone) -> void: a_tag.visible = true)
 
 
 ## Every device id the goal names.

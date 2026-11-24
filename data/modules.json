@@ -713,6 +713,445 @@
           }
         }
       ]
+    },
+    {
+      "id": "build_network",
+      "title": "Build a Network",
+      "category": "computer",
+      "missions": [
+        {
+          "id": "connect_two",
+          "title": "Connect two computers",
+          "description": "Join two PCs with one Cat6 cable: the smallest network there is.",
+          "topic": "Networks",
+          "difficulty": "Beginner",
+          "image": "task_build_network_connect_two",
+          "scene": "res://scenes/network/connect_two.tscn",
+          "intro": [
+            "Two PCs on a desk can't share anything yet.",
+            "Plug one end of the blue Cat6 cable into PC A's LAN port and the other end into PC B's."
+          ],
+          "success": [
+            "That's a network! Two devices joined by a cable can share data.",
+            "A cable between two computers is the smallest network: two devices that can share data."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "goal": {
+            "connected": [
+              "pc_a",
+              "pc_b"
+            ]
+          },
+          "parts": {
+            "Cable/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Cable/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            }
+          },
+          "slots": {
+            "PcA/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC A LAN port",
+              "hint": "A cable between two computers is the smallest network: two devices that can share data.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcA/Power": {
+              "working": true,
+              "name": "PC A power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcB/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC B LAN port",
+              "hint": "A cable between two computers is the smallest network: two devices that can share data.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcB/Power": {
+              "working": true,
+              "name": "PC B power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            }
+          }
+        },
+        {
+          "id": "switch",
+          "title": "Add a switch",
+          "description": "Cable three PCs to a GS108 switch so they can all reach each other.",
+          "topic": "Networks",
+          "difficulty": "Beginner",
+          "image": "task_build_network_switch",
+          "scene": "res://scenes/network/switch.tscn",
+          "intro": [
+            "One cable joins two computers. For three or more you need a switch.",
+            "Cable each PC's LAN port to any of the switch's 8 ports."
+          ],
+          "success": [
+            "All three PCs are on one network now.",
+            "A switch connects many devices on the same local network and passes data only to the port it's meant for."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "goal": {
+            "connected": [
+              "pc_a",
+              "pc_b",
+              "pc_c"
+            ]
+          },
+          "parts": {
+            "CableA/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableA/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            }
+          },
+          "slots": {
+            "PcA/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC A LAN port",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcA/Power": {
+              "working": true,
+              "name": "PC A power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcB/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC B LAN port",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcB/Power": {
+              "working": true,
+              "name": "PC B power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcC/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC C LAN port",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcC/Power": {
+              "working": true,
+              "name": "PC C power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "Switch/Port1": {
+              "accepts": "ethernet",
+              "name": "Switch port 1",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port2": {
+              "accepts": "ethernet",
+              "name": "Switch port 2",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port3": {
+              "accepts": "ethernet",
+              "name": "Switch port 3",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port4": {
+              "accepts": "ethernet",
+              "name": "Switch port 4",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port5": {
+              "accepts": "ethernet",
+              "name": "Switch port 5",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port6": {
+              "accepts": "ethernet",
+              "name": "Switch port 6",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port7": {
+              "accepts": "ethernet",
+              "name": "Switch port 7",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port8": {
+              "accepts": "ethernet",
+              "name": "Switch port 8",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            }
+          }
+        },
+        {
+          "id": "router",
+          "title": "Add a router",
+          "description": "Connect the switch to a router, and the router to the internet.",
+          "topic": "Networks",
+          "difficulty": "Beginner",
+          "image": "task_build_network_router",
+          "scene": "res://scenes/network/router.tscn",
+          "intro": [
+            "The three PCs reach each other, but not the internet.",
+            "Cable the switch to one of the router's LAN ports, then the wall's Internet jack to the router's WAN port."
+          ],
+          "success": [
+            "Every PC is online!",
+            "A router connects networks together. LAN is your side; WAN goes out to the internet."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "goal": {
+            "reach": "internet",
+            "from": [
+              "pc_a",
+              "pc_b",
+              "pc_c"
+            ]
+          },
+          "parts": {
+            "CableA/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableA/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Uplink/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Uplink/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "InternetCable/EndA": {
+              "type": "wan",
+              "name": "internet cable plug"
+            },
+            "InternetCable/EndB": {
+              "type": "wan",
+              "name": "internet cable plug"
+            }
+          },
+          "slots": {
+            "PcA/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC A LAN port",
+              "hint": "A router connects networks together. LAN is your side; WAN goes out to the internet.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcA/Power": {
+              "working": true,
+              "name": "PC A power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcB/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC B LAN port",
+              "hint": "A router connects networks together. LAN is your side; WAN goes out to the internet.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcB/Power": {
+              "working": true,
+              "name": "PC B power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcC/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC C LAN port",
+              "hint": "A router connects networks together. LAN is your side; WAN goes out to the internet.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcC/Power": {
+              "working": true,
+              "name": "PC C power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "Switch/Port1": {
+              "accepts": "ethernet",
+              "name": "Switch port 1",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port2": {
+              "accepts": "ethernet",
+              "name": "Switch port 2",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port3": {
+              "accepts": "ethernet",
+              "name": "Switch port 3",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port4": {
+              "accepts": "ethernet",
+              "name": "Switch port 4",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port5": {
+              "accepts": "ethernet",
+              "name": "Switch port 5",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port6": {
+              "accepts": "ethernet",
+              "name": "Switch port 6",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port7": {
+              "accepts": "ethernet",
+              "name": "Switch port 7",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port8": {
+              "accepts": "ethernet",
+              "name": "Switch port 8",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Router/Wan": {
+              "accepts": "wan",
+              "name": "Router WAN port",
+              "hint": "WAN goes out to the internet: only the cable from the wall's Internet jack goes here. The switch goes in a LAN port.",
+              "role": "The WAN port joins your network to the internet.",
+              "optional": true,
+              "removable": true
+            },
+            "Router/Lan1": {
+              "accepts": "ethernet",
+              "name": "Router LAN 1 port",
+              "hint": "LAN is your side: the cable from the switch goes here. The internet cable goes in WAN.",
+              "role": "The LAN ports are your side of the router: your own network.",
+              "optional": true,
+              "removable": true
+            },
+            "Router/Lan2": {
+              "accepts": "ethernet",
+              "name": "Router LAN 2 port",
+              "hint": "LAN is your side: the cable from the switch goes here. The internet cable goes in WAN.",
+              "role": "The LAN ports are your side of the router: your own network.",
+              "optional": true,
+              "removable": true
+            },
+            "Jack/Jack": {
+              "accepts": "wan",
+              "name": "Internet Internet jack",
+              "hint": "The wall's Internet jack only takes the internet cable, which goes to the router's WAN port.",
+              "role": "The wall jack is where the internet comes into the room.",
+              "optional": true,
+              "removable": true
+            }
+          }
+        }
+      ]
     }
   ]
 }

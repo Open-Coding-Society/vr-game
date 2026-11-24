@@ -317,14 +317,15 @@ func _test_mission_mistake_gives_hint_and_costs_points() -> void:
 
 func _test_every_mission_scene_is_clean() -> void:
 	# Every mission in the registry loads with no scene/registry mismatch, and no
-	# part starts inside a slot (it would install itself on its first drop).
+	# part starts inside a slot (it would install itself on its first drop),
+	# unless it starts installed there (a network cable that starts plugged in).
 	for module in manager.registry.modules:
 		for full_id in module.mission_ids:
 			var mission := await _fresh(load(manager.registry.mission(full_id).scene))
 			var overlapping := []
 			for zone in mission.zones:
 				for body in zone.get_overlapping_bodies():
-					if body is GrabbablePart:
+					if body is GrabbablePart and body.installed_zone != zone:
 						overlapping.append("%s in %s" % [body.name, zone.name])
 			check("%s: loads cleanly, no part starts inside a slot" % full_id,
 				mission.problems.is_empty() and overlapping.is_empty() and mission.zones.size() > 0,

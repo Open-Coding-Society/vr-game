@@ -138,7 +138,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.115, 0.0065)
 script = ExtResource("4_screen")
 size = Vector2(0.16, 0.1)
 pixels_per_meter = 4000
-body_size = 34
+body_size = 48
 line_seconds = 0.0
 
 [node name="MonitorShape" type="CollisionShape3D" parent="."]

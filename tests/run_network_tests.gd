@@ -63,7 +63,10 @@ func _tests() -> Array:
 		_test_goal_connected, _test_goal_reach, _test_goal_delivered, _test_goal_cut_then_restore,
 		_test_goal_survives_any_single_cut, _test_goal_jobs_done, _test_registry_checks_goals,
 		_test_registry_optional_slots, _test_optional_slot_is_not_needed, _test_old_mission_finishes_the_old_way,
-		_test_goal_mission_ignores_full_slots, _test_cable_start_ports]
+		_test_goal_mission_ignores_full_slots, _test_cable_start_ports,
+		_test_build_network_is_in_the_registry, _test_network_scenes_load, _test_connect_two,
+		_test_connect_two_power_socket_is_a_mistake, _test_unplugging_in_a_mission, _test_switch_any_ports,
+		_test_router_starts_cabled, _test_router_wan_lan_swapped, _test_router_perfect_run]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -701,3 +704,148 @@ func _test_cable_start_ports() -> void:
 	a.grab()
 	a.drop()
 	check("start ports: pulled out and let go, a plug goes to where it started on the table", not a.is_installed and a.global_position.is_equal_approx(Vector3(-0.2, 0, 0)), a.global_position)
+
+
+# --- Step 5: missions 1-3 -----------------------------------------------------
+
+const MISSIONS_1_3 := {
+	"build_network.connect_two": "res://scenes/network/connect_two.tscn",
+	"build_network.switch": "res://scenes/network/switch.tscn",
+	"build_network.router": "res://scenes/network/router.tscn",
+}
+
+
+## Loads a network mission scene and returns it.
+func _mission(path: String) -> Node3D:
+	return await _fresh(load(path).instantiate())
+
+
+## The middle of a slot's drop area: where a carried part has to be for the
+## slot to see it.
+func _over(mission: Node3D, slot_path: String) -> Vector3:
+	return (mission.get_node(slot_path).get_node("CollisionShape3D") as Node3D).global_position
+
+
+## The real input path, as the mouse does it: press on the part through the
+## camera, carry it above the table to over `to`, let go.
+func _drag(mission: Node3D, part_path: String, to: Vector3) -> void:
+	var part: GrabbablePart = mission.get_node(part_path)
+	var grabber = mission.get_node("Room/MouseGrabber")
+	var camera: Camera3D = mission.get_node("Room/Camera3D")
+	var middle: Vector3 = (part.get_node("CollisionShape3D") as Node3D).global_position
+	if grabber.try_grab_at(camera.unproject_position(middle)) != part:
+		check("pressing on %s through the camera picks it up" % part_path, false)
+		return
+	grabber.carry_to(camera.unproject_position(Vector3(to.x, grabber.carry_height, to.z)))
+	await _settle()
+	grabber.release()
+	await _settle()
+
+
+## Drags a plug into a slot.
+func _plug(mission: Node3D, part_path: String, slot_path: String) -> void:
+	await _drag(mission, part_path, _over(mission, slot_path))
+
+
+func _test_build_network_is_in_the_registry() -> void:
+	var r = ModuleRegistry.load_from()
+	check("registry: data/modules.json still loads cleanly", r.errors.is_empty(), r.errors)
+	var module: Dictionary = {}
+	for m in r.modules:
+		if m.id == "build_network":
+			module = m
+	check("registry: there is a Build a Network module in Computer", module.get("title") == "Build a Network" and module.get("category") == "computer", module)
+	for id in MISSIONS_1_3:
+		var m: Dictionary = r.mission(id)
+		check("registry: %s has its scene, a goal and the usual scoring" % id, m.get("scene") == MISSIONS_1_3[id]
+			and m.has("goal") and m.scoring.full == 100 and m.scoring.per_mistake == 10 and m.difficulty == "Beginner", m.get("scene"))
+
+
+func _test_network_scenes_load() -> void:
+	for id in MISSIONS_1_3:
+		var mission := await _mission(MISSIONS_1_3[id])
+		check("%s: the scene loads with no problems" % id, mission.problems.is_empty(), mission.problems)
+		check("%s: every port is an optional slot" % id, mission.goals.is_empty() and mission.zones.size() > 0)
+		check("%s: it starts in Intro, not finished" % id, manager.state == manager.State.INTRO and not mission.finished)
+
+
+func _test_connect_two() -> void:
+	var mission := await _mission(MISSIONS_1_3["build_network.connect_two"])
+	var screen: Node = mission.devices.pc_a.screen()
+	check("connect two: PC A's screen starts not connected", screen.is_on and "not connected" in "\n".join(screen.lines), screen.lines)
+	await _plug(mission, "Cable/EndA", "PcA/Eth0")
+	check("connect two: one end in doesn't finish it", manager.state == manager.State.ACTIVE and mission.graph.links.is_empty())
+	await _plug(mission, "Cable/EndB", "PcB/Eth0")
+	check("connect two: both ends in joins the PCs", mission.graph.path("pc_a", "pc_b") == ["pc_a", "pc_b"])
+	check("connect two: and finishes the mission", manager.state == manager.State.SUCCESS and manager.score == 100, manager.state)
+	var light_a: MeshInstance3D = mission.devices.pc_a.port_light(mission.get_node("PcA/Eth0"))
+	var light_b: MeshInstance3D = mission.devices.pc_b.port_light(mission.get_node("PcB/Eth0"))
+	check("connect two: both link lights are green", light_a.is_lit and light_b.is_lit and light_a.shown_color() == light_a.on_color)
+	check("connect two: PC A's screen says PC B found", screen.lines.has("PC B found"), screen.lines)
+
+
+func _test_connect_two_power_socket_is_a_mistake() -> void:
+	var mission := await _mission(MISSIONS_1_3["build_network.connect_two"])
+	await _plug(mission, "Cable/EndA", "PcA/Power")
+	check("connect two: Ethernet into the power socket is turned away", not mission.get_node("Cable/EndA").is_installed)
+	check("connect two: and is a mistake", manager.mistakes == 1, manager.mistakes)
+	check("connect two: the panel says where it goes", "\n".join(mission.panel.lines).contains("LAN port"), mission.panel.lines)
+
+
+func _test_unplugging_in_a_mission() -> void:
+	var mission := await _mission(MISSIONS_1_3["build_network.switch"])
+	await _plug(mission, "CableA/EndA", "PcA/Eth0")
+	await _plug(mission, "CableA/EndB", "Switch/Port4")
+	var light: MeshInstance3D = mission.devices.switch.port_light(mission.get_node("Switch/Port4"))
+	check("unplug: the switch port is lit once PC A is cabled to it", light.is_lit and mission.graph.links.size() == 1)
+	await _drag(mission, "CableA/EndB", Vector3(0.3, 0.9, 0.3))
+	check("unplug: pulling the plug out takes the link away", mission.graph.links.is_empty() and not mission.get_node("CableA/EndB").is_installed)
+	check("unplug: the port's light goes dark", not light.is_lit)
+	check("unplug: and it isn't a mistake", manager.mistakes == 0, manager.mistakes)
+	check("unplug: PC A's screen is not connected again", "not connected" in "\n".join(mission.devices.pc_a.screen().lines))
+
+
+func _test_switch_any_ports() -> void:
+	var mission := await _mission(MISSIONS_1_3["build_network.switch"])
+	var plan := [["CableA", "PcA/Eth0", "Switch/Port2"], ["CableB", "PcB/Eth0", "Switch/Port5"], ["CableC", "PcC/Eth0", "Switch/Port8"]]
+	for i in plan.size():
+		await _plug(mission, plan[i][0] + "/EndA", plan[i][1])
+		await _plug(mission, plan[i][0] + "/EndB", plan[i][2])
+		if i == 1:
+			check("switch: two PCs on the switch isn't all three", manager.state == manager.State.ACTIVE and mission.graph.path("pc_a", "pc_b").size() == 3)
+	check("switch: any three ports join all three PCs", mission.graph.all_connected(["pc_a", "pc_b", "pc_c"]))
+	check("switch: and that finishes it", manager.state == manager.State.SUCCESS and manager.score == 100, manager.state)
+	check("switch: PC B finds the other two", mission.devices.pc_b.screen().lines.has("PC A, PC C found"), mission.devices.pc_b.screen().lines)
+	check("switch: the panel ticks the goal", "\n".join(mission.panel.lines).contains("Mission complete") or mission.panel.title == "Mission complete!", mission.panel.title)
+
+
+func _test_router_starts_cabled() -> void:
+	var mission := await _mission(MISSIONS_1_3["build_network.router"])
+	check("router: the PCs start cabled to the switch", mission.graph.links.size() == 3 and mission.graph.all_connected(["pc_a", "pc_b", "pc_c"]))
+	check("router: their switch ports start lit", mission.devices.switch.port_light(mission.get_node("Switch/Port1")).is_lit)
+	check("router: but nobody reaches the internet", mission.graph.path("pc_a", "internet").is_empty())
+	check("router: and starting cabled is no mistake and doesn't start the clock", manager.mistakes == 0 and manager.state == manager.State.INTRO)
+
+
+func _test_router_wan_lan_swapped() -> void:
+	var mission := await _mission(MISSIONS_1_3["build_network.router"])
+	await _plug(mission, "InternetCable/EndA", "Router/Lan1")
+	check("router: the internet cable into a LAN port is turned away", not mission.get_node("InternetCable/EndA").is_installed and manager.mistakes == 1, manager.mistakes)
+	check("router: with LAN's hint", "\n".join(mission.panel.lines).contains("LAN is your side"), mission.panel.lines)
+	await _plug(mission, "Uplink/EndA", "Router/Wan")
+	check("router: the switch's cable into WAN is turned away too", not mission.get_node("Uplink/EndA").is_installed and manager.mistakes == 2, manager.mistakes)
+	check("router: with WAN's hint", "\n".join(mission.panel.lines).contains("WAN goes out to the internet"), mission.panel.lines)
+	await _plug(mission, "InternetCable/EndA", "Switch/Port6")
+	check("router: and the internet cable into the switch", manager.mistakes == 3, manager.mistakes)
+
+
+func _test_router_perfect_run() -> void:
+	var mission := await _mission(MISSIONS_1_3["build_network.router"])
+	await _plug(mission, "Uplink/EndA", "Switch/Port8")
+	await _plug(mission, "Uplink/EndB", "Router/Lan1")
+	check("router: switch to LAN isn't online yet", manager.state == manager.State.ACTIVE)
+	await _plug(mission, "InternetCable/EndA", "Jack/Jack")
+	await _plug(mission, "InternetCable/EndB", "Router/Wan")
+	check("router: every PC reaches the internet", ["pc_a", "pc_b", "pc_c"].all(func(id) -> bool: return mission.graph.path(id, "internet").size() == 4))
+	check("router: and the mission is done, with no mistakes", manager.state == manager.State.SUCCESS and manager.score == 100, manager.score)
+	check("router: the PCs' screens say they're online", mission.devices.pc_c.screen().lines.has("Internet: online"), mission.devices.pc_c.screen().lines)

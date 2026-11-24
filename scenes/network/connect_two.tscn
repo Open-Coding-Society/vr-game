@@ -1,0 +1,31 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/missions/network_mission.gd" id="1_mission"]
+[ext_resource type="PackedScene" path="res://scenes/room.tscn" id="2_room"]
+[ext_resource type="Script" path="res://scripts/ui/info_panel.gd" id="3_panel"]
+[ext_resource type="PackedScene" path="res://scenes/network/cat6_cable.tscn" id="4_cable"]
+[ext_resource type="PackedScene" path="res://scenes/network/devices/pc.tscn" id="d_pc"]
+
+[node name="ConnectTwo" type="Node3D"]
+script = ExtResource("1_mission")
+mission_id = "build_network.connect_two"
+
+[node name="Room" parent="." instance=ExtResource("2_room")]
+
+[node name="PcA" parent="." instance=ExtResource("d_pc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 0.9, -0.06)
+device_id = "pc_a"
+display_name = "PC A"
+
+[node name="PcB" parent="." instance=ExtResource("d_pc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.22, 0.9, -0.06)
+device_id = "pc_b"
+display_name = "PC B"
+
+[node name="Cable" parent="." instance=ExtResource("4_cable")]
+end_a_position = Vector3(-0.08, 0.9, 0.22)
+end_b_position = Vector3(0.06, 0.9, 0.22)
+
+[node name="InfoPanel" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.9063, 0.4226, 0, -0.4226, 0.9063, -0.02, 1.12, -0.32)
+script = ExtResource("3_panel")
