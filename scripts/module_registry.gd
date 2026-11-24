@@ -109,8 +109,8 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 			errors.append("%s.%s: must be text" % [full_id, field])
 	if typeof(m.get("scene")) == TYPE_STRING and not ResourceLoader.exists(m.scene):
 		errors.append("%s.scene: %s doesn't exist" % [full_id, m.scene])
-	# Free Play's card text: optional, but text when given.
-	for field in ["description", "topic", "difficulty"]:
+	# Free Play's card text and image name: optional, but text when given.
+	for field in ["description", "topic", "difficulty", "image"]:
 		if m.has(field) and (typeof(m[field]) != TYPE_STRING or m[field] == ""):
 			errors.append("%s.%s: must be text" % [full_id, field])
 	for field in ["intro", "success"]:
@@ -147,6 +147,9 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 	copy.description = str(m.get("description", ""))
 	copy.topic = str(m.get("topic", ""))
 	copy.difficulty = str(m.get("difficulty", ""))
+	# The card's picture in ui/images/ (without .png): task_<mission id> unless
+	# the mission names its own (Build a Network's are task_build_network_<id>).
+	copy.image = str(m.get("image", "task_" + m.id))
 	copy.practice = bool(m.get("practice", false))
 	copy.catalog_parts = bool(m.get("catalog_parts", false))
 	copy.scoring = {"full": int(scoring.full), "per_mistake": int(scoring.per_mistake),
