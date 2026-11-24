@@ -9,8 +9,8 @@ The team builds the game **one person at a time**, in this order (the build orde
 | 0 | Aryan | Play in the Quest headset: VR grabber, XR rig, OpenXR, Quest plugin and export | Done; the Quest playtest is still open |
 | 1 | Aryan | Home menu with a placeholder OCS login, plus the menu system the next phases build on: save system, mode picker, Free Play list, Story roadmap shell | Done; merged into `main` |
 | 2 | Chetan | Two game modes, with placeholder models: Story IRL Act 1 "Set up a pre-built PC" and Free Play "Build your own PC" | Done; merged into `main` |
-| **3** | **Kashyap** | **One more mode: "Build a Network", played as Story IRL Act 4 "Small rigs" and listed in Free Play** | **Built on `phase-3-network`; waiting for review and merge** |
-| 4 | Ryden | Assigned later | Waiting |
+| 3 | Kashyap | One more mode: "Build a Network", played as Story IRL Act 4 "Small rigs" and listed in Free Play | Done; merged into `main` |
+| 4 | Ryden | Assigned later | Next |
 | 5 | Aaditya | Finish the game | Waiting |
 | 6 | Chetan + one more Claude | Bug fixes | Waiting |
 | 7 | Aryan | Detailed, dissectible 3D models | Waiting |
