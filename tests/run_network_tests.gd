@@ -72,7 +72,9 @@ func _tests() -> Array:
 		_test_interrupt_scene, _test_interrupt_cut_and_restore, _test_interrupt_other_cable_is_not_the_cut,
 		_test_message_waits_for_a_cut_link, _test_redundancy_scene, _test_redundancy_second_path,
 		_test_redundancy_loop_on_one_switch_fails, _test_redundancy_really_cuts, _test_redundancy_ring_and_line,
-		_test_registry_checks_streams]
+		_test_registry_checks_streams,
+		_test_job_board_sums, _test_job_board_even_spread, _test_distribute_scene, _test_unconnected_mini_turns_work_away,
+		_test_distribute_even_run, _test_distribute_uneven_run, _test_tiles_can_move, _test_slot_gate]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -1124,3 +1126,111 @@ func _test_redundancy_ring_and_line() -> void:
 func _test_registry_checks_streams() -> void:
 	var r = _registry_with({"stream": {"from": "pc_a"}})
 	check("registry: a stream needs from and to", r.errors.size() == 1 and r.errors[0].contains(".stream"), r.errors)
+
+
+# --- Step 8: split a workload across machines -------------------------------
+
+const DISTRIBUTE := "res://scenes/network/distribute.tscn"
+const JobBoardScript := preload("res://scripts/network/job_board.gd")
+
+
+func _test_job_board_sums() -> void:
+	var board: Node = JobBoardScript.new()
+	check("job board: 12 tiles on one machine take 12 s", board.sequential_s(12) == 12.0)
+	check("job board: split 3-3-3-3 they take 3.5 s (3 s of work, 0.5 s to send it)", is_equal_approx(board.parallel_s([3, 3, 3, 3]), 3.5), board.parallel_s([3, 3, 3, 3]))
+	check("job board: the busiest machine sets the time", is_equal_approx(board.parallel_s([4, 4, 4, 0]), 4.5) and is_equal_approx(board.parallel_s([6, 2, 2, 2]), 6.5))
+	check("job board: nothing handed out is no time yet", board.parallel_s([0, 0]) == 0.0 and board.speedup(12, [0, 0]) == 0.0)
+	check("job board: speedup 12 / 3.5 = 3.4", is_equal_approx(snappedf(board.speedup(12, [3, 3, 3, 3]), 0.1), 3.4))
+	check("job board: the time bar's line, as in the plan", board.summary(12, [3, 3, 3, 3]) == "Sequential: 12 s → Parallel: 3.5 s · Speedup 3.4×", board.summary(12, [3, 3, 3, 3]))
+	check("job board: before any work, just the sequential time", board.summary(12, []) == "Sequential: 12 s")
+	board.free()
+
+
+func _test_job_board_even_spread() -> void:
+	check("even spread: 3-3-3-3 is even", JobBoardScript.is_even([3, 3, 3, 3]))
+	check("even spread: within one of each other is even", JobBoardScript.is_even([4, 3, 3, 3]) and JobBoardScript.is_even([2, 3, 2, 3]))
+	check("even spread: 4-4-4-0 isn't (one machine idle)", not JobBoardScript.is_even([4, 4, 4, 0]))
+	check("even spread: 4-4-2-2 isn't", not JobBoardScript.is_even([4, 4, 2, 2]))
+	check("even spread: machines used counts those with work", JobBoardScript.machines_used([4, 4, 4, 0]) == 3)
+
+
+func _distribute() -> Node3D:
+	return await _mission(DISTRIBUTE)
+
+
+## Hands tile `n` to a machine through the mouse.
+func _tile(mission: Node3D, n: int, mini: String) -> void:
+	await _drag(mission, "Tiles/Tile%d" % n, _over(mission, mini + "/Job"))
+
+
+func _test_distribute_scene() -> void:
+	var mission := await _distribute()
+	check("distribute: the scene loads with no problems", mission.problems.is_empty(), mission.problems)
+	check("distribute: four Mac minis with Job slots", mission.job_zones.size() == 4 and mission.job_zones.values().all(func(z) -> bool: return z.capacity == 4))
+	check("distribute: three are on the network, Mac mini D isn't", mission._on_network("mini_a") and mission._on_network("mini_c") and not mission._on_network("mini_d"))
+	check("distribute: scoring is 90, plus 10 for an even spread", mission.config.scoring.full == 90 and mission.config.scoring.balanced_bonus == 10)
+	check("distribute: the time bar starts at the sequential time", mission.job_board.get_node("TimeBar").lines[0] == "Sequential: 12 s", mission.job_board.get_node("TimeBar").lines)
+
+
+func _test_unconnected_mini_turns_work_away() -> void:
+	var mission := await _distribute()
+	await _tile(mission, 1, "MiniD")
+	check("distribute: a mini that isn't on the network turns a tile away", not mission.get_node("Tiles/Tile1").is_installed)
+	check("distribute: with the hint", "\n".join(mission.panel.lines).contains("Mac mini D isn't on the network"), mission.panel.lines)
+	check("distribute: that isn't a mistake", manager.mistakes == 0, manager.mistakes)
+	await _plug(mission, "CableD/EndB", "Switch/Port4")
+	check("distribute: cabled to the switch, it's on the network", mission._on_network("mini_d"))
+	await _tile(mission, 1, "MiniD")
+	check("distribute: and takes work", mission.get_node("Tiles/Tile1").is_installed and mission.job_counts.mini_d == 1, mission.job_counts)
+
+
+func _test_distribute_even_run() -> void:
+	var mission := await _distribute()
+	await _plug(mission, "CableD/EndB", "Switch/Port5")
+	var minis := ["MiniA", "MiniB", "MiniC", "MiniD"]
+	for n in range(1, 13):
+		await _tile(mission, n, minis[(n - 1) % 4])
+		if n == 11:
+			check("distribute: 11 tiles isn't the whole job", manager.state == manager.State.ACTIVE)
+	check("distribute: 12 tiles on 4 machines finishes it", manager.state == manager.State.SUCCESS, mission.job_counts)
+	check("distribute: an even spread earns the bonus: 90 + 10", manager.score == 100, manager.score)
+	check("distribute: the time bar shows the speedup", mission.job_board.get_node("TimeBar").lines[0] == "Sequential: 12 s → Parallel: 3.5 s · Speedup 3.4×", mission.job_board.get_node("TimeBar").lines)
+	var bar: Node3D = mission.job_board.get_node("ParallelBar")
+	check("distribute: the parallel bar is shorter than the sequential one", bar.visible and bar.scale.x < mission.job_board.get_node("SequentialBar").scale.x)
+	check("distribute: the results card has the times and the bonus", "\n".join(mission.panel.lines).contains("Speedup 3.4×") and "\n".join(mission.panel.lines).contains("+10"), mission.panel.lines)
+
+
+func _test_distribute_uneven_run() -> void:
+	var mission := await _distribute()
+	var minis := ["MiniA", "MiniB", "MiniC"]
+	for n in range(1, 13):
+		await _tile(mission, n, minis[(n - 1) % 3])
+	check("distribute: 4-4-4 on three machines finishes it (at least 3)", manager.state == manager.State.SUCCESS, mission.job_counts)
+	check("distribute: but one idle machine means no bonus: 90", manager.score == 90, manager.score)
+	check("distribute: the time is 4.5 s", mission.job_board.get_node("TimeBar").lines[0].contains("Parallel: 4.5 s"), mission.job_board.get_node("TimeBar").lines)
+
+
+func _test_tiles_can_move() -> void:
+	var mission := await _distribute()
+	await _tile(mission, 1, "MiniA")
+	await _drag(mission, "Tiles/Tile1", _over(mission, "MiniB/Job"))
+	check("distribute: a tile can be moved to another machine", mission.job_counts.mini_a == 0 and mission.job_counts.mini_b == 1, mission.job_counts)
+	check("distribute: moving work isn't a mistake", manager.mistakes == 0)
+	await _drag(mission, "Tiles/Tile2", _over(mission, "MiniA/Eth0"))
+	check("distribute: a tile on a LAN port is a mistake", manager.mistakes == 1 and not mission.get_node("Tiles/Tile2").is_installed)
+
+
+func _test_slot_gate() -> void:
+	var made := await _bench()
+	var cable: Node3D = made[1]
+	var p1: SnapZone = made[2]
+	var reason := ["Not now."]
+	p1.gate = func(_part) -> String: return reason[0]
+	var refused := []
+	p1.refused.connect(func(_z, part) -> void: refused.append(part))
+	var a: GrabbablePart = cable.get_node("EndA")
+	await _carry_and_drop(a, p1.global_position)
+	check("gate: a slot's gate can turn a part away", not a.is_installed and refused == [a] and p1.last_problem == "Not now.")
+	reason[0] = ""
+	await _carry_and_drop(a, p1.global_position)
+	check("gate: and let it in once it says yes", a.is_installed)

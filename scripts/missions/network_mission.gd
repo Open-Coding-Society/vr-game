@@ -58,6 +58,12 @@ var _cut_note := ""
 ## The scene's packets (scripts/network/packet_flow.gd, a child named
 ## PacketFlow), or null in a mission without them.
 var flow: Node = null
+## Distributed work: the job board (scripts/network/job_board.gd, a child
+## named JobBoard) and each machine's Job slot by device id.
+var job_board: Node = null
+var job_zones: Dictionary = {}
+## The device a machine must reach to get work (the switch the job comes from).
+@export var job_host := "switch"
 
 
 func _ready() -> void:
@@ -70,6 +76,13 @@ func _ready() -> void:
 		flow.setup(self)
 		flow.packet_arrived.connect(func(from_id, to_id, _i) -> void: note_packet_arrived(from_id, to_id))
 		flow.message_delivered.connect(func(from_id, to_id, packets, _text) -> void: note_delivered(from_id, to_id, packets))
+	job_board = find_child("JobBoard", true, false)
+	for id in devices:
+		var job := devices[id].get_node_or_null("Job") as SnapZone
+		if job and zones.has(job):
+			job_zones[id] = job
+			job.gate = func(_part) -> String: return "" if _on_network(id) else \
+				"%s isn't on the network. Cable it to the switch first, then it can take work." % _name(id)
 	for cable in cables:
 		cable.plug_in_start_ports()
 	var stream: Dictionary = config.get("stream", {})
@@ -104,17 +117,24 @@ func _build_network() -> void:
 
 
 ## With many cables on a desk, a label over every plug is a pile of text: a
-## cable's name shows over its first end only, and only while that end is
-## loose.
+## cable's name shows over one loose end only (the first, if both are).
 func _label_one_end(cable: Node) -> void:
-	var b_tag := cable.get_node_or_null("EndB/Name") as Label3D
-	if b_tag:
-		b_tag.visible = false
-	var a_end := cable.get_node_or_null("EndA")
-	var a_tag := cable.get_node_or_null("EndA/Name") as Label3D
-	if a_end and a_tag and a_end.has_signal("installed"):
-		a_end.installed.connect(func(_part, _zone) -> void: a_tag.visible = false)
-		a_end.removed.connect(func(_part, _zone) -> void: a_tag.visible = true)
+	for end_name in ["EndA", "EndB"]:
+		var end := cable.get_node_or_null(end_name)
+		if end and end.has_signal("installed"):
+			end.installed.connect(func(_part, _zone) -> void: _show_cable_label(cable))
+			end.removed.connect(func(_part, _zone) -> void: _show_cable_label(cable))
+	_show_cable_label(cable)
+
+
+func _show_cable_label(cable: Node) -> void:
+	var shown := false
+	for end_name in ["EndA", "EndB"]:
+		var end := cable.get_node_or_null(end_name)
+		var tag := cable.get_node_or_null(end_name + "/Name") as Label3D
+		if end and tag:
+			tag.visible = not shown and not end.is_installed
+			shown = shown or tag.visible
 
 
 ## Every device id the goal names.
@@ -145,6 +165,14 @@ func _on_snapped(zone: SnapZone, part: GrabbablePart) -> void:
 	var device := zone.get_parent()
 	if entry.has("to") and flow and device.get_script() == NetworkDevice and manager.state == manager.State.ACTIVE:
 		flow.send(device.device_id, entry.to, int(entry.get("packets", 4)), str(entry.get("text", "")))
+	if job_zones.values().has(zone):
+		_changed()
+
+
+func _on_removed(zone: SnapZone, part: GrabbablePart) -> void:
+	super(zone, part)
+	if job_zones.values().has(zone):
+		_changed()
 
 
 func _on_cable_plugged(_cable: Node, zone_a: Area3D, zone_b: Area3D) -> void:
@@ -196,6 +224,7 @@ func note_packet_arrived(_from_id: String, _to_id: String) -> void:
 
 
 func _changed() -> void:
+	_count_jobs()
 	_update_screens()
 	network_changed.emit()
 	if manager == null:
@@ -213,9 +242,50 @@ func _finish() -> void:
 	finished = true
 	if flow:
 		flow.stop_streams()
+	if not job_zones.is_empty() and job_board and job_board.is_even(_all_job_counts()):
+		manager.add_bonus(config.scoring.balanced_bonus)
 	for z in zones:
 		z.locked = true
 	manager.complete()
+
+
+# --- Distributed work ---------------------------------------------------------
+
+## True when a machine can reach the device its work comes from.
+func _on_network(id: String) -> bool:
+	return not graph.path(id, job_host).is_empty()
+
+
+## Jobs on each machine that is on the network, for the goal.
+func _count_jobs() -> void:
+	if job_zones.is_empty():
+		return
+	job_counts.clear()
+	for id in job_zones:
+		if _on_network(id):
+			job_counts[id] = job_zones[id].installed_parts.size()
+	if job_board:
+		var all := _all_job_counts()
+		var placed := 0
+		for c in all:
+			placed += c
+		job_board.show_times(int(config.goal.get("jobs_done", placed)), job_counts.values(), placed)
+
+
+## Jobs on every machine in the scene, on the network or not, in scene order.
+func _all_job_counts() -> Array:
+	return job_zones.values().map(func(z) -> int: return z.installed_parts.size())
+
+
+func _result_extras() -> PackedStringArray:
+	var out := PackedStringArray()
+	if job_board and not job_zones.is_empty():
+		out.append(job_board.summary(int(config.goal.jobs_done), job_counts.values()))
+		if job_board.is_even(_all_job_counts()):
+			out.append("Spread evenly across every machine: +%d" % config.scoring.balanced_bonus)
+		else:
+			out.append("Spread the tiles evenly across all the machines for %d more points." % config.scoring.balanced_bonus)
+	return out
 
 
 # --- The redundancy check -----------------------------------------------------

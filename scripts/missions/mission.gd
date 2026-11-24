@@ -53,6 +53,7 @@ func _ready() -> void:
 		zone.blocked.connect(_on_blocked)
 		zone.swapped.connect(_on_swapped)
 		zone.removed.connect(_on_removed)
+		zone.refused.connect(_on_refused)
 	manager.module_completed.connect(_on_module_completed)
 	var reporter := get_node_or_null("/root/ScoreReporter")
 	if reporter:
@@ -178,6 +179,13 @@ func _on_swapped(zone: SnapZone, _old_part: GrabbablePart) -> void:
 func _on_removed(_zone: SnapZone, _part: GrabbablePart) -> void:
 	if manager.state == manager.State.ACTIVE:
 		_show_checklist("")
+
+
+## A slot's gate turned a part away for now (a machine that isn't on the
+## network yet). Not the player's mistake: the panel just says why.
+func _on_refused(zone: SnapZone, _part: GrabbablePart) -> void:
+	if manager.state == manager.State.ACTIVE:
+		_show_checklist(zone.last_problem)
 
 
 func _empty_dependents(zone: SnapZone, seen: Array) -> void:

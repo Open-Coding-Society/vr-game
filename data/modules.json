@@ -1745,6 +1745,248 @@
               "removable": true
             }
           }
+        },
+        {
+          "id": "distribute",
+          "title": "Split a workload across machines",
+          "description": "Share 12 render tiles between Mac minis and see how much faster the job gets.",
+          "topic": "Parallel computing",
+          "difficulty": "Advanced",
+          "image": "task_build_network_distribute",
+          "scene": "res://scenes/network/distribute.tscn",
+          "intro": [
+            "One big job: 12 render tiles. One machine would take 12 seconds.",
+            "Drag the tiles onto the Mac minis' Job slots. Use at least 3 machines; the time bar shows the speedup."
+          ],
+          "success": [
+            "The job is done, split across the machines.",
+            "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too."
+          ],
+          "scoring": {
+            "full": 90,
+            "per_mistake": 10,
+            "balanced_bonus": 10
+          },
+          "goal": {
+            "jobs_done": 12,
+            "min_machines": 3
+          },
+          "parts": {
+            "CableA/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableA/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableD/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableD/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Tiles/Tile1": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile2": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile3": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile4": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile5": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile6": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile7": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile8": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile9": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile10": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile11": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile12": {
+              "type": "job",
+              "name": "render tile"
+            }
+          },
+          "slots": {
+            "MiniA/Eth0": {
+              "accepts": "ethernet",
+              "name": "Mac mini A LAN port",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "The Mac mini's LAN port: it gets its work over the network.",
+              "optional": true,
+              "removable": true
+            },
+            "MiniA/Job": {
+              "accepts": "job",
+              "name": "Mac mini A's Job slot",
+              "hint": "Render tiles go on a Mac mini's Job slot. Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Mac mini A works on its tiles at the same time as the others.",
+              "capacity": 4,
+              "optional": true,
+              "removable": true
+            },
+            "MiniB/Eth0": {
+              "accepts": "ethernet",
+              "name": "Mac mini B LAN port",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "The Mac mini's LAN port: it gets its work over the network.",
+              "optional": true,
+              "removable": true
+            },
+            "MiniB/Job": {
+              "accepts": "job",
+              "name": "Mac mini B's Job slot",
+              "hint": "Render tiles go on a Mac mini's Job slot. Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Mac mini B works on its tiles at the same time as the others.",
+              "capacity": 4,
+              "optional": true,
+              "removable": true
+            },
+            "MiniC/Eth0": {
+              "accepts": "ethernet",
+              "name": "Mac mini C LAN port",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "The Mac mini's LAN port: it gets its work over the network.",
+              "optional": true,
+              "removable": true
+            },
+            "MiniC/Job": {
+              "accepts": "job",
+              "name": "Mac mini C's Job slot",
+              "hint": "Render tiles go on a Mac mini's Job slot. Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Mac mini C works on its tiles at the same time as the others.",
+              "capacity": 4,
+              "optional": true,
+              "removable": true
+            },
+            "MiniD/Eth0": {
+              "accepts": "ethernet",
+              "name": "Mac mini D LAN port",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "The Mac mini's LAN port: it gets its work over the network.",
+              "optional": true,
+              "removable": true
+            },
+            "MiniD/Job": {
+              "accepts": "job",
+              "name": "Mac mini D's Job slot",
+              "hint": "Render tiles go on a Mac mini's Job slot. Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Mac mini D works on its tiles at the same time as the others.",
+              "capacity": 4,
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port1": {
+              "accepts": "ethernet",
+              "name": "Switch port 1",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port2": {
+              "accepts": "ethernet",
+              "name": "Switch port 2",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port3": {
+              "accepts": "ethernet",
+              "name": "Switch port 3",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port4": {
+              "accepts": "ethernet",
+              "name": "Switch port 4",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port5": {
+              "accepts": "ethernet",
+              "name": "Switch port 5",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port6": {
+              "accepts": "ethernet",
+              "name": "Switch port 6",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port7": {
+              "accepts": "ethernet",
+              "name": "Switch port 7",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port8": {
+              "accepts": "ethernet",
+              "name": "Switch port 8",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            }
+          }
         }
       ]
     }
