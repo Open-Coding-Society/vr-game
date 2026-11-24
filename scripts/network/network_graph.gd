@@ -135,22 +135,48 @@ func bridges() -> Array:
 
 ## Cuts each working link in turn and checks `ids` are still all connected.
 ## True only if no one cut splits them, and they are connected to start with.
-func survives_any_single_cut(ids: Array) -> bool:
-	return cut_results(ids).all(func(r) -> bool: return r.ok) and all_connected(ids)
+## With `skip_own_cables`, a PC's or server's only cable isn't cut: a
+## computer with one network port can't have a second path, so the test is
+## of the network between them (the redundancy mission uses this).
+func survives_any_single_cut(ids: Array, skip_own_cables := false) -> bool:
+	return cut_results(ids, skip_own_cables).all(func(r) -> bool: return r.ok) and all_connected(ids)
 
 
 ## What happens to `ids` when each working link is cut in turn:
 ## [{a, b, ok}], ok meaning they all still reach each other. The redundancy
 ## mission shows these one by one.
-func cut_results(ids: Array) -> Array:
+func cut_results(ids: Array, skip_own_cables := false) -> Array:
 	var out := []
 	for link in links:
-		if not link.up:
+		if not link.up or (skip_own_cables and is_own_cable(link)):
 			continue
 		link.up = false
 		out.append({"a": link.a, "b": link.b, "ok": all_connected(ids)})
 		link.up = true
 	return out
+
+
+## True for a PC's or server's only cable: the one way it has into the
+## network, which no second path could stand in for.
+func is_own_cable(link: Dictionary) -> bool:
+	for port in [link.a, link.b]:
+		var id := device_of(port)
+		if devices.get(id) in ["pc", "server"] and links.filter(func(l) -> bool: return device_of(l.a) == id or device_of(l.b) == id).size() == 1:
+			return true
+	return false
+
+
+## The ports of a working cable that data can take straight from device `a`
+## to device `b`, as {a, b} (a's port first), or {} when there is none.
+func link_between(a: String, b: String) -> Dictionary:
+	for link in links:
+		if not link.up or not _internet_ok(link.a, link.b):
+			continue
+		if device_of(link.a) == a and device_of(link.b) == b:
+			return {"a": link.a, "b": link.b}
+		if device_of(link.b) == a and device_of(link.a) == b:
+			return {"a": link.b, "b": link.a}
+	return {}
 
 
 static func device_of(port: String) -> String:

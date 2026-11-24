@@ -17,6 +17,8 @@ const GrabbablePart := preload("res://scripts/grabbable_part.gd")
 const LinkLight := preload("res://scripts/parts/link_light.gd")
 const NetworkDevice := preload("res://scripts/network/network_device.gd")
 const Cat6Cable := preload("res://scenes/network/cat6_cable.tscn")
+const NetworkMission := preload("res://scripts/missions/network_mission.gd")
+const GoOnline := preload("res://scenes/setup_pc/go_online.tscn")
 
 ## Nodes under the root that stay between tests.
 const AUTOLOADS := [&"TrainingManager", &"ScoreReporter", &"SaveService"]
@@ -57,7 +59,11 @@ func _tests() -> Array:
 		_test_removable_slot, _test_fixed_slot_keeps_its_part, _test_locked_slot_keeps_its_part,
 		_test_cable_plugged_signals, _test_removing_is_not_a_mistake, _test_link_light_goes_out,
 		_test_device_ports, _test_device_port_ids, _test_device_port_lights, _test_device_other_slots,
-		_test_pc_has_a_screen, _test_cat6_cable]
+		_test_pc_has_a_screen, _test_cat6_cable,
+		_test_goal_connected, _test_goal_reach, _test_goal_delivered, _test_goal_cut_then_restore,
+		_test_goal_survives_any_single_cut, _test_goal_jobs_done, _test_registry_checks_goals,
+		_test_registry_optional_slots, _test_optional_slot_is_not_needed, _test_old_mission_finishes_the_old_way,
+		_test_goal_mission_ignores_full_slots, _test_cable_start_ports]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -475,3 +481,223 @@ func _test_cat6_cable() -> void:
 	check("cat6 cable: it is Phase 2's cable, with its two plugs", cable.has_signal("plugged") and cable.get_node("EndA") is GrabbablePart and cable.get_node("EndB") is GrabbablePart)
 	var plug := (cable.get_node("EndA/Mesh") as MeshInstance3D).mesh as BoxMesh
 	check("cat6 cable: its plugs are small enough for switch ports side by side", plug.size.x < 0.018, plug.size)
+
+
+# --- Step 4: network missions and their goals --------------------------------
+
+## A network mission on its own (no scene), with this goal and graph, to
+## check its goal logic without loading a scene.
+func _goal_mission(goal: Dictionary, g: NetworkGraphScript) -> Node:
+	var m: Node = NetworkMission.new()
+	m.config = {"goal": goal}
+	m.graph = g
+	return m
+
+
+func _test_goal_connected() -> void:
+	var g := _graph({"pc_a": "pc", "pc_b": "pc"})
+	var m := _goal_mission({"connected": ["pc_a", "pc_b"]}, g)
+	check("goal connected: not met with no cable", not m.goal_met())
+	m.note_plugged("pc_a:eth0", "pc_b:eth0")
+	check("goal connected: met once a cable joins them", m.goal_met())
+	m.note_unplugged("pc_b:eth0", "pc_a:eth0")
+	check("goal connected: not met once it is pulled out", not m.goal_met())
+	m.free()
+
+
+func _test_goal_reach() -> void:
+	var g := _star()
+	g.add_device("router", "router")
+	g.add_device("internet", "internet")
+	var m := _goal_mission({"reach": "internet", "from": ["pc_a", "pc_b", "pc_c"]}, g)
+	m.note_plugged("sw:port8", "router:lan1")
+	check("goal reach: not met without the WAN cable", not m.goal_met())
+	m.note_plugged("router:lan2", "internet:jack")
+	check("goal reach: not met through a LAN port", not m.goal_met())
+	m.note_unplugged("router:lan2", "internet:jack")
+	m.note_plugged("router:wan", "internet:jack")
+	check("goal reach: met with WAN to the jack", m.goal_met())
+	m.note_unplugged("pc_b:eth0", "sw:port2")
+	check("goal reach: not met when one PC is cut off", not m.goal_met())
+	m.free()
+
+
+func _test_goal_delivered() -> void:
+	var m := _goal_mission({"delivered": {"from": "pc_a", "to": "pc_c", "packets": 4}}, _star())
+	check("goal delivered: not met before anything arrives", not m.goal_met())
+	m.note_delivered("pc_a", "pc_b", 4)
+	check("goal delivered: not met by a message to someone else", not m.goal_met())
+	m.note_delivered("pc_a", "pc_c", 2)
+	check("goal delivered: not met by a shorter message", not m.goal_met())
+	m.note_delivered("pc_a", "pc_c", 4)
+	check("goal delivered: met by the whole message", m.goal_met())
+	m.free()
+
+
+func _test_goal_cut_then_restore() -> void:
+	var g := _graph({"pc_a": "pc", "switch": "switch", "server": "server"})
+	var m := _goal_mission({"cut_then_restore": ["switch:port3", "server:eth0"]}, g)
+	m.note_plugged("pc_a:eth0", "switch:port1")
+	m.note_plugged("switch:port3", "server:eth0")
+	m.note_packet_arrived("pc_a", "server")
+	check("goal cut_then_restore: packets alone don't meet it", not m.goal_met())
+	m.note_unplugged("pc_a:eth0", "switch:port1")
+	check("goal cut_then_restore: pulling another cable isn't the cut", not m.was_cut)
+	m.note_plugged("pc_a:eth0", "switch:port1")
+	m.note_unplugged("server:eth0", "switch:port3")
+	check("goal cut_then_restore: pulling the marked cable is", m.was_cut and not m.restored)
+	m.note_packet_arrived("pc_a", "server")
+	check("goal cut_then_restore: not met while it's out", not m.goal_met())
+	m.note_plugged("switch:port5", "server:eth0")
+	check("goal cut_then_restore: back in (another port is fine) is restored", m.restored)
+	check("goal cut_then_restore: not met until packets get through again", not m.goal_met())
+	m.note_packet_arrived("pc_a", "server")
+	check("goal cut_then_restore: met once they do", m.goal_met())
+	m.free()
+
+
+func _test_goal_survives_any_single_cut() -> void:
+	var ids := ["pc_a", "pc_b", "pc_c", "pc_d"]
+	var g := _graph({"pc_a": "pc", "pc_b": "pc", "pc_c": "pc", "pc_d": "pc", "sw1": "switch", "sw2": "switch"})
+	g.connect_ports("pc_a:eth0", "sw1:port1")
+	g.connect_ports("pc_b:eth0", "sw1:port2")
+	g.connect_ports("pc_c:eth0", "sw2:port1")
+	g.connect_ports("pc_d:eth0", "sw2:port2")
+	var m := _goal_mission({"survives_any_single_cut": ids}, g)
+	check("goal redundancy: not met while the switches aren't joined", not m.goal_met())
+	m.note_plugged("sw1:port8", "sw2:port8")
+	check("goal redundancy: one cable between the switches is a single point of failure", not m.goal_met())
+	m.note_plugged("sw1:port7", "sw2:port7")
+	check("goal redundancy: a second cable between them meets it", m.goal_met())
+	check("goal redundancy: a PC's only cable isn't counted as a cut to survive", g.is_own_cable(g.links[0]) and not g.is_own_cable(g.links[4]))
+	m.free()
+
+
+func _test_goal_jobs_done() -> void:
+	var m := _goal_mission({"jobs_done": 12, "min_machines": 3}, _star())
+	m.job_counts = {"mini_a": 6, "mini_b": 6}
+	check("goal jobs: 12 jobs on 2 machines isn't enough machines", not m.goal_met())
+	m.job_counts = {"mini_a": 4, "mini_b": 4, "mini_c": 3}
+	check("goal jobs: 11 jobs isn't all of them", not m.goal_met())
+	m.job_counts = {"mini_a": 4, "mini_b": 4, "mini_c": 4, "mini_d": 0}
+	check("goal jobs: 12 jobs on 3 machines meets it", m.goal_met())
+	m.free()
+
+
+func _test_registry_checks_goals() -> void:
+	var bad := {
+		"no kind": {"what": 1},
+		"two kinds": {"connected": ["a", "b"], "reach": "internet", "from": ["a"]},
+		"one device": {"connected": ["a"]},
+		"reach without from": {"reach": "internet"},
+		"no packet count": {"delivered": {"from": "a", "to": "b"}},
+		"a device, not a port": {"cut_then_restore": ["switch", "server:eth0"]},
+		"jobs as text": {"jobs_done": "twelve"},
+	}
+	for label in bad:
+		var r = _registry_with({"goal": bad[label]})
+		check("registry: a goal with %s is an error" % label, r.errors.size() == 1 and r.errors[0].contains(".goal"), r.errors)
+	for goal in [{"connected": ["a", "b"]}, {"reach": "internet", "from": ["a"]},
+			{"delivered": {"from": "a", "to": "b", "packets": 4}}, {"cut_then_restore": ["s:port3", "srv:eth0"]},
+			{"survives_any_single_cut": ["a", "b"]}, {"jobs_done": 12, "min_machines": 3}]:
+		var r = _registry_with({"goal": goal})
+		check("registry: goal %s reads cleanly" % goal.keys()[0], r.errors.is_empty(), r.errors)
+
+
+## A registry with one small mission, plus `extra` fields on the mission.
+func _registry_with(extra: Dictionary, slots := {}) -> Object:
+	var m := {"id": "m", "title": "T", "scene": "res://scenes/setup_pc/go_online.tscn", "intro": ["a"], "success": ["b"],
+		"scoring": {"full": 100, "per_mistake": 10},
+		"parts": {"C/EndA": {"type": "ethernet", "name": "plug"}},
+		"slots": slots if not slots.is_empty() else {"P1": {"accepts": "ethernet", "name": "port", "hint": "h"}}}
+	m.merge(extra, true)
+	var r = ModuleRegistry.new()
+	r.read({"modules": [{"id": "net", "title": "Net", "missions": [m]}]})
+	return r
+
+
+func _test_registry_optional_slots() -> void:
+	var slots := {}
+	for i in 8:
+		slots["Switch/Port%d" % (i + 1)] = {"accepts": "ethernet", "name": "port", "hint": "h", "optional": true}
+	var r = _registry_with({}, slots)
+	check("registry: 8 optional ports with 1 plug is fine (they needn't all be filled)", r.errors.is_empty(), r.errors)
+	slots["Switch/Port1"].optional = "yes"
+	r = _registry_with({}, slots)
+	check("registry: optional must be true or false", r.errors.size() == 1 and r.errors[0].contains("optional"), r.errors)
+
+
+## Loads Connect to the network (Phase 2) with this registry change to its
+## slots, and returns the mission.
+func _go_online_with(slot_changes: Dictionary) -> Node3D:
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/modules.json"))
+	for module in data.modules:
+		for m in module.missions:
+			if m.id == "go_online":
+				for path in slot_changes:
+					m.slots[path].merge(slot_changes[path], true)
+	var r = ModuleRegistry.new()
+	r.read(data)
+	manager.use_registry(r)
+	return await _fresh(GoOnline.instantiate())
+
+
+func _test_optional_slot_is_not_needed() -> void:
+	var mission := await _go_online_with({"Router/Lan1": {"optional": true}})
+	check("mission: an optional slot isn't on the list of slots to fill", mission.goals.size() == 1 and mission.zones.size() == 2, mission.goals.size())
+	mission.get_node("Room/MouseGrabber").part_grabbed.emit(null)
+	var plug: GrabbablePart = mission.get_node("EthernetCable/EndA")
+	await _carry_and_drop(plug, mission.get_node("Tower/Ethernet/CollisionShape3D").global_position)
+	check("mission: so it finishes once the other slot is filled", manager.state == manager.State.SUCCESS, manager.state)
+
+
+func _test_old_mission_finishes_the_old_way() -> void:
+	var mission := await _go_online_with({})
+	check("old mission: no goal, both slots to fill", not mission.config.has("goal") and mission.goals.size() == 2)
+	mission.get_node("Room/MouseGrabber").part_grabbed.emit(null)
+	await _carry_and_drop(mission.get_node("EthernetCable/EndA"), mission.get_node("Tower/Ethernet/CollisionShape3D").global_position)
+	check("old mission: one slot filled isn't done", manager.state == manager.State.ACTIVE)
+	await _carry_and_drop(mission.get_node("EthernetCable/EndB"), mission.get_node("Router/Lan1/CollisionShape3D").global_position)
+	check("old mission: both filled finishes it", manager.state == manager.State.SUCCESS)
+
+
+func _test_goal_mission_ignores_full_slots() -> void:
+	# The same mission with a goal: its slots being full no longer ends it.
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/modules.json"))
+	for module in data.modules:
+		for m in module.missions:
+			if m.id == "go_online":
+				m.goal = {"connected": ["pc_a", "pc_b"]}
+	var r = ModuleRegistry.new()
+	r.read(data)
+	manager.use_registry(r)
+	var mission: Node3D = await _fresh(GoOnline.instantiate())
+	mission.get_node("Room/MouseGrabber").part_grabbed.emit(null)
+	await _carry_and_drop(mission.get_node("EthernetCable/EndA"), mission.get_node("Tower/Ethernet/CollisionShape3D").global_position)
+	await _carry_and_drop(mission.get_node("EthernetCable/EndB"), mission.get_node("Router/Lan1/CollisionShape3D").global_position)
+	check("goal mission: full slots don't finish a mission with a goal", manager.state == manager.State.ACTIVE, manager.state)
+
+
+func _test_cable_start_ports() -> void:
+	var bench := Node3D.new()
+	bench.name = "Bench"
+	var cable := Cable.instantiate()
+	cable.end_a_position = Vector3(-0.2, 0.0, 0.0)
+	cable.end_b_position = Vector3(0.2, 0.0, 0.0)
+	cable.start_ports = [NodePath("../Port1"), NodePath("../Port2")] as Array[NodePath]
+	bench.add_child(cable)
+	await _fresh(bench)
+	for end_name in ["EndA", "EndB"]:
+		(cable.get_node(end_name) as GrabbablePart).part_type = &"ethernet"
+	var p1 := _port(bench, "Port1", "ethernet", Vector3(-0.1, 0.0, -0.3))
+	var p2 := _port(bench, "Port2", "ethernet", Vector3(0.1, 0.0, -0.3))
+	var events := []
+	cable.plugged.connect(func(_c, x, y) -> void: events.append([x, y]))
+	await _settle()
+	cable.plug_in_start_ports()
+	check("start ports: a cable can start plugged in", cable.is_plugged() and p1.installed_part == cable.get_node("EndA") and p2.installed_part == cable.get_node("EndB"))
+	check("start ports: and says so, like a player plugging it", events == [[p1, p2]], events)
+	var a: GrabbablePart = cable.get_node("EndA")
+	a.grab()
+	a.drop()
+	check("start ports: pulled out and let go, a plug goes to where it started on the table", not a.is_installed and a.global_position.is_equal_approx(Vector3(-0.2, 0, 0)), a.global_position)

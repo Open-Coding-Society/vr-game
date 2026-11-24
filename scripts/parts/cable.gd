@@ -27,6 +27,10 @@ signal unplugged(cable, port_a, port_b)
 ## set, EndB is taken out too. With both fixed, the cable is only a wire
 ## between two nodes, e.g. last mission's HDMI cable still in place.
 @export var fixed_end_b: NodePath
+## For a cable that starts plugged in (a network that is already cabled):
+## the ports, SnapZones, its EndA and EndB start in. The mission calls
+## plug_in_start_ports() once it has given the ports their types.
+@export var start_ports: Array[NodePath] = []
 ## How far above a plug's origin the wire leaves it (meters).
 @export var wire_lift := 0.012
 
@@ -67,6 +71,23 @@ func _ready() -> void:
 			end.installed.connect(_on_end_installed)
 			end.removed.connect(_on_end_removed)
 	_stretch()
+
+
+## Puts each end into its start port, as if the player had plugged it in
+## (the port judges it, so a plug of the wrong type stays out). Any end with
+## no start port is left where it is.
+func plug_in_start_ports() -> void:
+	var ends := [get_node_or_null("EndA"), get_node_or_null("EndB")]
+	for i in mini(start_ports.size(), 2):
+		var zone := get_node_or_null(start_ports[i]) as Area3D
+		var end = ends[i]
+		if zone == null or end == null or end.is_installed:
+			continue
+		end.global_transform = zone.snap_transform()
+		zone.judge(end)
+		if not end.is_installed:
+			end.return_home()
+			push_error("%s: %s can't start in %s" % [name, end.name, start_ports[i]])
 
 
 ## True when both ends are in ports.
