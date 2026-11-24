@@ -20,6 +20,9 @@ const PartsCatalog := preload("res://scripts/parts/parts_catalog.gd")
 signal dropped(part)
 ## Emitted when a SnapZone accepts the part.
 signal installed(part, zone)
+## Emitted when the part leaves the zone it was installed in: pulled out of a
+## removable slot, swapped for another part, or sent home.
+signal removed(part, zone)
 
 ## What kind of part this is. A SnapZone accepts parts whose type matches its own.
 @export var part_type: StringName = &"ram"
@@ -35,6 +38,8 @@ var spec: Dictionary = {}
 
 var is_held := false
 var is_installed := false
+## The SnapZone the part is installed in (null when it isn't).
+var installed_zone: Area3D = null
 ## Where the part goes back to when it's dropped somewhere that isn't its slot.
 var home_transform: Transform3D
 ## SnapZones the part is over right now (they add and remove themselves).
@@ -73,7 +78,10 @@ func apply_variant() -> void:
 
 
 func can_grab() -> bool:
-	return not is_installed and not is_held
+	if is_held:
+		return false
+	# An installed part stays put, unless its slot lets it be pulled out again.
+	return not is_installed or (installed_zone != null and installed_zone.can_remove(self))
 
 
 ## Where a hand reaches for the part: its origin, or a child Marker3D named
@@ -86,6 +94,9 @@ func grab_position() -> Vector3:
 func grab() -> bool:
 	if not can_grab():
 		return false
+	if is_installed:
+		# Pulled out of a removable slot: the slot is empty again.
+		installed_zone.remove(self)
 	is_held = true
 	return true
 
@@ -135,11 +146,26 @@ func move_home(at: Transform3D) -> void:
 func install(zone: Node3D, at: Transform3D) -> void:
 	global_transform = at
 	is_installed = true
+	installed_zone = zone
 	installed.emit(self, zone)
 
 
 ## Called by a SnapZone that gives the part up (it was swapped for another):
 ## the part is free again and goes back where it came from.
 func uninstall() -> void:
-	is_installed = false
+	_leave_zone()
 	return_home()
+
+
+## Called by a removable SnapZone as the player pulls the part out: free
+## again, and still in the hand (it doesn't jump home).
+func pull_out() -> void:
+	_leave_zone()
+
+
+func _leave_zone() -> void:
+	var zone := installed_zone
+	is_installed = false
+	installed_zone = null
+	if zone:
+		removed.emit(self, zone)

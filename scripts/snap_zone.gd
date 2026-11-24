@@ -23,6 +23,9 @@ extends Area3D
 ##   the right type is also checked against the parts in this zone's
 ##   prerequisites; if the rule fails it's turned away (`rejected`) and
 ##   `last_problem` says why.
+## - `removable`: an installed part can be grabbed and pulled out again (a
+##   network cable). The zone is empty again and says so (`removed`); pulling a
+##   part out is never a mistake.
 ##
 ## A child named "Replaced" (e.g. the old, faulty part's mesh) is hidden once
 ## the zone is full, so the new part doesn't sit on top of the old one.
@@ -38,6 +41,8 @@ signal rejected(zone, part)
 signal blocked(zone, part)
 ## A swappable zone gave up `old_part` for a new one. Emitted before `snapped`.
 signal swapped(zone, old_part)
+## A part was pulled out of a removable zone (or sent home by eject_all).
+signal removed(zone, part)
 
 ## The part type this zone takes, e.g. &"ram". Matches GrabbablePart.part_type.
 @export var accepts: StringName = &"ram"
@@ -60,6 +65,8 @@ signal swapped(zone, old_part)
 @export var swappable := false
 ## See above: the compatibility rule a part must also pass, e.g. &"cpu_socket".
 @export var compat: StringName = &""
+## See above: an installed part can be pulled out again.
+@export var removable := false
 
 ## Set by the mission once it is over: the zone takes, swaps and turns away
 ## nothing more, so what is in it stays as it was when the mission ended.
@@ -155,6 +162,24 @@ func compat_problem(part: GrabbablePart) -> String:
 	return Compatibility.check(compat, part.spec, others)
 
 
+## True when the player may pull this installed part out right now.
+func can_remove(part: GrabbablePart) -> bool:
+	return removable and not locked and installed_parts.has(part)
+
+
+## Takes a part out as the player pulls it: the zone gives it up and is
+## empty again (or has room again, with capacity over 1).
+func remove(part: GrabbablePart) -> void:
+	if not installed_parts.has(part):
+		return
+	installed_parts.erase(part)
+	installed_part = installed_parts.back() if not installed_parts.is_empty() else null
+	part.pull_out()
+	if has_node("Replaced"):
+		get_node("Replaced").visible = true
+	removed.emit(self, part)
+
+
 ## Sends every installed part back home and leaves the zone empty, e.g. when
 ## the part they were plugged into has been taken out.
 func eject_all() -> void:
@@ -163,6 +188,7 @@ func eject_all() -> void:
 	installed_part = null
 	for part in leaving:
 		part.uninstall()
+		removed.emit(self, part)
 	if has_node("Replaced"):
 		get_node("Replaced").visible = true
 

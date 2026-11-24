@@ -218,8 +218,8 @@ func _read_slots(full_id: String, slots, part_types: Array) -> void:
 			errors.append('%s: slots need %d "%s" part(s) but only %d have that type' % [full_id, filled[type], type, part_types.count(type)])
 
 
-## Optional slot fields: role (text), pass_through, working and swappable
-## (true/false), compat (a rule in scripts/parts/compatibility.gd) and requires
+## Optional slot fields: role (text), pass_through, working, swappable and
+## removable (true/false), compat (a rule in scripts/parts/compatibility.gd) and requires
 ## (other slots of this mission that must be filled first, with no loops).
 func _read_slot_options(full_id: String, slots: Dictionary) -> void:
 	for path in slots:
@@ -228,7 +228,7 @@ func _read_slot_options(full_id: String, slots: Dictionary) -> void:
 			continue
 		if slot.has("role") and typeof(slot.role) != TYPE_STRING:
 			errors.append('%s: slot "%s" role must be text' % [full_id, path])
-		for flag in ["pass_through", "working", "swappable"]:
+		for flag in ["pass_through", "working", "swappable", "removable"]:
 			if slot.has(flag) and typeof(slot[flag]) != TYPE_BOOL:
 				errors.append('%s: slot "%s" %s must be true or false' % [full_id, path, flag])
 		if slot.has("compat") and not slot.compat in Compatibility.RULES:

@@ -49,6 +49,7 @@ func _ready() -> void:
 		zone.rejected.connect(_on_rejected)
 		zone.blocked.connect(_on_blocked)
 		zone.swapped.connect(_on_swapped)
+		zone.removed.connect(_on_removed)
 	manager.module_completed.connect(_on_module_completed)
 	var reporter := get_node_or_null("/root/ScoreReporter")
 	if reporter:
@@ -85,6 +86,7 @@ func _apply_registry() -> void:
 		zone.working = slot.get("working", false)
 		zone.swappable = slot.get("swappable", false)
 		zone.compat = StringName(slot.get("compat", ""))
+		zone.removable = slot.get("removable", false)
 		zones.append(zone)
 		if not zone.working:
 			goals.append(zone)
@@ -161,6 +163,13 @@ func _on_rejected(zone: SnapZone, part: GrabbablePart) -> void:
 ## their parts go back home.
 func _on_swapped(zone: SnapZone, _old_part: GrabbablePart) -> void:
 	_empty_dependents(zone, [zone])
+
+
+## A part was pulled out of a removable slot (a cable unplugged). That is
+## never a mistake; the checklist just shows the slot as empty again.
+func _on_removed(_zone: SnapZone, _part: GrabbablePart) -> void:
+	if manager.state == manager.State.ACTIVE:
+		_show_checklist("")
 
 
 func _empty_dependents(zone: SnapZone, seen: Array) -> void:

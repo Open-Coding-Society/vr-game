@@ -11,6 +11,10 @@ extends SceneTree
 const NetworkGraphScript := preload("res://scripts/network/network_graph.gd")
 const ModuleRegistry := preload("res://scripts/module_registry.gd")
 const TrainingManagerScript := preload("res://scripts/training_manager.gd")
+const Cable := preload("res://scenes/parts/cable.tscn")
+const SnapZone := preload("res://scripts/snap_zone.gd")
+const GrabbablePart := preload("res://scripts/grabbable_part.gd")
+const LinkLight := preload("res://scripts/parts/link_light.gd")
 
 ## Nodes under the root that stay between tests.
 const AUTOLOADS := [&"TrainingManager", &"ScoreReporter", &"SaveService"]
@@ -47,7 +51,9 @@ func _tests() -> Array:
 	return [_test_graph_two_pcs, _test_graph_path_through_a_switch, _test_graph_disconnect,
 		_test_graph_one_cable_per_port, _test_graph_pc_does_not_forward, _test_graph_link_down,
 		_test_graph_internet_only_through_wan, _test_graph_bridges_line, _test_graph_bridges_ring,
-		_test_graph_bridges_star, _test_graph_survives_any_single_cut, _test_graph_cut_results]
+		_test_graph_bridges_star, _test_graph_survives_any_single_cut, _test_graph_cut_results,
+		_test_removable_slot, _test_fixed_slot_keeps_its_part, _test_locked_slot_keeps_its_part,
+		_test_cable_plugged_signals, _test_removing_is_not_a_mistake, _test_link_light_goes_out]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -217,3 +223,154 @@ func _test_graph_cut_results() -> void:
 	check("graph: cut_results has one entry per working link", r.size() == 3, r.size())
 	check("graph: in a line each cut fails", r.all(func(x) -> bool: return not x.ok))
 	check("graph: cutting leaves every link up afterwards", g.links.all(func(l) -> bool: return l.up))
+
+
+# --- Step 2: removable slots and cables that tell the network ---------------
+
+## A port made in code: a SnapZone at `at` that takes parts of `type`.
+func _port(parent: Node3D, port_name: String, type: String, at: Vector3, removable := true) -> SnapZone:
+	var zone := Area3D.new()
+	zone.set_script(SnapZone)
+	zone.name = port_name
+	zone.position = at
+	zone.accepts = StringName(type)
+	zone.display_name = port_name
+	zone.removable = removable
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(0.06, 0.06, 0.06)
+	shape.shape = box
+	zone.add_child(shape)
+	parent.add_child(zone)
+	return zone
+
+
+## A bench with one Ethernet cable and two ports for it.
+func _bench(removable := true) -> Array:
+	var bench := Node3D.new()
+	bench.name = "Bench"
+	var cable := Cable.instantiate()
+	cable.end_a_position = Vector3(-0.2, 0.0, 0.0)
+	cable.end_b_position = Vector3(0.2, 0.0, 0.0)
+	bench.add_child(cable)
+	await _fresh(bench)
+	for end_name in ["EndA", "EndB"]:
+		(cable.get_node(end_name) as GrabbablePart).part_type = &"ethernet"
+	var p1 := _port(bench, "Port1", "ethernet", Vector3(-0.1, 0.0, -0.3), removable)
+	var p2 := _port(bench, "Port2", "ethernet", Vector3(0.1, 0.0, -0.3), removable)
+	await _settle()
+	return [bench, cable, p1, p2]
+
+
+## Picks a part up, carries it to `to` and lets go, as a grabber does.
+func _carry_and_drop(part: GrabbablePart, to: Vector3) -> void:
+	part.grab()
+	part.global_position = to
+	await _settle()
+	part.drop()
+	await _settle()
+
+
+func _test_removable_slot() -> void:
+	var made := await _bench()
+	var cable: Node3D = made[1]
+	var p1: SnapZone = made[2]
+	var p2: SnapZone = made[3]
+	var a: GrabbablePart = cable.get_node("EndA")
+	var removed := []
+	p1.removed.connect(func(zone, part) -> void: removed.append([zone, part]))
+	await _carry_and_drop(a, p1.global_position)
+	check("removable: a plug goes into the port", a.is_installed and p1.is_filled() and a.installed_zone == p1)
+	check("removable: and can still be grabbed", a.can_grab())
+	check("removable: grabbing it pulls it out", a.grab() and not a.is_installed and not p1.is_filled())
+	check("removable: the port says it was emptied", removed.size() == 1 and removed[0][1] == a, removed)
+	a.global_position = p2.global_position
+	await _settle()
+	a.drop()
+	await _settle()
+	check("removable: the plug can go into another port", a.is_installed and p2.installed_part == a and not p1.is_filled())
+
+
+func _test_fixed_slot_keeps_its_part() -> void:
+	var made := await _bench(false)
+	var cable: Node3D = made[1]
+	var p1: SnapZone = made[2]
+	var a: GrabbablePart = cable.get_node("EndA")
+	await _carry_and_drop(a, p1.global_position)
+	check("not removable: an installed plug can't be grabbed", a.is_installed and not a.can_grab() and not a.grab())
+	check("not removable: the port stays full", p1.installed_part == a)
+
+
+func _test_locked_slot_keeps_its_part() -> void:
+	var made := await _bench()
+	var cable: Node3D = made[1]
+	var p1: SnapZone = made[2]
+	var a: GrabbablePart = cable.get_node("EndA")
+	await _carry_and_drop(a, p1.global_position)
+	p1.locked = true
+	check("removable but locked (the mission is over): it stays in", not a.can_grab())
+
+
+func _test_cable_plugged_signals() -> void:
+	var made := await _bench()
+	var cable: Node3D = made[1]
+	var p1: SnapZone = made[2]
+	var p2: SnapZone = made[3]
+	var events := []
+	cable.plugged.connect(func(_c, x, y) -> void: events.append(["plugged", x, y]))
+	cable.unplugged.connect(func(_c, x, y) -> void: events.append(["unplugged", x, y]))
+	var a: GrabbablePart = cable.get_node("EndA")
+	var b: GrabbablePart = cable.get_node("EndB")
+	await _carry_and_drop(a, p1.global_position)
+	check("cable: one end in isn't plugged yet", events.is_empty() and not cable.is_plugged())
+	await _carry_and_drop(b, p2.global_position)
+	check("cable: both ends in says plugged, with both ports", events.size() == 1 and events[0] == ["plugged", p1, p2], events)
+	a.grab()
+	check("cable: pulling an end out says unplugged, with the ports it joined", events.size() == 2 and events[1] == ["unplugged", p1, p2], events)
+	a.global_position = Vector3(0, 0.5, 0.5)
+	await _settle()
+	a.drop()
+	await _settle()
+	check("cable: and it is no longer plugged", not cable.is_plugged() and cable.port_a == null and cable.port_b == p2)
+
+
+func _test_removing_is_not_a_mistake() -> void:
+	var mission := Node3D.new()
+	# A real mission scene with a removable slot comes in step 5; here, the
+	# rule itself: TrainingManager only counts mistakes it is told about, and
+	# a zone pulling a part out emits removed, never rejected or blocked.
+	var made := await _bench()
+	var cable: Node3D = made[1]
+	var p1: SnapZone = made[2]
+	var bad := [0]
+	p1.rejected.connect(func(_z, _p) -> void: bad[0] += 1)
+	p1.blocked.connect(func(_z, _p) -> void: bad[0] += 1)
+	var a: GrabbablePart = cable.get_node("EndA")
+	await _carry_and_drop(a, p1.global_position)
+	a.grab()
+	await _carry_and_drop(a, p1.global_position)
+	check("removing a plug and putting it back counts no mistake", bad[0] == 0 and a.is_installed)
+	mission.free()
+
+
+func _test_link_light_goes_out() -> void:
+	var made := await _bench()
+	var bench: Node3D = made[0]
+	var cable: Node3D = made[1]
+	var p1: SnapZone = made[2]
+	var p2: SnapZone = made[3]
+	var light := MeshInstance3D.new()
+	light.set_script(LinkLight)
+	light.zones = [NodePath("../Port1"), NodePath("../Port2")] as Array[NodePath]
+	bench.add_child(light)
+	await _settle()
+	var a: GrabbablePart = cable.get_node("EndA")
+	await _carry_and_drop(a, p1.global_position)
+	await _carry_and_drop(cable.get_node("EndB"), p2.global_position)
+	check("link light: green with both ends in", light.is_lit and light.shown_color() == light.on_color)
+	a.grab()
+	check("link light: dark again once an end is pulled out", not light.is_lit and light.shown_color() == light.off_color)
+	light.set_cut(true)
+	check("link light: red when the link is marked cut", light.shown_color() == light.cut_color)
+	light.set_cut(false)
+	a.drop()
