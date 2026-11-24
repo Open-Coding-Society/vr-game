@@ -1,0 +1,360 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/network/network_device.gd" id="1_device"]
+[ext_resource type="Script" path="res://scripts/snap_zone.gd" id="2_zone"]
+[ext_resource type="Script" path="res://scripts/parts/link_light.gd" id="3_light"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_1"]
+albedo_color = Color(0.941, 0.953, 0.965, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_2"]
+material = SubResource("Mat_1")
+size = Vector3(0.16, 0.028, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shape_3"]
+size = Vector3(0.16, 0.028, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shape_4"]
+size = Vector3(0.018, 0.12, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="Mat_5"]
+albedo_color = Color(0.106, 0.122, 0.141, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_6"]
+material = SubResource("Mat_5")
+size = Vector3(0.012, 0.002, 0.012)
+
+[sub_resource type="BoxMesh" id="Mesh_7"]
+size = Vector3(0.006, 0.003, 0.006)
+
+[sub_resource type="BoxShape3D" id="Shape_8"]
+size = Vector3(0.018, 0.12, 0.04)
+
+[sub_resource type="BoxMesh" id="Mesh_9"]
+material = SubResource("Mat_5")
+size = Vector3(0.012, 0.002, 0.012)
+
+[sub_resource type="BoxMesh" id="Mesh_10"]
+size = Vector3(0.006, 0.003, 0.006)
+
+[sub_resource type="BoxShape3D" id="Shape_11"]
+size = Vector3(0.018, 0.12, 0.04)
+
+[sub_resource type="BoxMesh" id="Mesh_12"]
+material = SubResource("Mat_5")
+size = Vector3(0.012, 0.002, 0.012)
+
+[sub_resource type="BoxMesh" id="Mesh_13"]
+size = Vector3(0.006, 0.003, 0.006)
+
+[sub_resource type="BoxShape3D" id="Shape_14"]
+size = Vector3(0.018, 0.12, 0.04)
+
+[sub_resource type="BoxMesh" id="Mesh_15"]
+material = SubResource("Mat_5")
+size = Vector3(0.012, 0.002, 0.012)
+
+[sub_resource type="BoxMesh" id="Mesh_16"]
+size = Vector3(0.006, 0.003, 0.006)
+
+[sub_resource type="BoxShape3D" id="Shape_17"]
+size = Vector3(0.018, 0.12, 0.04)
+
+[sub_resource type="BoxMesh" id="Mesh_18"]
+material = SubResource("Mat_5")
+size = Vector3(0.012, 0.002, 0.012)
+
+[sub_resource type="BoxMesh" id="Mesh_19"]
+size = Vector3(0.006, 0.003, 0.006)
+
+[sub_resource type="BoxShape3D" id="Shape_20"]
+size = Vector3(0.018, 0.12, 0.04)
+
+[sub_resource type="BoxMesh" id="Mesh_21"]
+material = SubResource("Mat_5")
+size = Vector3(0.012, 0.002, 0.012)
+
+[sub_resource type="BoxMesh" id="Mesh_22"]
+size = Vector3(0.006, 0.003, 0.006)
+
+[sub_resource type="BoxShape3D" id="Shape_23"]
+size = Vector3(0.018, 0.12, 0.04)
+
+[sub_resource type="BoxMesh" id="Mesh_24"]
+material = SubResource("Mat_5")
+size = Vector3(0.012, 0.002, 0.012)
+
+[sub_resource type="BoxMesh" id="Mesh_25"]
+size = Vector3(0.006, 0.003, 0.006)
+
+[sub_resource type="BoxShape3D" id="Shape_26"]
+size = Vector3(0.018, 0.12, 0.04)
+
+[sub_resource type="BoxMesh" id="Mesh_27"]
+material = SubResource("Mat_5")
+size = Vector3(0.012, 0.002, 0.012)
+
+[sub_resource type="BoxMesh" id="Mesh_28"]
+size = Vector3(0.006, 0.003, 0.006)
+
+[node name="Switch" type="StaticBody3D"]
+script = ExtResource("1_device")
+kind = "switch"
+display_name = "Switch"
+
+[node name="Box" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.014, 0)
+mesh = SubResource("Mesh_2")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.014, 0)
+shape = SubResource("Shape_3")
+
+[node name="Port1" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.063, 0, 0.025)
+script = ExtResource("2_zone")
+accepts = &"ethernet"
+display_name = "Port1"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Port1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+shape = SubResource("Shape_4")
+
+[node name="SnapPoint" type="Marker3D" parent="Port1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.028, 0)
+
+[node name="Socket" type="MeshInstance3D" parent="Port1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.029, 0)
+mesh = SubResource("Mesh_6")
+
+[node name="Light" type="MeshInstance3D" parent="Port1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0295, -0.012)
+mesh = SubResource("Mesh_7")
+script = ExtResource("3_light")
+
+[node name="Tag" type="Label3D" parent="Port1"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.03, 0.016)
+pixel_size = 0.0003
+text = "1"
+font_size = 28
+outline_size = 8
+
+[node name="Port2" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.045, 0, 0.025)
+script = ExtResource("2_zone")
+accepts = &"ethernet"
+display_name = "Port2"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Port2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+shape = SubResource("Shape_8")
+
+[node name="SnapPoint" type="Marker3D" parent="Port2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.028, 0)
+
+[node name="Socket" type="MeshInstance3D" parent="Port2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.029, 0)
+mesh = SubResource("Mesh_9")
+
+[node name="Light" type="MeshInstance3D" parent="Port2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0295, -0.012)
+mesh = SubResource("Mesh_10")
+script = ExtResource("3_light")
+
+[node name="Tag" type="Label3D" parent="Port2"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.03, 0.016)
+pixel_size = 0.0003
+text = "2"
+font_size = 28
+outline_size = 8
+
+[node name="Port3" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.027, 0, 0.025)
+script = ExtResource("2_zone")
+accepts = &"ethernet"
+display_name = "Port3"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Port3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+shape = SubResource("Shape_11")
+
+[node name="SnapPoint" type="Marker3D" parent="Port3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.028, 0)
+
+[node name="Socket" type="MeshInstance3D" parent="Port3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.029, 0)
+mesh = SubResource("Mesh_12")
+
+[node name="Light" type="MeshInstance3D" parent="Port3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0295, -0.012)
+mesh = SubResource("Mesh_13")
+script = ExtResource("3_light")
+
+[node name="Tag" type="Label3D" parent="Port3"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.03, 0.016)
+pixel_size = 0.0003
+text = "3"
+font_size = 28
+outline_size = 8
+
+[node name="Port4" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.009, 0, 0.025)
+script = ExtResource("2_zone")
+accepts = &"ethernet"
+display_name = "Port4"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Port4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+shape = SubResource("Shape_14")
+
+[node name="SnapPoint" type="Marker3D" parent="Port4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.028, 0)
+
+[node name="Socket" type="MeshInstance3D" parent="Port4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.029, 0)
+mesh = SubResource("Mesh_15")
+
+[node name="Light" type="MeshInstance3D" parent="Port4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0295, -0.012)
+mesh = SubResource("Mesh_16")
+script = ExtResource("3_light")
+
+[node name="Tag" type="Label3D" parent="Port4"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.03, 0.016)
+pixel_size = 0.0003
+text = "4"
+font_size = 28
+outline_size = 8
+
+[node name="Port5" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.009, 0, 0.025)
+script = ExtResource("2_zone")
+accepts = &"ethernet"
+display_name = "Port5"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Port5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+shape = SubResource("Shape_17")
+
+[node name="SnapPoint" type="Marker3D" parent="Port5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.028, 0)
+
+[node name="Socket" type="MeshInstance3D" parent="Port5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.029, 0)
+mesh = SubResource("Mesh_18")
+
+[node name="Light" type="MeshInstance3D" parent="Port5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0295, -0.012)
+mesh = SubResource("Mesh_19")
+script = ExtResource("3_light")
+
+[node name="Tag" type="Label3D" parent="Port5"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.03, 0.016)
+pixel_size = 0.0003
+text = "5"
+font_size = 28
+outline_size = 8
+
+[node name="Port6" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.027, 0, 0.025)
+script = ExtResource("2_zone")
+accepts = &"ethernet"
+display_name = "Port6"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Port6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+shape = SubResource("Shape_20")
+
+[node name="SnapPoint" type="Marker3D" parent="Port6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.028, 0)
+
+[node name="Socket" type="MeshInstance3D" parent="Port6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.029, 0)
+mesh = SubResource("Mesh_21")
+
+[node name="Light" type="MeshInstance3D" parent="Port6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0295, -0.012)
+mesh = SubResource("Mesh_22")
+script = ExtResource("3_light")
+
+[node name="Tag" type="Label3D" parent="Port6"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.03, 0.016)
+pixel_size = 0.0003
+text = "6"
+font_size = 28
+outline_size = 8
+
+[node name="Port7" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.045, 0, 0.025)
+script = ExtResource("2_zone")
+accepts = &"ethernet"
+display_name = "Port7"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Port7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+shape = SubResource("Shape_23")
+
+[node name="SnapPoint" type="Marker3D" parent="Port7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.028, 0)
+
+[node name="Socket" type="MeshInstance3D" parent="Port7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.029, 0)
+mesh = SubResource("Mesh_24")
+
+[node name="Light" type="MeshInstance3D" parent="Port7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0295, -0.012)
+mesh = SubResource("Mesh_25")
+script = ExtResource("3_light")
+
+[node name="Tag" type="Label3D" parent="Port7"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.03, 0.016)
+pixel_size = 0.0003
+text = "7"
+font_size = 28
+outline_size = 8
+
+[node name="Port8" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.063, 0, 0.025)
+script = ExtResource("2_zone")
+accepts = &"ethernet"
+display_name = "Port8"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Port8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+shape = SubResource("Shape_26")
+
+[node name="SnapPoint" type="Marker3D" parent="Port8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.028, 0)
+
+[node name="Socket" type="MeshInstance3D" parent="Port8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.029, 0)
+mesh = SubResource("Mesh_27")
+
+[node name="Light" type="MeshInstance3D" parent="Port8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0295, -0.012)
+mesh = SubResource("Mesh_28")
+script = ExtResource("3_light")
+
+[node name="Tag" type="Label3D" parent="Port8"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.03, 0.016)
+pixel_size = 0.0003
+text = "8"
+font_size = 28
+outline_size = 8
+
+[node name="Model" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.029, -0.03)
+pixel_size = 0.0003
+text = "GS108"
+font_size = 32
+outline_size = 8
+
+[node name="Label" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+billboard = 1
+pixel_size = 0.0004
+text = "Switch"
+font_size = 44
+outline_size = 8

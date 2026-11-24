@@ -1,0 +1,77 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/missions/network_mission.gd" id="1_mission"]
+[ext_resource type="PackedScene" path="res://scenes/room.tscn" id="2_room"]
+[ext_resource type="Script" path="res://scripts/ui/info_panel.gd" id="3_panel"]
+[ext_resource type="PackedScene" path="res://scenes/network/cat6_cable.tscn" id="4_cable"]
+[ext_resource type="PackedScene" path="res://scenes/network/devices/pc.tscn" id="d_pc"]
+[ext_resource type="PackedScene" path="res://scenes/network/devices/switch_gs108.tscn" id="d_switch"]
+
+[node name="Redundancy" type="Node3D"]
+script = ExtResource("1_mission")
+mission_id = "build_network.redundancy"
+
+[node name="Room" parent="." instance=ExtResource("2_room")]
+
+[node name="PcA" parent="." instance=ExtResource("d_pc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 0.9, -0.06)
+device_id = "pc_a"
+display_name = "PC A"
+
+[node name="PcB" parent="." instance=ExtResource("d_pc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.22, 0.9, -0.06)
+device_id = "pc_b"
+display_name = "PC B"
+
+[node name="PcC" parent="." instance=ExtResource("d_pc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1, 0.9, -0.06)
+device_id = "pc_c"
+display_name = "PC C"
+
+[node name="PcD" parent="." instance=ExtResource("d_pc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38, 0.9, -0.06)
+device_id = "pc_d"
+display_name = "PC D"
+
+[node name="Sw1" parent="." instance=ExtResource("d_switch")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 0.9, 0.15)
+device_id = "sw1"
+display_name = "Switch 1"
+
+[node name="Sw2" parent="." instance=ExtResource("d_switch")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.9, 0.15)
+device_id = "sw2"
+display_name = "Switch 2"
+
+[node name="CableA" parent="." instance=ExtResource("4_cable")]
+end_a_position = Vector3(-0.56, 0.9, 0.1)
+end_b_position = Vector3(-0.37, 0.9, 0.1)
+start_ports = Array[NodePath]([NodePath("../PcA/Eth0"), NodePath("../Sw1/Port1")])
+
+[node name="CableB" parent="." instance=ExtResource("4_cable")]
+end_a_position = Vector3(-0.28, 0.9, 0.1)
+end_b_position = Vector3(-0.35, 0.9, 0.1)
+start_ports = Array[NodePath]([NodePath("../PcB/Eth0"), NodePath("../Sw1/Port2")])
+
+[node name="CableC" parent="." instance=ExtResource("4_cable")]
+end_a_position = Vector3(0.04, 0.9, 0.1)
+end_b_position = Vector3(0.18, 0.9, 0.1)
+start_ports = Array[NodePath]([NodePath("../PcC/Eth0"), NodePath("../Sw2/Port1")])
+
+[node name="CableD" parent="." instance=ExtResource("4_cable")]
+end_a_position = Vector3(0.32, 0.9, 0.1)
+end_b_position = Vector3(0.2, 0.9, 0.1)
+start_ports = Array[NodePath]([NodePath("../PcD/Eth0"), NodePath("../Sw2/Port2")])
+
+[node name="Link" parent="." instance=ExtResource("4_cable")]
+end_a_position = Vector3(-0.2, 0.9, 0.1)
+end_b_position = Vector3(0.15, 0.9, 0.1)
+start_ports = Array[NodePath]([NodePath("../Sw1/Port8"), NodePath("../Sw2/Port8")])
+
+[node name="Spare" parent="." instance=ExtResource("4_cable")]
+end_a_position = Vector3(-0.05, 0.9, 0.28)
+end_b_position = Vector3(0.05, 0.9, 0.28)
+
+[node name="InfoPanel" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.9063, 0.4226, 0, -0.4226, 0.9063, -0.02, 1.12, -0.32)
+script = ExtResource("3_panel")

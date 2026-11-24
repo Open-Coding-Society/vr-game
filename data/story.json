@@ -37,11 +37,15 @@
         {
           "title": "Act 4: Small rigs",
           "tasks": [
-            {"id": "irl.rigs.connect_two", "title": "Connect two computers"},
-            {"id": "irl.rigs.switch", "title": "Add a switch"},
-            {"id": "irl.rigs.router", "title": "Add a router"},
-            {"id": "irl.rigs.redundancy", "title": "Add redundancy"},
-            {"id": "irl.rigs.distribute", "title": "Split a workload across machines"}
+            {"mission": "build_network.connect_two"},
+            {"mission": "build_network.switch"},
+            {"mission": "build_network.router"},
+            {"mission": "build_network.send_packets"},
+            {"mission": "build_network.interrupt"},
+            {"mission": "build_network.redundancy"},
+            {"mission": "build_network.distribute"},
+            {"id": "irl.rigs.server_rack", "title": "Build a mini server rack"},
+            {"id": "irl.rigs.pi_cluster", "title": "A Raspberry Pi cluster"}
           ]
         }
       ]

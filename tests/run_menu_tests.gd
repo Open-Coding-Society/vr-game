@@ -35,6 +35,11 @@ func _run() -> void:
 	quit(0 if _failures.is_empty() else 1)
 
 
+## Build a Network's seven missions (Phase 3), in order.
+const BUILD_NETWORK := ["build_network.connect_two", "build_network.switch", "build_network.router",
+	"build_network.send_packets", "build_network.interrupt", "build_network.redundancy", "build_network.distribute"]
+
+
 func _tests() -> Array:
 	return [_test_screen_pixels, _test_pointer_clicks_button, _test_pointer_misses_off_screen,
 		_test_theme_placeholder_image, _test_theme_text_is_readable, _test_tag_keeps_its_size,
@@ -42,7 +47,8 @@ func _tests() -> Array:
 		_test_mode_picker, _test_free_play_lists_tasks, _test_free_play_lists_the_new_modes, _test_free_play_cloud_empty,
 		_test_free_play_starts_task, _test_done_task_shows_best, _test_mission_returns_to_menu,
 		_test_menu_reopens_return_page, _test_story_map_states, _test_story_act_1_unlocks_in_order,
-		_test_story_act_3_starts_with_build_your_own,
+		_test_story_act_3_starts_with_build_your_own, _test_story_act_4_unlocks_in_order,
+		_test_free_play_lists_build_network, _test_roadmap_plays_act_4,
 		_test_story_map_bad_mission,
 		_test_story_chapters, _test_roadmap_plays_next, _test_roadmap_cloud_planned,
 		_test_roadmap_rows_fill_the_screen]
@@ -277,9 +283,9 @@ func _test_free_play_lists_the_new_modes() -> void:
 	_opened.clear()
 	var manager := root.get_node("TrainingManager")
 	var ids: Array = manager.registry.missions_in("computer").map(func(task) -> String: return task.full_id)
-	check("Free Play's Computer list has eleven tasks, the new ones last",
-		ids.size() == 11 and ids.slice(6) == ["build_computer.build_your_own", "setup_pc.unbox", "setup_pc.connect_peripherals",
-			"setup_pc.power_on", "setup_pc.go_online"], ids)
+	check("Free Play's Computer list has Phase 2's tasks after the first six, then Build a Network's seven",
+		ids.size() == 18 and ids.slice(6, 11) == ["build_computer.build_your_own", "setup_pc.unbox", "setup_pc.connect_peripherals",
+			"setup_pc.power_on", "setup_pc.go_online"] and ids.slice(11) == BUILD_NETWORK, ids)
 	var menu := await _menu()
 	menu.show_page("free_play", "computer")
 	await process_frame
@@ -399,7 +405,7 @@ func _test_story_map_states() -> void:
 	s = map.states("irl", is_done)
 	check("finishing it makes the next one playable", s["setup_pc.unbox"] == StoryMap.DONE
 		and s["setup_pc.connect_peripherals"] == StoryMap.NEXT, s)
-	check("progress counts playable tasks only", map.progress("irl", is_done) == [1, 11], map.progress("irl", is_done))
+	check("progress counts playable tasks only", map.progress("irl", is_done) == [1, 18], map.progress("irl", is_done))
 	check("the IRL chapter isn't complete yet", not map.chapter_complete("irl", is_done))
 
 
@@ -427,7 +433,7 @@ func _test_story_act_1_unlocks_in_order() -> void:
 	var after: Dictionary = map.states("irl", is_done)
 	check("finishing Act 1 opens the first task of Act 2",
 		ids.all(func(id) -> bool: return after[id] == StoryMap.DONE) and after["build_computer.install_ram"] == StoryMap.NEXT, after)
-	check("and counts as four of the chapter's eleven playable tasks", map.progress("irl", is_done) == [4, 11], map.progress("irl", is_done))
+	check("and counts as four of the chapter's eighteen playable tasks", map.progress("irl", is_done) == [4, 18], map.progress("irl", is_done))
 
 
 ## Act 3 opens with Build your own PC, under the roadmap's own title for it.
@@ -530,3 +536,108 @@ func _test_roadmap_rows_fill_the_screen() -> void:
 	check("the last step ends where the row ends", is_equal_approx(last.position.x + last.size.x, row.size.x),
 		"%s of %s" % [last.position.x + last.size.x, row.size.x])
 	menu.queue_free()
+
+
+## Act 4, "Small rigs", is Build a Network's seven missions in Mr. Mortensen's
+## order, then two tasks that are still planned. They open one at a time
+## once Act 3 is done.
+func _test_story_act_4_unlocks_in_order() -> void:
+	var manager := root.get_node("TrainingManager")
+	var map = StoryMap.load_from(manager.registry)
+	var act: Dictionary = map.chapter("irl").acts[3]
+	var ids: Array = act.tasks.map(func(task) -> String: return task.mission)
+	check("Act 4 is called Small rigs", act.title == "Act 4: Small rigs", act.title)
+	check("Act 4 is the seven Build a Network missions, then two planned tasks", ids == BUILD_NETWORK + ["", ""], ids)
+	check("the planned ones are the server rack and the Raspberry Pi cluster",
+		act.tasks.slice(7).map(func(t) -> String: return t.title) == ["Build a mini server rack", "A Raspberry Pi cluster"])
+	check("each step takes its title from the mission",
+		act.tasks.slice(0, 7).map(func(task) -> String: return task.title) == BUILD_NETWORK.map(func(id) -> String: return manager.registry.mission(id).title))
+	var done := {}
+	var is_done := func(id: String) -> bool: return done.has(id)
+	for task in map.tasks_of("irl"):
+		if task.mission != "" and not task.mission.begins_with("build_network."):
+			done[task.id] = true
+	check("with Acts 1 to 3 done, Connect two computers is next", map.states("irl", is_done)["build_network.connect_two"] == StoryMap.NEXT)
+	var wrong := []
+	for at in BUILD_NETWORK.size():
+		var s: Dictionary = map.states("irl", is_done)
+		for i in BUILD_NETWORK.size():
+			var want: String = StoryMap.DONE if i < at else (StoryMap.NEXT if i == at else StoryMap.LOCKED)
+			if s[BUILD_NETWORK[i]] != want:
+				wrong.append("%s done: %s is %s" % [at, BUILD_NETWORK[i], s[BUILD_NETWORK[i]]])
+		done[BUILD_NETWORK[at]] = true
+	check("its missions unlock in order: done ones Done, one Next, the rest Locked", wrong.is_empty(), wrong)
+	var after: Dictionary = map.states("irl", is_done)
+	check("the planned tasks stay planned", after["irl.rigs.server_rack"] == StoryMap.PLANNED and after["irl.rigs.pi_cluster"] == StoryMap.PLANNED)
+	check("with Act 4 done, every playable IRL task is done", map.progress("irl", is_done) == [18, 18] and map.chapter_complete("irl", is_done), map.progress("irl", is_done))
+
+
+func _test_free_play_lists_build_network() -> void:
+	var manager := root.get_node("TrainingManager")
+	var difficulty: Array = BUILD_NETWORK.map(func(id) -> String: return manager.registry.mission(id).difficulty)
+	check("Build a Network goes Beginner, Intermediate, Advanced",
+		difficulty == ["Beginner", "Beginner", "Beginner", "Intermediate", "Intermediate", "Advanced", "Advanced"], difficulty)
+	var topics: Array = BUILD_NETWORK.map(func(id) -> String: return manager.registry.mission(id).topic)
+	check("its topics are Networks, Packets, Fault tolerance and Parallel computing",
+		topics == ["Networks", "Networks", "Networks", "Packets", "Fault tolerance", "Fault tolerance", "Parallel computing"], topics)
+	var menu := await _menu()
+	menu.show_page("free_play", "computer")
+	await process_frame
+	var missing: Array = BUILD_NETWORK.filter(func(id) -> bool: return menu.find_button("Task_" + id.replace(".", "_")) == null)
+	check("each of the seven has a card in Free Play", missing.is_empty(), missing)
+	var card: Node = menu.screen.ui_root.find_child("TaskCard_build_network_router", true, false)
+	check("its card shows its image, task_build_network_router (a placeholder for now)",
+		card != null and card.find_child("Placeholder_task_build_network_router", true, false) != null)
+	_opened.clear()
+	await _scroll_to(menu, "Task_build_network_redundancy")
+	await _click(menu, "Task_build_network_redundancy")
+	check("a card starts its mission", _opened == ["res://scenes/network/redundancy.tscn"], _opened)
+	manager.return_scene = ""
+	manager.return_page = ""
+	manager.return_label = ""
+	menu.queue_free()
+
+
+func _test_roadmap_plays_act_4() -> void:
+	_opened.clear()
+	var manager := root.get_node("TrainingManager")
+	var saves := root.get_node("SaveService")
+	saves.load_profile()
+	saves.profile.tasks.clear()
+	var map = StoryMap.load_from(manager.registry)
+	for task in map.tasks_of("irl"):
+		if task.mission != "" and not task.mission.begins_with("build_network."):
+			saves.record_task_result(task.id, 100, 30, 1)
+	saves.record_task_result("build_network.connect_two", 100, 30, 1)
+	var menu := await _menu()
+	menu.show_page("roadmap", "irl")
+	await process_frame
+	var node := func(id: String) -> Node: return menu.screen.ui_root.find_child("Node_" + id.replace(".", "_"), true, false)
+	check("Act 4's first mission shows as done", node.call("build_network.connect_two").get_meta("state") == StoryMap.DONE)
+	check("Add a switch shows as next", node.call("build_network.switch").get_meta("state") == StoryMap.NEXT)
+	check("the rest of Act 4 shows as locked", BUILD_NETWORK.slice(2).all(func(id) -> bool: return node.call(id).get_meta("state") == StoryMap.LOCKED))
+	check("a locked mission can't be played", menu.find_button("Play_build_network_router") == null)
+	check("the server rack is planned and can't be played", node.call("irl.rigs.server_rack").get_meta("state") == StoryMap.PLANNED
+		and menu.find_button("Play_irl_rigs_server_rack") == null)
+	await _scroll_to(menu, "Play_build_network_switch")
+	await _click(menu, "Play_build_network_switch")
+	check("playing it opens Add a switch", _opened == ["res://scenes/network/switch.tscn"], _opened)
+	check("the roadmap position is saved", saves.story_current("irl") == "build_network.switch")
+	saves.profile.tasks.clear()
+	manager.return_scene = ""
+	manager.return_page = ""
+	manager.return_label = ""
+	menu.queue_free()
+
+
+## Scrolls the list a button is in until the button is on screen, as a
+## player would before clicking something far down.
+func _scroll_to(menu: Node3D, button_name: String) -> void:
+	var button: Control = menu.find_button(button_name)
+	var at: Node = button
+	while at != null and not at is ScrollContainer:
+		at = at.get_parent()
+	if at:
+		(at as ScrollContainer).ensure_control_visible(button)
+	await process_frame
+	await process_frame

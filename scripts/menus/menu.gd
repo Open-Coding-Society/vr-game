@@ -202,7 +202,7 @@ func _task_row(task: Dictionary, return_page: String) -> Control:
 	card.add_theme_stylebox_override("panel", MenuTheme.box(MenuTheme.CARD, MenuTheme.BORDER, MenuTheme.RADIUS, 20))
 	var inside := HBoxContainer.new()
 	inside.add_theme_constant_override("separation", 28)
-	inside.add_child(MenuTheme.image("task_" + task.id, Vector2(230, 150)))
+	inside.add_child(MenuTheme.image(task.image, Vector2(230, 150)))
 	var text := VBoxContainer.new()
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text.alignment = BoxContainer.ALIGNMENT_CENTER

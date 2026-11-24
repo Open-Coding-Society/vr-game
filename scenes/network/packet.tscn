@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="Mat_packet"]
+albedo_color = Color(1, 1, 1, 1)
+roughness = 0.6
+
+[sub_resource type="BoxMesh" id="Mesh_packet"]
+material = SubResource("Mat_packet")
+size = Vector3(0.018, 0.018, 0.018)
+
+[node name="Packet" type="Node3D"]
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("Mesh_packet")
+
+[node name="Label" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, 0)
+billboard = 1
+pixel_size = 0.0003
+text = "1/4"
+font_size = 40
+outline_size = 8

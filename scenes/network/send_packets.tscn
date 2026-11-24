@@ -1,0 +1,125 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/missions/network_mission.gd" id="1_mission"]
+[ext_resource type="PackedScene" path="res://scenes/room.tscn" id="2_room"]
+[ext_resource type="Script" path="res://scripts/ui/info_panel.gd" id="3_panel"]
+[ext_resource type="PackedScene" path="res://scenes/network/cat6_cable.tscn" id="4_cable"]
+[ext_resource type="PackedScene" path="res://scenes/network/devices/pc.tscn" id="d_pc"]
+[ext_resource type="PackedScene" path="res://scenes/network/devices/switch_gs108.tscn" id="d_switch"]
+[ext_resource type="Script" path="res://scripts/snap_zone.gd" id="7_zone"]
+[ext_resource type="Script" path="res://scripts/grabbable_part.gd" id="8_part"]
+[ext_resource type="Script" path="res://scripts/network/packet_flow.gd" id="6_flow"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_tray"]
+albedo_color = Color(0.2, 0.22, 0.26, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_tray"]
+material = SubResource("Mat_tray")
+size = Vector3(0.08, 0.006, 0.06)
+
+[sub_resource type="BoxShape3D" id="Shape_tray"]
+size = Vector3(0.09, 0.12, 0.07)
+
+[sub_resource type="StandardMaterial3D" id="Mat_card"]
+albedo_color = Color(0.96, 0.86, 0.45, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_card"]
+material = SubResource("Mat_card")
+size = Vector3(0.06, 0.008, 0.04)
+
+[sub_resource type="BoxShape3D" id="Shape_card"]
+size = Vector3(0.07, 0.03, 0.05)
+
+[node name="SendPackets" type="Node3D"]
+script = ExtResource("1_mission")
+mission_id = "build_network.send_packets"
+
+[node name="Room" parent="." instance=ExtResource("2_room")]
+
+[node name="PcA" parent="." instance=ExtResource("d_pc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.42, 0.9, -0.06)
+device_id = "pc_a"
+display_name = "PC A"
+
+[node name="PcB" parent="." instance=ExtResource("d_pc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.08, 0.9, -0.06)
+device_id = "pc_b"
+display_name = "PC B"
+
+[node name="PcC" parent="." instance=ExtResource("d_pc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.26, 0.9, -0.06)
+device_id = "pc_c"
+display_name = "PC C"
+
+[node name="Switch" parent="." instance=ExtResource("d_switch")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.05, 0.9, 0.15)
+device_id = "switch"
+display_name = "Switch"
+
+[node name="CableA" parent="." instance=ExtResource("4_cable")]
+end_a_position = Vector3(-0.48, 0.9, 0.1)
+end_b_position = Vector3(-0.14, 0.9, 0.1)
+start_ports = Array[NodePath]([NodePath("../PcA/Eth0"), NodePath("../Switch/Port1")])
+
+[node name="CableB" parent="." instance=ExtResource("4_cable")]
+end_a_position = Vector3(-0.14, 0.9, 0.1)
+end_b_position = Vector3(-0.1, 0.9, 0.1)
+start_ports = Array[NodePath]([NodePath("../PcB/Eth0"), NodePath("../Switch/Port3")])
+
+[node name="CableC" parent="." instance=ExtResource("4_cable")]
+end_a_position = Vector3(0.2, 0.9, 0.1)
+end_b_position = Vector3(-0, 0.9, 0.1)
+start_ports = Array[NodePath]([NodePath("../PcC/Eth0"), NodePath("../Switch/Port6")])
+
+[node name="Outbox" type="Area3D" parent="PcA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.06, 0, 0.15)
+script = ExtResource("7_zone")
+accepts = &"message"
+display_name = "Outbox"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PcA/Outbox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+shape = SubResource("Shape_tray")
+
+[node name="SnapPoint" type="Marker3D" parent="PcA/Outbox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, 0)
+
+[node name="Tray" type="MeshInstance3D" parent="PcA/Outbox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.003, 0)
+mesh = SubResource("Mesh_tray")
+
+[node name="Tag" type="Label3D" parent="PcA/Outbox"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.007, 0.038)
+pixel_size = 0.0003
+text = "Outbox"
+font_size = 32
+outline_size = 8
+
+[node name="Message" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 0.9, 0.27)
+script = ExtResource("8_part")
+part_type = &"message"
+
+[node name="Mesh" type="MeshInstance3D" parent="Message"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.002, 0)
+mesh = SubResource("Mesh_card")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Message"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_card")
+
+[node name="Name" type="Label3D" parent="Message"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+billboard = 1
+pixel_size = 0.0004
+font_size = 44
+outline_size = 10
+
+[node name="PacketFlow" type="Node3D" parent="."]
+script = ExtResource("6_flow")
+
+[node name="InfoPanel" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.9063, 0.4226, 0, -0.4226, 0.9063, -0.02, 1.12, -0.32)
+script = ExtResource("3_panel")

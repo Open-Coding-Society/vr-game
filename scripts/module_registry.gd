@@ -19,6 +19,10 @@ const CATEGORIES := ["computer", "cloud"]
 ## What a mission can ask for once its last slot is filled, before the success
 ## panel: "boot" plays its boot_lines on the scene's monitor.
 const ON_COMPLETE := ["boot"]
+## What a network mission's "goal" can ask for (scripts/missions/
+## network_mission.gd has one small check for each). A mission with a goal
+## finishes when the goal is met, not when its slots are full.
+const GOAL_KINDS := ["connected", "reach", "delivered", "cut_then_restore", "survives_any_single_cut", "jobs_done"]
 
 ## Every mission by its full id ("module.mission"), each a Dictionary with the
 ## mission's fields plus "full_id" and "module_title".
@@ -105,8 +109,8 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 			errors.append("%s.%s: must be text" % [full_id, field])
 	if typeof(m.get("scene")) == TYPE_STRING and not ResourceLoader.exists(m.scene):
 		errors.append("%s.scene: %s doesn't exist" % [full_id, m.scene])
-	# Free Play's card text: optional, but text when given.
-	for field in ["description", "topic", "difficulty"]:
+	# Free Play's card text and image name: optional, but text when given.
+	for field in ["description", "topic", "difficulty", "image"]:
 		if m.has(field) and (typeof(m[field]) != TYPE_STRING or m[field] == ""):
 			errors.append("%s.%s: must be text" % [full_id, field])
 	for field in ["intro", "success"]:
@@ -130,6 +134,10 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 	_read_slots(full_id, m.get("slots"), types)
 	_read_on_complete(full_id, m)
 	_read_monitor(full_id, m)
+	_read_goal(full_id, m)
+	if m.has("stream") and (typeof(m.stream) != TYPE_DICTIONARY or typeof(m.stream.get("from")) != TYPE_STRING
+			or typeof(m.stream.get("to")) != TYPE_STRING):
+		errors.append("%s.stream: must be {from, to}, the devices packets keep flowing between" % full_id)
 	if errors.size() > before:
 		return ""
 	var copy: Dictionary = m.duplicate(true)
@@ -139,6 +147,9 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 	copy.description = str(m.get("description", ""))
 	copy.topic = str(m.get("topic", ""))
 	copy.difficulty = str(m.get("difficulty", ""))
+	# The card's picture in ui/images/ (without .png): task_<mission id> unless
+	# the mission names its own (Build a Network's are task_build_network_<id>).
+	copy.image = str(m.get("image", "task_" + m.id))
 	copy.practice = bool(m.get("practice", false))
 	copy.catalog_parts = bool(m.get("catalog_parts", false))
 	copy.scoring = {"full": int(scoring.full), "per_mistake": int(scoring.per_mistake),
@@ -156,6 +167,46 @@ func _read_on_complete(full_id: String, m: Dictionary) -> void:
 		errors.append("%s.on_complete: must be one of %s" % [full_id, ", ".join(ON_COMPLETE)])
 	if not _is_text_list(m.get("boot_lines")):
 		errors.append("%s.boot_lines: must be a non-empty list of text" % full_id)
+
+
+## Optional mission field "goal": one of GOAL_KINDS and what it needs, e.g.
+## {"connected": ["pc_a", "pc_b"]} or {"jobs_done": 12, "min_machines": 3}.
+func _read_goal(full_id: String, m: Dictionary) -> void:
+	if not m.has("goal"):
+		return
+	var goal = m.goal
+	var kinds: Array = goal.keys().filter(func(k) -> bool: return k in GOAL_KINDS) if typeof(goal) == TYPE_DICTIONARY else []
+	if kinds.size() != 1:
+		errors.append("%s.goal: must be one of %s" % [full_id, ", ".join(GOAL_KINDS)])
+		return
+	var kind: String = kinds[0]
+	var value = goal[kind]
+	var ok := true
+	match kind:
+		"connected", "survives_any_single_cut":
+			ok = _is_text_list(value) and value.size() >= 2
+		"reach":
+			ok = typeof(value) == TYPE_STRING and value != "" and _is_text_list(goal.get("from"))
+		"delivered":
+			ok = typeof(value) == TYPE_DICTIONARY and typeof(value.get("from")) == TYPE_STRING \
+				and typeof(value.get("to")) == TYPE_STRING and _is_whole(value.get("packets"), 1, 20)
+		"cut_then_restore":
+			ok = _is_text_list(value) and value.size() == 2 and value.all(func(p) -> bool: return p.contains(":"))
+		"jobs_done":
+			ok = _is_whole(value, 1, 100) and _is_whole(goal.get("min_machines", 1), 1, 100)
+	if not ok:
+		errors.append("%s.goal.%s: %s" % [full_id, kind, GOAL_SHAPES[kind]])
+
+
+## What each goal kind needs, for the error message when it's written wrong.
+const GOAL_SHAPES := {
+	"connected": "must list two or more device ids",
+	"survives_any_single_cut": "must list two or more device ids",
+	"reach": "must be a device id, with \"from\": a list of device ids",
+	"delivered": "must be {from, to, packets (1-20)}",
+	"cut_then_restore": "must be the two ports the cable joins, e.g. [\"switch:port3\", \"server:eth0\"]",
+	"jobs_done": "must be a whole number, with \"min_machines\" a whole number too",
+}
 
 
 ## Optional mission field "monitor": text for the scene's monitor screen.
@@ -185,7 +236,21 @@ func _read_parts(full_id: String, parts) -> Array:
 			errors.append('%s: part "%s" needs a type in lower_snake_case and a name' % [full_id, path])
 		else:
 			types.append(part.type)
+			_read_message(full_id, path, part)
 	return types
+
+
+## A message card (Build a Network) says who it goes to, and optionally how
+## many packets it's split into (1-20) and its text.
+func _read_message(full_id: String, path: String, part: Dictionary) -> void:
+	if not part.has("to") and not part.has("packets") and not part.has("text"):
+		return
+	if typeof(part.get("to")) != TYPE_STRING or part.to == "":
+		errors.append('%s: part "%s" needs "to", the device the message goes to' % [full_id, path])
+	if part.has("packets") and not _is_whole(part.packets, 1, 20):
+		errors.append('%s: part "%s" packets must be a whole number from 1 to 20' % [full_id, path])
+	if part.has("text") and typeof(part.text) != TYPE_STRING:
+		errors.append('%s: part "%s" text must be text' % [full_id, path])
 
 
 func _read_slots(full_id: String, slots, part_types: Array) -> void:
@@ -208,7 +273,8 @@ func _read_slots(full_id: String, slots, part_types: Array) -> void:
 		if not _is_whole(capacity, 1, 20):
 			errors.append('%s: slot "%s" capacity must be a whole number from 1 to 20' % [full_id, path])
 			capacity = 1
-		if not slot.get("pass_through", false):
+		# An optional slot (any of a switch's ports) doesn't have to be filled.
+		if not slot.get("pass_through", false) and not slot.get("optional", false):
 			filled[slot.accepts] = filled.get(slot.accepts, 0) + int(capacity)
 	_read_slot_options(full_id, slots)
 	# Every slot needs its own part, or the mission could never finish. A
@@ -218,8 +284,8 @@ func _read_slots(full_id: String, slots, part_types: Array) -> void:
 			errors.append('%s: slots need %d "%s" part(s) but only %d have that type' % [full_id, filled[type], type, part_types.count(type)])
 
 
-## Optional slot fields: role (text), pass_through, working and swappable
-## (true/false), compat (a rule in scripts/parts/compatibility.gd) and requires
+## Optional slot fields: role (text), pass_through, working, swappable,
+## removable and optional (true/false), compat (a rule in scripts/parts/compatibility.gd) and requires
 ## (other slots of this mission that must be filled first, with no loops).
 func _read_slot_options(full_id: String, slots: Dictionary) -> void:
 	for path in slots:
@@ -228,7 +294,7 @@ func _read_slot_options(full_id: String, slots: Dictionary) -> void:
 			continue
 		if slot.has("role") and typeof(slot.role) != TYPE_STRING:
 			errors.append('%s: slot "%s" role must be text' % [full_id, path])
-		for flag in ["pass_through", "working", "swappable"]:
+		for flag in ["pass_through", "working", "swappable", "removable", "optional"]:
 			if slot.has(flag) and typeof(slot[flag]) != TYPE_BOOL:
 				errors.append('%s: slot "%s" %s must be true or false' % [full_id, path, flag])
 		if slot.has("compat") and not slot.compat in Compatibility.RULES:

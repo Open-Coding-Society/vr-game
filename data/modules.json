@@ -713,6 +713,1282 @@
           }
         }
       ]
+    },
+    {
+      "id": "build_network",
+      "title": "Build a Network",
+      "category": "computer",
+      "missions": [
+        {
+          "id": "connect_two",
+          "title": "Connect two computers",
+          "description": "Join two PCs with one Cat6 cable: the smallest network there is.",
+          "topic": "Networks",
+          "difficulty": "Beginner",
+          "image": "task_build_network_connect_two",
+          "scene": "res://scenes/network/connect_two.tscn",
+          "intro": [
+            "Two PCs on a desk can't share anything yet.",
+            "Plug one end of the blue Cat6 cable into PC A's LAN port and the other end into PC B's."
+          ],
+          "success": [
+            "That's a network! Two devices joined by a cable can share data.",
+            "A cable between two computers is the smallest network: two devices that can share data."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "goal": {
+            "connected": [
+              "pc_a",
+              "pc_b"
+            ]
+          },
+          "parts": {
+            "Cable/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Cable/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            }
+          },
+          "slots": {
+            "PcA/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC A LAN port",
+              "hint": "A cable between two computers is the smallest network: two devices that can share data.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcA/Power": {
+              "working": true,
+              "name": "PC A power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcB/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC B LAN port",
+              "hint": "A cable between two computers is the smallest network: two devices that can share data.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcB/Power": {
+              "working": true,
+              "name": "PC B power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            }
+          }
+        },
+        {
+          "id": "switch",
+          "title": "Add a switch",
+          "description": "Cable three PCs to a GS108 switch so they can all reach each other.",
+          "topic": "Networks",
+          "difficulty": "Beginner",
+          "image": "task_build_network_switch",
+          "scene": "res://scenes/network/switch.tscn",
+          "intro": [
+            "One cable joins two computers. For three or more you need a switch.",
+            "Cable each PC's LAN port to any of the switch's 8 ports."
+          ],
+          "success": [
+            "All three PCs are on one network now.",
+            "A switch connects many devices on the same local network and passes data only to the port it's meant for."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "goal": {
+            "connected": [
+              "pc_a",
+              "pc_b",
+              "pc_c"
+            ]
+          },
+          "parts": {
+            "CableA/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableA/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            }
+          },
+          "slots": {
+            "PcA/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC A LAN port",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcA/Power": {
+              "working": true,
+              "name": "PC A power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcB/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC B LAN port",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcB/Power": {
+              "working": true,
+              "name": "PC B power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcC/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC C LAN port",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcC/Power": {
+              "working": true,
+              "name": "PC C power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "Switch/Port1": {
+              "accepts": "ethernet",
+              "name": "Switch port 1",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port2": {
+              "accepts": "ethernet",
+              "name": "Switch port 2",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port3": {
+              "accepts": "ethernet",
+              "name": "Switch port 3",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port4": {
+              "accepts": "ethernet",
+              "name": "Switch port 4",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port5": {
+              "accepts": "ethernet",
+              "name": "Switch port 5",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port6": {
+              "accepts": "ethernet",
+              "name": "Switch port 6",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port7": {
+              "accepts": "ethernet",
+              "name": "Switch port 7",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port8": {
+              "accepts": "ethernet",
+              "name": "Switch port 8",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            }
+          }
+        },
+        {
+          "id": "router",
+          "title": "Add a router",
+          "description": "Connect the switch to a router, and the router to the internet.",
+          "topic": "Networks",
+          "difficulty": "Beginner",
+          "image": "task_build_network_router",
+          "scene": "res://scenes/network/router.tscn",
+          "intro": [
+            "The three PCs reach each other, but not the internet.",
+            "Cable the switch to one of the router's LAN ports, then the wall's Internet jack to the router's WAN port."
+          ],
+          "success": [
+            "Every PC is online!",
+            "A router connects networks together. LAN is your side; WAN goes out to the internet."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "goal": {
+            "reach": "internet",
+            "from": [
+              "pc_a",
+              "pc_b",
+              "pc_c"
+            ]
+          },
+          "parts": {
+            "CableA/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableA/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Uplink/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Uplink/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "InternetCable/EndA": {
+              "type": "wan",
+              "name": "internet cable plug"
+            },
+            "InternetCable/EndB": {
+              "type": "wan",
+              "name": "internet cable plug"
+            }
+          },
+          "slots": {
+            "PcA/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC A LAN port",
+              "hint": "A router connects networks together. LAN is your side; WAN goes out to the internet.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcA/Power": {
+              "working": true,
+              "name": "PC A power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcB/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC B LAN port",
+              "hint": "A router connects networks together. LAN is your side; WAN goes out to the internet.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcB/Power": {
+              "working": true,
+              "name": "PC B power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcC/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC C LAN port",
+              "hint": "A router connects networks together. LAN is your side; WAN goes out to the internet.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcC/Power": {
+              "working": true,
+              "name": "PC C power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "Switch/Port1": {
+              "accepts": "ethernet",
+              "name": "Switch port 1",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port2": {
+              "accepts": "ethernet",
+              "name": "Switch port 2",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port3": {
+              "accepts": "ethernet",
+              "name": "Switch port 3",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port4": {
+              "accepts": "ethernet",
+              "name": "Switch port 4",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port5": {
+              "accepts": "ethernet",
+              "name": "Switch port 5",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port6": {
+              "accepts": "ethernet",
+              "name": "Switch port 6",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port7": {
+              "accepts": "ethernet",
+              "name": "Switch port 7",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port8": {
+              "accepts": "ethernet",
+              "name": "Switch port 8",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Router/Wan": {
+              "accepts": "wan",
+              "name": "Router WAN port",
+              "hint": "WAN goes out to the internet: only the cable from the wall's Internet jack goes here. The switch goes in a LAN port.",
+              "role": "The WAN port joins your network to the internet.",
+              "optional": true,
+              "removable": true
+            },
+            "Router/Lan1": {
+              "accepts": "ethernet",
+              "name": "Router LAN 1 port",
+              "hint": "LAN is your side: the cable from the switch goes here. The internet cable goes in WAN.",
+              "role": "The LAN ports are your side of the router: your own network.",
+              "optional": true,
+              "removable": true
+            },
+            "Router/Lan2": {
+              "accepts": "ethernet",
+              "name": "Router LAN 2 port",
+              "hint": "LAN is your side: the cable from the switch goes here. The internet cable goes in WAN.",
+              "role": "The LAN ports are your side of the router: your own network.",
+              "optional": true,
+              "removable": true
+            },
+            "Jack/Jack": {
+              "accepts": "wan",
+              "name": "Internet Internet jack",
+              "hint": "The wall's Internet jack only takes the internet cable, which goes to the router's WAN port.",
+              "role": "The wall jack is where the internet comes into the room.",
+              "optional": true,
+              "removable": true
+            }
+          }
+        },
+        {
+          "id": "send_packets",
+          "title": "Send data and watch the packets",
+          "description": "Send a message from PC A to PC C and watch it travel as numbered packets.",
+          "topic": "Packets",
+          "difficulty": "Intermediate",
+          "image": "task_build_network_send_packets",
+          "scene": "res://scenes/network/send_packets.tscn",
+          "intro": [
+            "The PCs are cabled to the switch. Now send something!",
+            "Drop the message card into PC A's Outbox. It's addressed to PC C."
+          ],
+          "success": [
+            "Every packet arrived, and PC C put them back in order.",
+            "Data is split into packets. Each one carries the address it's going to, and they can arrive out of order."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "goal": {
+            "delivered": {
+              "from": "pc_a",
+              "to": "pc_c",
+              "packets": 4
+            }
+          },
+          "parts": {
+            "CableA/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableA/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Message": {
+              "type": "message",
+              "name": "message to PC C",
+              "to": "pc_c",
+              "packets": 4,
+              "text": "Hello from PC A!"
+            }
+          },
+          "slots": {
+            "PcA/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC A LAN port",
+              "hint": "Data is split into packets. Each one carries the address it's going to, and they can arrive out of order.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcA/Power": {
+              "working": true,
+              "name": "PC A power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcB/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC B LAN port",
+              "hint": "Data is split into packets. Each one carries the address it's going to, and they can arrive out of order.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcB/Power": {
+              "working": true,
+              "name": "PC B power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcC/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC C LAN port",
+              "hint": "Data is split into packets. Each one carries the address it's going to, and they can arrive out of order.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcC/Power": {
+              "working": true,
+              "name": "PC C power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "Switch/Port1": {
+              "accepts": "ethernet",
+              "name": "Switch port 1",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port2": {
+              "accepts": "ethernet",
+              "name": "Switch port 2",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port3": {
+              "accepts": "ethernet",
+              "name": "Switch port 3",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port4": {
+              "accepts": "ethernet",
+              "name": "Switch port 4",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port5": {
+              "accepts": "ethernet",
+              "name": "Switch port 5",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port6": {
+              "accepts": "ethernet",
+              "name": "Switch port 6",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port7": {
+              "accepts": "ethernet",
+              "name": "Switch port 7",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port8": {
+              "accepts": "ethernet",
+              "name": "Switch port 8",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "PcA/Outbox": {
+              "accepts": "message",
+              "name": "PC A's Outbox",
+              "hint": "Drop the message card in PC A's Outbox to send it.",
+              "role": "PC A splits the message into numbered packets and sends each one to PC C."
+            }
+          }
+        },
+        {
+          "id": "interrupt",
+          "title": "Interrupt a connection",
+          "description": "Pull out a cable while packets are flowing, watch them stop, then plug it back in.",
+          "topic": "Fault tolerance",
+          "difficulty": "Intermediate",
+          "image": "task_build_network_interrupt",
+          "scene": "res://scenes/network/interrupt.tscn",
+          "intro": [
+            "Packets are flowing from PC A to the server, through the switch.",
+            "Pull out the marked cable, watch what happens, then plug it back in."
+          ],
+          "success": [
+            "The packets got through again once the cable was back.",
+            "With only one path, one broken cable stops everything after it."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "goal": {
+            "cut_then_restore": [
+              "switch:port3",
+              "server:eth0"
+            ]
+          },
+          "stream": {
+            "from": "pc_a",
+            "to": "server"
+          },
+          "parts": {
+            "CableA/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableA/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "MarkedCable/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "MarkedCable/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            }
+          },
+          "slots": {
+            "PcA/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC A LAN port",
+              "hint": "With only one path, one broken cable stops everything after it.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcA/Power": {
+              "working": true,
+              "name": "PC A power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcB/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC B LAN port",
+              "hint": "With only one path, one broken cable stops everything after it.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcB/Power": {
+              "working": true,
+              "name": "PC B power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "Switch/Port1": {
+              "accepts": "ethernet",
+              "name": "Switch port 1",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port2": {
+              "accepts": "ethernet",
+              "name": "Switch port 2",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port3": {
+              "accepts": "ethernet",
+              "name": "Switch port 3",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port4": {
+              "accepts": "ethernet",
+              "name": "Switch port 4",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port5": {
+              "accepts": "ethernet",
+              "name": "Switch port 5",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port6": {
+              "accepts": "ethernet",
+              "name": "Switch port 6",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port7": {
+              "accepts": "ethernet",
+              "name": "Switch port 7",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port8": {
+              "accepts": "ethernet",
+              "name": "Switch port 8",
+              "hint": "A switch connects many devices on the same local network and passes data only to the port it's meant for.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Server/Eth0": {
+              "accepts": "ethernet",
+              "name": "Server LAN port",
+              "hint": "With only one path, one broken cable stops everything after it.",
+              "role": "The server's LAN port is its only way into the network.",
+              "optional": true,
+              "removable": true
+            },
+            "Server/Power": {
+              "working": true,
+              "name": "Server power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            }
+          }
+        },
+        {
+          "id": "redundancy",
+          "title": "Add redundancy",
+          "description": "Add a second path so that cutting any one cable doesn't split the network.",
+          "topic": "Fault tolerance",
+          "difficulty": "Advanced",
+          "image": "task_build_network_redundancy",
+          "scene": "res://scenes/network/redundancy.tscn",
+          "intro": [
+            "Two switches, two PCs on each, and one cable between the switches.",
+            "If that cable breaks, the network splits in two. Use the spare cable to add a second path."
+          ],
+          "success": [
+            "Cut any one cable between the switches and every PC is still connected.",
+            "Fault tolerance: a second path means the network keeps working when one part fails."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "goal": {
+            "survives_any_single_cut": [
+              "pc_a",
+              "pc_b",
+              "pc_c",
+              "pc_d"
+            ]
+          },
+          "parts": {
+            "CableA/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableA/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableD/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableD/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Link/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Link/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Spare/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Spare/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            }
+          },
+          "slots": {
+            "PcA/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC A LAN port",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcA/Power": {
+              "working": true,
+              "name": "PC A power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcB/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC B LAN port",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcB/Power": {
+              "working": true,
+              "name": "PC B power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcC/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC C LAN port",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcC/Power": {
+              "working": true,
+              "name": "PC C power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "PcD/Eth0": {
+              "accepts": "ethernet",
+              "name": "PC D LAN port",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "The LAN port is how a PC sends and receives data over a cable.",
+              "optional": true,
+              "removable": true
+            },
+            "PcD/Power": {
+              "working": true,
+              "name": "PC D power socket",
+              "hint": "That's the power socket. The network cable goes in the LAN port beside it."
+            },
+            "Sw1/Port1": {
+              "accepts": "ethernet",
+              "name": "Switch 1 port 1",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw1/Port2": {
+              "accepts": "ethernet",
+              "name": "Switch 1 port 2",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw1/Port3": {
+              "accepts": "ethernet",
+              "name": "Switch 1 port 3",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw1/Port4": {
+              "accepts": "ethernet",
+              "name": "Switch 1 port 4",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw1/Port5": {
+              "accepts": "ethernet",
+              "name": "Switch 1 port 5",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw1/Port6": {
+              "accepts": "ethernet",
+              "name": "Switch 1 port 6",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw1/Port7": {
+              "accepts": "ethernet",
+              "name": "Switch 1 port 7",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw1/Port8": {
+              "accepts": "ethernet",
+              "name": "Switch 1 port 8",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw2/Port1": {
+              "accepts": "ethernet",
+              "name": "Switch 2 port 1",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw2/Port2": {
+              "accepts": "ethernet",
+              "name": "Switch 2 port 2",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw2/Port3": {
+              "accepts": "ethernet",
+              "name": "Switch 2 port 3",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw2/Port4": {
+              "accepts": "ethernet",
+              "name": "Switch 2 port 4",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw2/Port5": {
+              "accepts": "ethernet",
+              "name": "Switch 2 port 5",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw2/Port6": {
+              "accepts": "ethernet",
+              "name": "Switch 2 port 6",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw2/Port7": {
+              "accepts": "ethernet",
+              "name": "Switch 2 port 7",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Sw2/Port8": {
+              "accepts": "ethernet",
+              "name": "Switch 2 port 8",
+              "hint": "Fault tolerance: a second path means the network keeps working when one part fails.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            }
+          }
+        },
+        {
+          "id": "distribute",
+          "title": "Split a workload across machines",
+          "description": "Share 12 render tiles between Mac minis and see how much faster the job gets.",
+          "topic": "Parallel computing",
+          "difficulty": "Advanced",
+          "image": "task_build_network_distribute",
+          "scene": "res://scenes/network/distribute.tscn",
+          "intro": [
+            "One big job: 12 render tiles. One machine would take 12 seconds.",
+            "Drag the tiles onto the Mac minis' Job slots. Use at least 3 machines; the time bar shows the speedup."
+          ],
+          "success": [
+            "The job is done, split across the machines.",
+            "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too."
+          ],
+          "scoring": {
+            "full": 90,
+            "per_mistake": 10,
+            "balanced_bonus": 10
+          },
+          "goal": {
+            "jobs_done": 12,
+            "min_machines": 3
+          },
+          "parts": {
+            "CableA/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableA/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableD/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableD/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Tiles/Tile1": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile2": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile3": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile4": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile5": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile6": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile7": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile8": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile9": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile10": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile11": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile12": {
+              "type": "job",
+              "name": "render tile"
+            }
+          },
+          "slots": {
+            "MiniA/Eth0": {
+              "accepts": "ethernet",
+              "name": "Mac mini A LAN port",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "The Mac mini's LAN port: it gets its work over the network.",
+              "optional": true,
+              "removable": true
+            },
+            "MiniA/Job": {
+              "accepts": "job",
+              "name": "Mac mini A's Job slot",
+              "hint": "Render tiles go on a Mac mini's Job slot. Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Mac mini A works on its tiles at the same time as the others.",
+              "capacity": 4,
+              "optional": true,
+              "removable": true
+            },
+            "MiniB/Eth0": {
+              "accepts": "ethernet",
+              "name": "Mac mini B LAN port",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "The Mac mini's LAN port: it gets its work over the network.",
+              "optional": true,
+              "removable": true
+            },
+            "MiniB/Job": {
+              "accepts": "job",
+              "name": "Mac mini B's Job slot",
+              "hint": "Render tiles go on a Mac mini's Job slot. Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Mac mini B works on its tiles at the same time as the others.",
+              "capacity": 4,
+              "optional": true,
+              "removable": true
+            },
+            "MiniC/Eth0": {
+              "accepts": "ethernet",
+              "name": "Mac mini C LAN port",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "The Mac mini's LAN port: it gets its work over the network.",
+              "optional": true,
+              "removable": true
+            },
+            "MiniC/Job": {
+              "accepts": "job",
+              "name": "Mac mini C's Job slot",
+              "hint": "Render tiles go on a Mac mini's Job slot. Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Mac mini C works on its tiles at the same time as the others.",
+              "capacity": 4,
+              "optional": true,
+              "removable": true
+            },
+            "MiniD/Eth0": {
+              "accepts": "ethernet",
+              "name": "Mac mini D LAN port",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "The Mac mini's LAN port: it gets its work over the network.",
+              "optional": true,
+              "removable": true
+            },
+            "MiniD/Job": {
+              "accepts": "job",
+              "name": "Mac mini D's Job slot",
+              "hint": "Render tiles go on a Mac mini's Job slot. Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Mac mini D works on its tiles at the same time as the others.",
+              "capacity": 4,
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port1": {
+              "accepts": "ethernet",
+              "name": "Switch port 1",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port2": {
+              "accepts": "ethernet",
+              "name": "Switch port 2",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port3": {
+              "accepts": "ethernet",
+              "name": "Switch port 3",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port4": {
+              "accepts": "ethernet",
+              "name": "Switch port 4",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port5": {
+              "accepts": "ethernet",
+              "name": "Switch port 5",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port6": {
+              "accepts": "ethernet",
+              "name": "Switch port 6",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port7": {
+              "accepts": "ethernet",
+              "name": "Switch port 7",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port8": {
+              "accepts": "ethernet",
+              "name": "Switch port 8",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            }
+          }
+        }
+      ]
     }
   ]
 }

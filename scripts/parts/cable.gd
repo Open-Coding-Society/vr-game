@@ -7,6 +7,14 @@ extends Node3D
 ##
 ## This script only looks after the wire, stretching it between the two ends
 ## every frame, and puts the ends where the mission scene wants them.
+##
+## It also tells whoever listens (a network mission) when the cable joins two
+## ports: `plugged` once both ends are in, `unplugged` when either comes out.
+
+## Both ends are in ports: the cable now joins port_a and port_b (SnapZones).
+signal plugged(cable, port_a, port_b)
+## One end came out of its port, so the cable no longer joins them.
+signal unplugged(cable, port_a, port_b)
 
 ## Where each plug starts, relative to the cable (meters). Set these on the
 ## instance; the plugs are moved before they note where their home is.
@@ -19,6 +27,10 @@ extends Node3D
 ## set, EndB is taken out too. With both fixed, the cable is only a wire
 ## between two nodes, e.g. last mission's HDMI cable still in place.
 @export var fixed_end_b: NodePath
+## For a cable that starts plugged in (a network that is already cabled):
+## the ports, SnapZones, its EndA and EndB start in. The mission calls
+## plug_in_start_ports() once it has given the ports their types.
+@export var start_ports: Array[NodePath] = []
 ## How far above a plug's origin the wire leaves it (meters).
 @export var wire_lift := 0.012
 
@@ -27,6 +39,9 @@ var _to: Node3D
 ## The plugs are put at their start positions the first time only, so a cable
 ## that leaves the scene tree and comes back keeps its plugs where they are.
 var _placed := false
+## The ports the two ends are in right now (null when an end is free).
+var port_a: Area3D = null
+var port_b: Area3D = null
 
 @onready var wire: MeshInstance3D = $Wire
 
@@ -51,7 +66,54 @@ func _enter_tree() -> void:
 func _ready() -> void:
 	_from = get_node_or_null(fixed_end if not fixed_end.is_empty() else NodePath("EndA")) as Node3D
 	_to = get_node_or_null(fixed_end_b if not fixed_end_b.is_empty() else NodePath("EndB")) as Node3D
+	for end in [get_node_or_null("EndA"), get_node_or_null("EndB")]:
+		if end and end.has_signal("installed"):
+			end.installed.connect(_on_end_installed)
+			end.removed.connect(_on_end_removed)
 	_stretch()
+
+
+## Puts each end into its start port, as if the player had plugged it in
+## (the port judges it, so a plug of the wrong type stays out). Any end with
+## no start port is left where it is.
+func plug_in_start_ports() -> void:
+	var ends := [get_node_or_null("EndA"), get_node_or_null("EndB")]
+	for i in mini(start_ports.size(), 2):
+		var zone := get_node_or_null(start_ports[i]) as Area3D
+		var end = ends[i]
+		if zone == null or end == null or end.is_installed:
+			continue
+		end.global_transform = zone.snap_transform()
+		zone.judge(end)
+		if not end.is_installed:
+			end.return_home()
+			push_error("%s: %s can't start in %s" % [name, end.name, start_ports[i]])
+
+
+## True when both ends are in ports.
+func is_plugged() -> bool:
+	return port_a != null and port_b != null
+
+
+func _on_end_installed(end: Node, zone: Area3D) -> void:
+	if end.name == "EndA":
+		port_a = zone
+	else:
+		port_b = zone
+	if is_plugged():
+		plugged.emit(self, port_a, port_b)
+
+
+func _on_end_removed(end: Node, _zone: Area3D) -> void:
+	var was := is_plugged()
+	var a := port_a
+	var b := port_b
+	if end.name == "EndA":
+		port_a = null
+	else:
+		port_b = null
+	if was:
+		unplugged.emit(self, a, b)
 
 
 func _process(_delta: float) -> void:

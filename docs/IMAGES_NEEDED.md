@@ -31,7 +31,14 @@ Every image below has a file name. Save the finished image as **`ui/images/<name
 | `task_connect_peripherals.png` | Free Play: "Connect the monitor, keyboard and mouse" | 460 × 300 | The back of a PC tower with an HDMI cable and two USB cables going in. |
 | `task_power_on.png` | Free Play: "Plug in power and watch it boot" | 460 × 300 | A power plug going into a wall socket, and a monitor lighting up. |
 | `task_go_online.png` | Free Play: "Connect to the network" | 460 × 300 | A network cable from a PC to a small router with a green light. |
+| `task_build_network_connect_two.png` | Free Play: "Connect two computers" | 460 × 300 | Two PCs joined by one blue network cable, a green light at each end. |
+| `task_build_network_switch.png` | Free Play: "Add a switch" | 460 × 300 | Three PCs, each with a cable to one small white 8-port switch. |
+| `task_build_network_router.png` | Free Play: "Add a router" | 460 × 300 | A switch cabled to a blue router, and the router cabled to a wall jack with a globe or cloud. |
+| `task_build_network_send_packets.png` | Free Play: "Send data and watch the packets" | 460 × 300 | Small numbered white cubes travelling along a cable from one PC to another, out of order. |
+| `task_build_network_interrupt.png` | Free Play: "Interrupt a connection" | 460 × 300 | A cable pulled out of a switch, its light red, with packets stopped before the gap. |
+| `task_build_network_redundancy.png` | Free Play: "Add redundancy" | 460 × 300 | Two switches joined by two cables, one of them cut, the PCs still connected. |
+| `task_build_network_distribute.png` | Free Play: "Split a workload across machines" | 460 × 300 | Four flat Mac minis, each with a few square tiles of one picture on top. |
 
-The five Phase 2 tasks (`task_build_your_own.png` and the four after it) have no interim icon yet, so their cards show the named placeholder.
+The five Phase 2 tasks (`task_build_your_own.png` and the four after it) and the seven Build a Network tasks (`task_build_network_*.png`, Phase 3) have no interim icon yet, so their cards show the named placeholder.
 
-**Later:** every new task gets a `task_<mission id>.png` (460 × 300). The menu shows its placeholder until the file is there, so a missing image is easy to spot.
+**Later:** every new task gets a `task_<mission id>.png` (460 × 300), or the name in its `"image"` field in `data/modules.json`. The menu shows its placeholder until the file is there, so a missing image is easy to spot.

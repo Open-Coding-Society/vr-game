@@ -3,7 +3,9 @@ extends Node3D
 ## data/modules.json says *what* they are, what the student reads and how the
 ## mission is scored. So a new mission is a new scene plus a registry entry,
 ## with no new code (build-plan step 4). One mission, Build your own PC, adds
-## a little of its own on top: scripts/missions/build_pc_mission.gd.
+## a little of its own on top: scripts/missions/build_pc_mission.gd. Network
+## missions finish when the network meets a goal rather than when every slot
+## is full: scripts/missions/network_mission.gd (a "goal" field).
 ##
 ## On load it asks the TrainingManager autoload for its mission, gives each
 ## part and slot its type, name and hint from the registry, and then turns
@@ -17,8 +19,9 @@ const InfoPanel := preload("res://scripts/ui/info_panel.gd")
 @export var mission_id: String = ""
 
 var config: Dictionary = {}
-## Every slot in the mission, and the ones that must be filled to finish it
-## (all but `working` slots, which only turn parts away with a hint).
+## Every slot in the mission, and the ones that must be filled to finish it:
+## all but `working` slots, which only turn parts away with a hint, and
+## `optional` ones, which can be filled or not (any of a switch's 8 ports).
 var zones: Array[SnapZone] = []
 var goals: Array[SnapZone] = []
 var parts: Array[GrabbablePart] = []
@@ -49,6 +52,8 @@ func _ready() -> void:
 		zone.rejected.connect(_on_rejected)
 		zone.blocked.connect(_on_blocked)
 		zone.swapped.connect(_on_swapped)
+		zone.removed.connect(_on_removed)
+		zone.refused.connect(_on_refused)
 	manager.module_completed.connect(_on_module_completed)
 	var reporter := get_node_or_null("/root/ScoreReporter")
 	if reporter:
@@ -85,8 +90,9 @@ func _apply_registry() -> void:
 		zone.working = slot.get("working", false)
 		zone.swappable = slot.get("swappable", false)
 		zone.compat = StringName(slot.get("compat", ""))
+		zone.removable = slot.get("removable", false)
 		zones.append(zone)
-		if not zone.working:
+		if not zone.working and not slot.get("optional", false):
 			goals.append(zone)
 	# Prerequisites are other slots of this mission, so link them once all exist.
 	for path in config.slots:
@@ -119,6 +125,11 @@ func _on_part_grabbed(_part: GrabbablePart) -> void:
 
 func _on_snapped(zone: SnapZone, part: GrabbablePart) -> void:
 	if manager.state != manager.State.ACTIVE:
+		return
+	if config.has("goal"):
+		# A mission with a goal finishes when the goal is met, not when its
+		# slots are full (scripts/missions/network_mission.gd checks it).
+		_show_checklist(_installed_text(zone, part))
 		return
 	if goals.all(func(z: SnapZone) -> bool: return z.is_filled()):
 		# The mission is over: what is in the slots now is what gets scored and
@@ -161,6 +172,20 @@ func _on_rejected(zone: SnapZone, part: GrabbablePart) -> void:
 ## their parts go back home.
 func _on_swapped(zone: SnapZone, _old_part: GrabbablePart) -> void:
 	_empty_dependents(zone, [zone])
+
+
+## A part was pulled out of a removable slot (a cable unplugged). That is
+## never a mistake; the checklist just shows the slot as empty again.
+func _on_removed(_zone: SnapZone, _part: GrabbablePart) -> void:
+	if manager.state == manager.State.ACTIVE:
+		_show_checklist("")
+
+
+## A slot's gate turned a part away for now (a machine that isn't on the
+## network yet). Not the player's mistake: the panel just says why.
+func _on_refused(zone: SnapZone, _part: GrabbablePart) -> void:
+	if manager.state == manager.State.ACTIVE:
+		_show_checklist(zone.last_problem)
 
 
 func _empty_dependents(zone: SnapZone, seen: Array) -> void:
@@ -260,6 +285,16 @@ func _show_result() -> void:
 ## One line per slot, ticked once its part is in, then any feedback.
 ## A slot still waiting on another says so.
 func _show_checklist(feedback: String) -> void:
+	var out := _status_lines()
+	if feedback != "":
+		out.append("")
+		out.append(feedback)
+	panel.show_text(config.title, out)
+
+
+## The checklist's lines: one per slot that must be filled. A mission with a
+## goal of its own lists what the goal needs instead.
+func _status_lines() -> PackedStringArray:
 	var out := PackedStringArray()
 	for zone in goals:
 		var line := ("[x] " if zone.is_filled() else "[  ] ") + zone.display_name
@@ -268,10 +303,7 @@ func _show_checklist(feedback: String) -> void:
 		if not zone.is_filled() and not zone.is_unlocked():
 			line += "  (after: %s)" % name_list(zone.missing_prerequisites().map(func(z) -> String: return z.display_name))
 		out.append(line)
-	if feedback != "":
-		out.append("")
-		out.append(feedback)
-	panel.show_text(config.title, out)
+	return out
 
 
 ## Names for the panel: "a, b, c", or "a, b and 4 more" when the list is long
