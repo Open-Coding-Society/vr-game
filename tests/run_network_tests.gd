@@ -15,6 +15,8 @@ const Cable := preload("res://scenes/parts/cable.tscn")
 const SnapZone := preload("res://scripts/snap_zone.gd")
 const GrabbablePart := preload("res://scripts/grabbable_part.gd")
 const LinkLight := preload("res://scripts/parts/link_light.gd")
+const NetworkDevice := preload("res://scripts/network/network_device.gd")
+const Cat6Cable := preload("res://scenes/network/cat6_cable.tscn")
 
 ## Nodes under the root that stay between tests.
 const AUTOLOADS := [&"TrainingManager", &"ScoreReporter", &"SaveService"]
@@ -53,7 +55,9 @@ func _tests() -> Array:
 		_test_graph_internet_only_through_wan, _test_graph_bridges_line, _test_graph_bridges_ring,
 		_test_graph_bridges_star, _test_graph_survives_any_single_cut, _test_graph_cut_results,
 		_test_removable_slot, _test_fixed_slot_keeps_its_part, _test_locked_slot_keeps_its_part,
-		_test_cable_plugged_signals, _test_removing_is_not_a_mistake, _test_link_light_goes_out]
+		_test_cable_plugged_signals, _test_removing_is_not_a_mistake, _test_link_light_goes_out,
+		_test_device_ports, _test_device_port_ids, _test_device_port_lights, _test_device_other_slots,
+		_test_pc_has_a_screen, _test_cat6_cable]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -374,3 +378,100 @@ func _test_link_light_goes_out() -> void:
 	check("link light: red when the link is marked cut", light.shown_color() == light.cut_color)
 	light.set_cut(false)
 	a.drop()
+
+
+# --- Step 3: the devices ------------------------------------------------------
+
+## Each device scene: its kind and its network ports, in order.
+const DEVICES := {
+	"res://scenes/network/devices/pc.tscn": ["pc", ["Eth0"]],
+	"res://scenes/network/devices/mac_mini.tscn": ["pc", ["Eth0"]],
+	"res://scenes/network/devices/switch_gs108.tscn": ["switch", ["Port1", "Port2", "Port3", "Port4", "Port5", "Port6", "Port7", "Port8"]],
+	"res://scenes/network/devices/router_glinet.tscn": ["router", ["Wan", "Lan1", "Lan2"]],
+	"res://scenes/network/devices/server.tscn": ["server", ["Eth0"]],
+	"res://scenes/network/devices/wall_jack.tscn": ["internet", ["Jack"]],
+}
+
+
+## A device scene put on its own under the root.
+func _device(path: String, id := "dev") -> Node:
+	var device: Node = load(path).instantiate()
+	device.device_id = id
+	await _fresh(device)
+	return device
+
+
+func _test_device_ports() -> void:
+	for path in DEVICES:
+		var device := await _device(path)
+		var want: Array = DEVICES[path][1]
+		var names: Array = device.ports().map(func(z) -> String: return String(z.name))
+		var label: String = path.get_file().get_basename()
+		check("device %s: the script is on a StaticBody3D root" % label, device is StaticBody3D and device.get_script() == NetworkDevice)
+		check("device %s: its kind is %s" % [label, DEVICES[path][0]], device.kind == DEVICES[path][0], device.kind)
+		check("device %s: its ports are %s" % [label, ", ".join(want)], names == want, names)
+		var ok: bool = device.ports().all(func(z) -> bool:
+			return z is SnapZone and z.accepts == &"ethernet" and z.get_node_or_null("SnapPoint") != null \
+				and z.get_node_or_null("CollisionShape3D") != null)
+		check("device %s: every port is an ethernet SnapZone with a SnapPoint" % label, ok)
+		var tag := device.get_node_or_null("Label") as Label3D
+		check("device %s: its label shows its name" % label, tag != null and tag.text == device.display_name and tag.text != "")
+
+
+func _test_device_port_ids() -> void:
+	var router := await _device("res://scenes/network/devices/router_glinet.tscn", "router")
+	check("device: a port's id is device:port in lower case", router.port_id(router.get_node("Wan")) == "router:wan"
+		and router.port_id(router.get_node("Lan2")) == "router:lan2")
+	check("device: a port is found by its name, any case", router.port("lan1") == router.get_node("Lan1") and router.port("WAN") == router.get_node("Wan"))
+	check("device: a port it doesn't have is null", router.port("eth0") == null)
+	check("device: ports have names a player can read", router.get_node("Lan1").display_name == "Router LAN 1 port", router.get_node("Lan1").display_name)
+	var sw := await _device("res://scenes/network/devices/switch_gs108.tscn", "switch")
+	check("device: switch ports read 'port 3'", sw.get_node("Port3").display_name == "Switch port 3", sw.get_node("Port3").display_name)
+	check("device: switch port ids run port1 to port8", sw.port_id(sw.get_node("Port8")) == "switch:port8")
+
+
+func _test_device_port_lights() -> void:
+	var sw := await _device("res://scenes/network/devices/switch_gs108.tscn", "switch")
+	var all_lit: bool = sw.ports().all(func(z) -> bool: return sw.port_light(z) != null)
+	check("device: every switch port has a link light", all_lit)
+	var p3: SnapZone = sw.get_node("Port3")
+	var light: MeshInstance3D = sw.port_light(p3)
+	check("device: lights start dark", not light.is_lit and light.shown_color() == light.off_color)
+	sw.set_port_state(p3, "up")
+	check("device: a port that is up is green", light.is_lit and light.shown_color() == light.on_color)
+	sw.set_port_state(p3, "cut")
+	check("device: a cut link is red", light.shown_color() == light.cut_color)
+	sw.set_port_state(p3, "off")
+	check("device: a port with no cable is dark again", not light.is_lit and not light.is_cut)
+	check("device: the other ports didn't change", not sw.port_light(sw.get_node("Port4")).is_lit)
+
+
+func _test_device_other_slots() -> void:
+	var pc := await _device("res://scenes/network/devices/pc.tscn")
+	var power := pc.get_node_or_null("Power") as SnapZone
+	check("device: a PC has a power socket that isn't a network port", power != null and power.accepts == &"power" and not pc.ports().has(power))
+	var mini := await _device("res://scenes/network/devices/mac_mini.tscn")
+	var job := mini.get_node_or_null("Job") as SnapZone
+	check("device: a Mac mini has a Job slot for work", job != null and job.accepts == &"job" and not mini.ports().has(job))
+	var box := mini.get_node("Box") as MeshInstance3D
+	check("device: a Mac mini is 0.2 x 0.2 x 0.036 m", (box.mesh as BoxMesh).size.is_equal_approx(Vector3(0.2, 0.036, 0.2)))
+	var sw := await _device("res://scenes/network/devices/switch_gs108.tscn")
+	check("device: the GS108 is 0.16 x 0.1 x 0.028 m", ((sw.get_node("Box") as MeshInstance3D).mesh as BoxMesh).size.is_equal_approx(Vector3(0.16, 0.028, 0.1)))
+
+
+func _test_pc_has_a_screen() -> void:
+	var pc := await _device("res://scenes/network/devices/pc.tscn")
+	var screen: Node = pc.screen()
+	check("device: a PC has a monitor screen", screen != null and screen.has_method("show_desktop"))
+	screen.show_desktop("PC B found", PackedStringArray())
+	check("device: and it can show text", screen.is_on and screen.title == "PC B found")
+	var sw := await _device("res://scenes/network/devices/switch_gs108.tscn")
+	check("device: a switch has no screen", sw.screen() == null)
+
+
+func _test_cat6_cable() -> void:
+	var cable: Node3D = Cat6Cable.instantiate()
+	await _fresh(cable)
+	check("cat6 cable: it is Phase 2's cable, with its two plugs", cable.has_signal("plugged") and cable.get_node("EndA") is GrabbablePart and cable.get_node("EndB") is GrabbablePart)
+	var plug := (cable.get_node("EndA/Mesh") as MeshInstance3D).mesh as BoxMesh
+	check("cat6 cable: its plugs are small enough for switch ports side by side", plug.size.x < 0.018, plug.size)

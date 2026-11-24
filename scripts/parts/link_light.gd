@@ -5,7 +5,9 @@ extends MeshInstance3D
 ## of a removable port and the light goes dark again.
 ##
 ## A network mission can also mark the link as cut (set_cut), which shows it
-## red until the link is restored.
+## red until the link is restored. A light on a network device's port has no
+## zones to watch (the far end can be any port): the mission turns it on and
+## off with set_lit.
 
 ## The light has just come on.
 signal lit
@@ -54,6 +56,18 @@ func _on_removed(_zone, _part) -> void:
 	is_lit = false
 	_show()
 	went_out.emit()
+
+
+## Turns the light on or off by hand, for a light that watches no zones.
+func set_lit(on: bool) -> void:
+	if on == is_lit:
+		return
+	is_lit = on
+	_show()
+	if on:
+		lit.emit()
+	else:
+		went_out.emit()
 
 
 ## Shows the link as cut (red) or not. Lit or dark is still kept underneath.

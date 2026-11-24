@@ -1,0 +1,80 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/network/network_device.gd" id="1_device"]
+[ext_resource type="Script" path="res://scripts/snap_zone.gd" id="2_zone"]
+[ext_resource type="Script" path="res://scripts/parts/link_light.gd" id="3_light"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_1"]
+albedo_color = Color(0.941, 0.953, 0.965, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_2"]
+material = SubResource("Mat_1")
+size = Vector3(0.08, 0.04, 0.05)
+
+[sub_resource type="BoxShape3D" id="Shape_3"]
+size = Vector3(0.08, 0.04, 0.05)
+
+[sub_resource type="BoxShape3D" id="Shape_4"]
+size = Vector3(0.04, 0.14, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="Mat_5"]
+albedo_color = Color(0.106, 0.122, 0.141, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_6"]
+material = SubResource("Mat_5")
+size = Vector3(0.012, 0.002, 0.012)
+
+[sub_resource type="BoxMesh" id="Mesh_7"]
+size = Vector3(0.006, 0.003, 0.006)
+
+[node name="WallJack" type="StaticBody3D"]
+script = ExtResource("1_device")
+kind = "internet"
+display_name = "Internet"
+
+[node name="Plate" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+mesh = SubResource("Mesh_2")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+shape = SubResource("Shape_3")
+
+[node name="Jack" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+script = ExtResource("2_zone")
+accepts = &"ethernet"
+display_name = "Jack"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Jack"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+shape = SubResource("Shape_4")
+
+[node name="SnapPoint" type="Marker3D" parent="Jack"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+
+[node name="Socket" type="MeshInstance3D" parent="Jack"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.041, 0)
+mesh = SubResource("Mesh_6")
+
+[node name="Light" type="MeshInstance3D" parent="Jack"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0415, -0.016)
+mesh = SubResource("Mesh_7")
+script = ExtResource("3_light")
+
+[node name="Tag" type="Label3D" parent="Jack"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.042, 0.016)
+pixel_size = 0.0003
+text = "Internet"
+font_size = 28
+outline_size = 8
+
+[node name="Label" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, 0)
+billboard = 1
+pixel_size = 0.0004
+text = "Internet"
+font_size = 44
+outline_size = 8

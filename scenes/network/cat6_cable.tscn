@@ -1,0 +1,51 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/parts/cable.tscn" id="1_cable"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_plug"]
+albedo_color = Color(0.42, 0.62, 0.9, 1)
+roughness = 0.6
+
+[sub_resource type="BoxMesh" id="Mesh_plug"]
+material = SubResource("Mat_plug")
+size = Vector3(0.012, 0.02, 0.016)
+
+[sub_resource type="BoxShape3D" id="Shape_plug"]
+size = Vector3(0.016, 0.03, 0.03)
+
+[sub_resource type="StandardMaterial3D" id="Mat_wire"]
+albedo_color = Color(0.17, 0.42, 0.82, 1)
+roughness = 0.8
+
+[sub_resource type="CylinderMesh" id="Mesh_wire"]
+material = SubResource("Mat_wire")
+top_radius = 0.003
+bottom_radius = 0.003
+height = 1.0
+radial_segments = 8
+rings = 1
+
+[node name="Cat6Cable" instance=ExtResource("1_cable")]
+
+[node name="Mesh" parent="EndA" index="0"]
+mesh = SubResource("Mesh_plug")
+
+[node name="CollisionShape3D" parent="EndA" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_plug")
+
+[node name="Name" parent="EndA" index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+
+[node name="Mesh" parent="EndB" index="0"]
+mesh = SubResource("Mesh_plug")
+
+[node name="CollisionShape3D" parent="EndB" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_plug")
+
+[node name="Name" parent="EndB" index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+
+[node name="Wire" parent="." index="2"]
+mesh = SubResource("Mesh_wire")
