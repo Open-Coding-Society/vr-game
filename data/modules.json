@@ -292,7 +292,8 @@
           "scene": "res://scenes/build_computer/diagnose_failure.tscn",
           "intro": [
             "This computer won't start properly: when it turns on, it beeps and shows no picture.",
-            "Find the broken part and swap in the right spare from the table. Drop the spare on the part you think is broken."
+            "Find the broken part and swap in the right spare from the table. Drop the spare on the part you think is broken.",
+            "Not sure? Test a part with the multimeter: drop it on the part to see a reading."
           ],
           "success": [
             "Fixed! Bad memory failed the start-up test, and a dead drive hid the operating system. Each part fails in its own way, which is how you can tell them apart."
@@ -324,7 +325,15 @@
               "accepts": "ram",
               "name": "Problem 1: beeps, no picture",
               "hint": "Beeping with no picture is the start-up memory test failing: nothing can run without working RAM.",
-              "role": "The new RAM passes the memory test. The computer starts... but now the screen says \"No boot device found\"."
+              "role": "The new RAM passes the memory test. The computer starts... but now the screen says \"No boot device found\".",
+              "probe": {
+                "reads": "0.0 V",
+                "means": "This RAM stick gets no power to its chips: it's dead, so the memory test fails and the PC beeps."
+              },
+              "probe_fixed": {
+                "reads": "1.2 V",
+                "means": "The new RAM stick has the power it needs."
+              }
             },
             "DriveProblem": {
               "accepts": "storage",
@@ -332,17 +341,33 @@
               "requires": [
                 "RamProblem"
               ],
-              "hint": "\"No boot device\" means the computer can't find the drive that holds the operating system: that's storage."
+              "hint": "\"No boot device\" means the computer can't find the drive that holds the operating system: that's storage.",
+              "probe": {
+                "reads": "0.0 V",
+                "means": "This drive gets no power: it's dead, so the PC can't find the operating system on it."
+              },
+              "probe_fixed": {
+                "reads": "3.3 V",
+                "means": "The new drive has the power it needs."
+              }
             },
             "CpuCheck": {
               "working": true,
               "name": "CPU",
-              "hint": "The CPU is fine: a dead CPU usually means no beeps at all, because nothing can run the start-up test."
+              "hint": "The CPU is fine: a dead CPU usually means no beeps at all, because nothing can run the start-up test.",
+              "probe": {
+                "reads": "1.2 V",
+                "means": "The CPU gets steady power: it's working."
+              }
             },
             "PsuCheck": {
               "working": true,
               "name": "power supply",
-              "hint": "The power supply is fine: the computer turns on and beeps, so it's getting power."
+              "hint": "The power supply is fine: the computer turns on and beeps, so it's getting power.",
+              "probe": {
+                "reads": "12.1 V",
+                "means": "The power supply gives a steady 12 V: it's working."
+              }
             }
           }
         },

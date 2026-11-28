@@ -17,7 +17,6 @@ const Tool := preload("res://scripts/tools/tool.gd")
 const Mission := preload("res://scripts/missions/mission.gd")
 const InfoPanel := preload("res://scripts/ui/info_panel.gd")
 const Room := preload("res://scenes/room.tscn")
-const ToolRack := preload("res://scenes/tools/tool_rack.tscn")
 const BoardVisual := preload("res://models/board/board_visual.tscn")
 const SsdVisual := preload("res://models/ssd_sata/ssd_sata_visual.tscn")
 const CpuVisual := preload("res://models/cpu/cpu_visual.tscn")
@@ -31,7 +30,10 @@ const PANEL_AT := Vector3(-0.02, 1.12, -0.32)
 const PANEL_TILT_DEG := -25.0
 
 ## Every scene this makes, by name.
+## (_tools makes several; the rest one each. The tools come first: the rack
+## and the missions place the saved tool scenes.)
 var SCENES := {
+	"tools": _tools,
 	"tool_rack": _tool_rack,
 	"swap_ssd": _swap_ssd,
 	"cooler_paste": _cooler_paste,
@@ -43,11 +45,82 @@ func _initialize() -> void:
 	for scene_name in SCENES:
 		if only.is_empty() or scene_name in only:
 			var made: Array = SCENES[scene_name].call()
-			_save(made[0], made[1])
+			for scene in (made if made[0] is Array else [made]):
+				_save(scene[0], scene[1])
 	quit()
 
 
 # ---------------------------------------------------------------- scenes
+
+## One scene per tool (scenes/tools/<tool type>.tscn), so a mission can use
+## a single tool (the multimeter in Diagnose a failure) and Phase 6 can give
+## each tool its real model in one file.
+func _tools() -> Array:
+	var made := []
+	for tool_type in TOOL_LOOKS:
+		made.append(["res://scenes/tools/%s.tscn" % tool_type, _make_tool(tool_type)])
+	return made
+
+
+## Each tool's node name, grab shape and where its label floats (labels of
+## neighbours on the rack are at different heights, so they don't overlap).
+const TOOL_LOOKS := {
+	"screwdriver": {"name": "Screwdriver", "size": Vector3(0.05, 0.03, 0.19), "tag_y": 0.05},
+	"wrist_strap": {"name": "WristStrap", "size": Vector3(0.09, 0.03, 0.09), "tag_y": 0.08},
+	"thermal_paste": {"name": "ThermalPaste", "size": Vector3(0.04, 0.03, 0.12), "tag_y": 0.05},
+	"multimeter": {"name": "Multimeter", "size": Vector3(0.08, 0.035, 0.14), "tag_y": 0.085},
+	"cloth": {"name": "Cloth", "size": Vector3(0.1, 0.02, 0.1), "tag_y": 0.05},
+}
+
+
+func _make_tool(tool_type: String) -> RigidBody3D:
+	var holder := Node3D.new()
+	var look: Dictionary = TOOL_LOOKS[tool_type]
+	var tool := _tool(holder, look.name, tool_type, Vector3.ZERO, look.size)
+	holder.remove_child(tool)
+	holder.free()
+	tool.get_node("Name").position.y = look.tag_y
+	var mesh := tool.get_node("Mesh")
+	match tool_type:
+		"screwdriver":
+			_cylinder(mesh, "Handle", 0.014, 0.1, Vector3(0, 0.014, 0.045), Vector3(90, 0, 0), Color(0.85, 0.2, 0.15))
+			_cylinder(mesh, "Shaft", 0.003, 0.085, Vector3(0, 0.014, -0.045), Vector3(90, 0, 0), Color(0.75, 0.76, 0.78))
+		"wrist_strap":
+			var band := MeshInstance3D.new()
+			band.name = "Band"
+			var torus := TorusMesh.new()
+			torus.inner_radius = 0.028
+			torus.outer_radius = 0.036
+			torus.material = _material(Color(0.15, 0.35, 0.8))
+			band.mesh = torus
+			band.position = Vector3(0, 0.004, 0)
+			mesh.add_child(band)
+			_box(mesh, "Clip", Vector3(0.016, 0.01, 0.022), Vector3(0.036, 0.005, 0), Color(0.6, 0.62, 0.66))
+		"thermal_paste":
+			_cylinder(mesh, "Syringe", 0.008, 0.085, Vector3(0, 0.008, 0.005), Vector3(90, 0, 0), Color(0.82, 0.83, 0.85))
+			_cylinder(mesh, "Tip", 0.003, 0.02, Vector3(0, 0.008, -0.047), Vector3(90, 0, 0), Color(0.55, 0.56, 0.58))
+			_cylinder(mesh, "Plunger", 0.005, 0.03, Vector3(0, 0.008, 0.06), Vector3(90, 0, 0), Color(0.3, 0.3, 0.32))
+		"multimeter":
+			_box(mesh, "Body", Vector3(0.072, 0.028, 0.13), Vector3(0, 0.014, 0), Color(0.95, 0.75, 0.1))
+			_box(mesh, "Screen", Vector3(0.052, 0.002, 0.032), Vector3(0, 0.029, -0.035), Color(0.55, 0.62, 0.5))
+			_cylinder(mesh, "Dial", 0.016, 0.004, Vector3(0, 0.03, 0.02), Vector3.ZERO, Color(0.15, 0.15, 0.16))
+			var display := _label(tool, "Display", "--.- V", Vector3(0, 0.031, -0.035), 40)
+			display.rotation_degrees = Vector3(-90, 0, 0)
+			display.modulate = Color(0.1, 0.12, 0.1)
+			display.outline_size = 0
+			display.pixel_size = 0.00025
+		"cloth":
+			_box(mesh, "Sheet", Vector3(0.1, 0.006, 0.1), Vector3(0, 0.003, 0), Color(0.55, 0.78, 0.9))
+	return tool
+
+
+## A tool scene placed under `parent`, named as its own scene names it.
+func _place_tool(parent: Node3D, tool_type: String, at: Vector3) -> Node3D:
+	var tool: Node3D = ResourceLoader.load("res://scenes/tools/%s.tscn" % tool_type, "", ResourceLoader.CACHE_MODE_REPLACE).instantiate()
+	tool.position = at
+	parent.add_child(tool)
+	return tool
+
 
 ## The tool rack (Phase 5 step 3): a tray with one of each tool, one size
 ## (design plan §5, "keep it simple"). Each tool's place on the tray is its
@@ -59,38 +132,10 @@ func _tool_rack() -> Array:
 	_box(rack, "Lip", Vector3(0.4, 0.02, 0.008), Vector3(0, 0.01, -0.071), Color(0.22, 0.23, 0.25))
 	var sign := _label(rack, "Sign", "Tool rack", Vector3(0, 0.026, -0.071), 40)
 	sign.rotation_degrees = Vector3(-35, 0, 0)
-
-	var screwdriver := _tool(rack, "Screwdriver", "screwdriver", Vector3(-0.135, 0.012, 0), Vector3(0.05, 0.03, 0.19))
-	var look := screwdriver.get_node("Mesh")
-	_cylinder(look, "Handle", 0.014, 0.1, Vector3(0, 0.014, 0.045), Vector3(90, 0, 0), Color(0.85, 0.2, 0.15))
-	_cylinder(look, "Shaft", 0.003, 0.085, Vector3(0, 0.014, -0.045), Vector3(90, 0, 0), Color(0.75, 0.76, 0.78))
-
-	var strap := _tool(rack, "WristStrap", "wrist_strap", Vector3(-0.045, 0.012, 0), Vector3(0.09, 0.03, 0.09))
-	var band := MeshInstance3D.new()
-	band.name = "Band"
-	var torus := TorusMesh.new()
-	torus.inner_radius = 0.028
-	torus.outer_radius = 0.036
-	torus.material = _material(Color(0.15, 0.35, 0.8))
-	band.mesh = torus
-	band.position = Vector3(0, 0.004, 0)
-	strap.get_node("Mesh").add_child(band)
-	_box(strap.get_node("Mesh"), "Clip", Vector3(0.016, 0.01, 0.022), Vector3(0.036, 0.005, 0), Color(0.6, 0.62, 0.66))
-
-	var paste := _tool(rack, "ThermalPaste", "thermal_paste", Vector3(0.045, 0.012, 0), Vector3(0.04, 0.03, 0.12))
-	_cylinder(paste.get_node("Mesh"), "Syringe", 0.008, 0.085, Vector3(0, 0.008, 0.005), Vector3(90, 0, 0), Color(0.82, 0.83, 0.85))
-	_cylinder(paste.get_node("Mesh"), "Tip", 0.003, 0.02, Vector3(0, 0.008, -0.047), Vector3(90, 0, 0), Color(0.55, 0.56, 0.58))
-	_cylinder(paste.get_node("Mesh"), "Plunger", 0.005, 0.03, Vector3(0, 0.008, 0.06), Vector3(90, 0, 0), Color(0.3, 0.3, 0.32))
-
-	var meter := _tool(rack, "Multimeter", "multimeter", Vector3(0.14, 0.012, 0), Vector3(0.08, 0.035, 0.14))
-	_box(meter.get_node("Mesh"), "Body", Vector3(0.072, 0.028, 0.13), Vector3(0, 0.014, 0), Color(0.95, 0.75, 0.1))
-	_box(meter.get_node("Mesh"), "Screen", Vector3(0.052, 0.002, 0.032), Vector3(0, 0.029, -0.035), Color(0.55, 0.62, 0.5))
-	_cylinder(meter.get_node("Mesh"), "Dial", 0.016, 0.004, Vector3(0, 0.03, 0.02), Vector3.ZERO, Color(0.15, 0.15, 0.16))
-	var display := _label(meter, "Display", "--.- V", Vector3(0, 0.031, -0.035), 40)
-	display.rotation_degrees = Vector3(-90, 0, 0)
-	display.modulate = Color(0.1, 0.12, 0.1)
-	display.outline_size = 0
-	display.pixel_size = 0.00025
+	_place_tool(rack, "screwdriver", Vector3(-0.135, 0.012, 0))
+	_place_tool(rack, "wrist_strap", Vector3(-0.045, 0.012, 0))
+	_place_tool(rack, "thermal_paste", Vector3(0.045, 0.012, 0))
+	_place_tool(rack, "multimeter", Vector3(0.14, 0.012, 0))
 	return ["res://scenes/tools/tool_rack.tscn", rack]
 
 
@@ -100,9 +145,7 @@ func _tool_rack() -> Array:
 ## down, close the case. data/modules.json gives the order with `requires`.
 func _swap_ssd() -> Array:
 	var root := _mission("SwapSsd", "build_computer.swap_ssd", 34)
-	var rack := ToolRack.instantiate()
-	rack.position = Vector3(-0.33, TABLE_TOP, 0.2)
-	root.add_child(rack)
+	_place_rack(root)
 	_zone(root, "Wrist", Vector3(-0.06, TABLE_TOP, 0.25), Vector3(0.1, 0.12, 0.1), Vector2(0.09, 0.09), "Your wrist")
 
 	# The case: a tray with walls (a low lip at the front, so the laptop camera
@@ -177,9 +220,7 @@ func _swap_ssd() -> Array:
 ## the CPU is a slot over the socket; `requires` decides which one is next.
 func _cooler_paste() -> Array:
 	var root := _mission("CoolerPaste", "build_computer.cooler_paste", 36)
-	var rack := ToolRack.instantiate()
-	rack.position = Vector3(-0.33, TABLE_TOP, 0.2)
-	root.add_child(rack)
+	_place_rack(root)
 
 	var board := Node3D.new()
 	board.name = "Motherboard"
@@ -237,8 +278,7 @@ func _cooler_paste() -> Array:
 	_box(plug.get_node("Mesh"), "Wire", Vector3(0.05, 0.002, 0.003), Vector3(-0.03, 0.002, 0), Color(0.15, 0.15, 0.15))
 	_label(plug, "Name", "Fan plug", Vector3(0, 0.03, 0), 40).billboard = BaseMaterial3D.BILLBOARD_ENABLED
 
-	var cloth := _tool(root, "Cloth", "cloth", Vector3(0.47, TABLE_TOP, 0.24), Vector3(0.1, 0.02, 0.1))
-	_box(cloth.get_node("Mesh"), "Sheet", Vector3(0.1, 0.006, 0.1), Vector3(0, 0.003, 0), Color(0.55, 0.78, 0.9))
+	_place_tool(root, "cloth", Vector3(0.47, TABLE_TOP, 0.24))
 
 	var monitor := Node3D.new()
 	monitor.name = "Monitor"
@@ -268,6 +308,13 @@ const LIP := 0.04
 
 
 # ---------------------------------------------------------------- pieces
+
+## The tool rack at its usual place: the front left of the desk.
+func _place_rack(root: Node3D) -> Node3D:
+	var rack: Node3D = ResourceLoader.load("res://scenes/tools/tool_rack.tscn", "", ResourceLoader.CACHE_MODE_REPLACE).instantiate()
+	rack.position = Vector3(-0.33, TABLE_TOP, 0.2)
+	root.add_child(rack)
+	return rack
 
 ## A mission scene's root: the mission script, the room and the info panel.
 func _mission(node_name: String, mission_id: String, body_size := 40) -> Node3D:
@@ -346,8 +393,7 @@ func _tool(parent: Node3D, node_name: String, tool_type: String, at: Vector3, si
 	tag.font_size = 40
 	tag.outline_size = 10
 	tag.no_depth_test = true
-	# Every other label a little higher, so neighbours on the rack don't overlap.
-	tag.position = Vector3(0, size.y + (0.02 if parent.get_child_count() % 2 else 0.05), 0)
+	tag.position = Vector3(0, size.y + 0.02, 0)
 	body.add_child(tag)
 	return body
 

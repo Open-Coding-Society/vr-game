@@ -1,0 +1,70 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/tools/tool.gd" id="1_up3vy"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_b54wo"]
+size = Vector3(0.04, 0.03, 0.12)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3ug0q"]
+albedo_color = Color(0.82, 0.83, 0.85, 1)
+roughness = 0.75
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_fhltv"]
+material = SubResource("StandardMaterial3D_3ug0q")
+top_radius = 0.008
+bottom_radius = 0.008
+height = 0.085
+radial_segments = 16
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4egwg"]
+albedo_color = Color(0.55, 0.56, 0.58, 1)
+roughness = 0.75
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_0ddhj"]
+material = SubResource("StandardMaterial3D_4egwg")
+top_radius = 0.003
+bottom_radius = 0.003
+height = 0.02
+radial_segments = 16
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nf6kt"]
+albedo_color = Color(0.3, 0.3, 0.32, 1)
+roughness = 0.75
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_3mgyf"]
+material = SubResource("StandardMaterial3D_nf6kt")
+top_radius = 0.005
+bottom_radius = 0.005
+height = 0.03
+radial_segments = 16
+
+[node name="ThermalPaste" type="RigidBody3D" unique_id=182063466]
+script = ExtResource("1_up3vy")
+tool_type = "thermal_paste"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2049262596]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("BoxShape3D_b54wo")
+
+[node name="Mesh" type="Node3D" parent="." unique_id=1766868487]
+
+[node name="Syringe" type="MeshInstance3D" parent="Mesh" unique_id=533850291]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.008, 0.005)
+mesh = SubResource("CylinderMesh_fhltv")
+
+[node name="Tip" type="MeshInstance3D" parent="Mesh" unique_id=1585762219]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.008, -0.047)
+mesh = SubResource("CylinderMesh_0ddhj")
+
+[node name="Plunger" type="MeshInstance3D" parent="Mesh" unique_id=309369338]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.008, 0.06)
+mesh = SubResource("CylinderMesh_3mgyf")
+
+[node name="Name" type="Label3D" parent="." unique_id=571013383]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+pixel_size = 0.0003
+billboard = 1
+no_depth_test = true
+text = "Paste"
+font_size = 40
+outline_size = 10

@@ -63,6 +63,7 @@ func _ready() -> void:
 		zone.swapped.connect(_on_swapped)
 		zone.removed.connect(_on_removed)
 		zone.refused.connect(_on_refused)
+		zone.probed.connect(_on_probed)
 	manager.module_completed.connect(_on_module_completed)
 	var reporter := get_node_or_null("/root/ScoreReporter")
 	if reporter:
@@ -103,6 +104,9 @@ func _apply_registry() -> void:
 		zone.compat = StringName(slot.get("compat", ""))
 		zone.removable = slot.get("removable", false)
 		zone.required_tool = StringName(slot.get("tool", ""))
+		zone.probe = slot.has("probe")
+		if zone.probe:
+			_probes[zone] = slot
 		if zone.required_tool != &"":
 			zone.accepts = zone.required_tool
 		zones.append(zone)
@@ -224,6 +228,25 @@ func _on_removed(_zone: SnapZone, _part: GrabbablePart) -> void:
 func _on_refused(zone: SnapZone, _part: GrabbablePart) -> void:
 	if manager.state == manager.State.ACTIVE:
 		_show_checklist(zone.last_problem)
+
+
+## The slots the multimeter can test, with their registry entries.
+var _probes := {}
+
+
+## The multimeter was dropped on a part: its display shows what it reads and
+## the panel says what that means. Not a mistake: testing is how you find the
+## broken part. A broken part that has been replaced reads its "probe_fixed".
+func _on_probed(zone: SnapZone, meter: GrabbablePart) -> void:
+	if manager.state == manager.State.INTRO:
+		manager.note_grab()
+	if manager.state != manager.State.ACTIVE:
+		return
+	var slot: Dictionary = _probes.get(zone, {})
+	var reading: Dictionary = slot.get("probe_fixed", slot.probe) if zone.is_filled() else slot.probe
+	if meter.has_method("show_reading"):
+		meter.show_reading(reading.reads)
+	_show_checklist("Multimeter on the %s: %s. %s" % [zone.display_name, reading.reads, reading.means])
 
 
 func _empty_dependents(zone: SnapZone, seen: Array) -> void:

@@ -41,6 +41,11 @@ extends Area3D
 ##   screw) is hidden per use. Children of "Fastens" do the opposite: one
 ##   appears per use (a screw going in).
 ##
+## - `probe`: what the multimeter reads here (Phase 5, Diagnose a failure).
+##   Dropping the multimeter on the zone tests the part under it (`probed`):
+##   nothing is installed and it isn't a mistake; the mission shows the
+##   reading. Set by the mission from the registry's "probe".
+##
 ## A child named "Replaced" (e.g. the old, faulty part's mesh) is hidden once
 ## the zone is full, so the new part doesn't sit on top of the old one.
 
@@ -59,6 +64,8 @@ signal swapped(zone, old_part)
 signal removed(zone, part)
 ## The `gate` turned a part of the right type away; `last_problem` says why.
 signal refused(zone, part)
+## The multimeter was dropped here to test the part (see `probe`).
+signal probed(zone, part)
 
 ## The part type this zone takes, e.g. &"ram". Matches GrabbablePart.part_type.
 @export var accepts: StringName = &"ram"
@@ -85,6 +92,8 @@ signal refused(zone, part)
 @export var removable := false
 ## See above: the tool this step needs (&"" for an ordinary slot).
 @export var required_tool: StringName = &""
+## See above: true when the multimeter can test the part here.
+@export var probe := false
 
 ## See above: may the zone take this part now? "" for yes, else why not.
 var gate: Callable
@@ -142,7 +151,9 @@ func judge(part: GrabbablePart) -> void:
 	if part.is_installed or locked:
 		return
 	last_problem = ""
-	if working:
+	if probe and part.get("tool_type") == "multimeter":
+		probed.emit(self, part)
+	elif working:
 		rejected.emit(self, part)
 	elif can_take(part) and gate.is_valid() and str(gate.call(part)) != "":
 		last_problem = str(gate.call(part))

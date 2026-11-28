@@ -334,6 +334,12 @@ func _read_slot_options(full_id: String, slots: Dictionary) -> void:
 		for flag in ["pass_through", "working", "swappable", "removable", "optional"]:
 			if slot.has(flag) and typeof(slot[flag]) != TYPE_BOOL:
 				errors.append('%s: slot "%s" %s must be true or false' % [full_id, path, flag])
+		for key in ["probe", "probe_fixed"]:
+			if slot.has(key) and (typeof(slot[key]) != TYPE_DICTIONARY or not _is_text(slot[key].get("reads"))
+					or not _is_text(slot[key].get("means"))):
+				errors.append('%s: slot "%s" %s must be {reads, means}: what the multimeter shows and what it tells you' % [full_id, path, key])
+		if slot.has("probe_fixed") and not slot.has("probe"):
+			errors.append('%s: slot "%s" has probe_fixed but no probe' % [full_id, path])
 		if slot.has("compat") and not slot.compat in Compatibility.RULES:
 			errors.append('%s: slot "%s" compat must be one of %s' % [full_id, path, ", ".join(Compatibility.RULES)])
 		elif slot.has("compat"):
@@ -385,6 +391,10 @@ func _requires_loop(slots: Dictionary, start: String, at: String, seen: Dictiona
 
 static func _is_id(value) -> bool:
 	return typeof(value) == TYPE_STRING and RegEx.create_from_string("^[a-z0-9_]+$").search(value) != null
+
+
+static func _is_text(value) -> bool:
+	return typeof(value) == TYPE_STRING and value != ""
 
 
 static func _is_text_list(value) -> bool:

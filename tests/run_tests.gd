@@ -52,7 +52,8 @@ func _run() -> void:
 		_test_registry_checks_requires, _test_next_mission_order,
 		_test_assemble_power_goes_last, _test_assemble_perfect_run,
 		_test_execute_task_data_flow, _test_registry_checks_capacity_and_working,
-		_test_add_capacity_routes_jobs, _test_diagnose_failure,
+		_test_add_capacity_routes_jobs, _test_diagnose_failure, _test_diagnose_with_the_multimeter,
+		_test_registry_checks_probes,
 	]:
 		manager.use_registry(ModuleRegistry.load_from())
 		manager.now_ms = Time.get_ticks_msec
@@ -470,6 +471,47 @@ func _test_add_capacity_routes_jobs() -> void:
 	await _place(mission, "TrainAi", _above(mission, "GpuJobs"))
 	manager.module_completed.disconnect(on_done)
 	check("all jobs routed: done with 2 mistakes, score 80, 90 s", results == [[80, 90, 3]], str(results))
+
+
+## Phase 5, step 7: the multimeter tests a part instead of guessing. The old
+## way (drop a spare on the part you think is broken) still works, above.
+func _test_diagnose_with_the_multimeter() -> void:
+	var mission := await _fresh(DiagnoseFailure)
+	var meter = mission.get_node("Multimeter")
+	meter.return_delay_s = 0.0
+	meter.return_time_s = 0.0
+	check("Diagnose a failure has a multimeter, and still loads cleanly", mission.problems.is_empty(), "; ".join(mission.problems))
+	check("the intro says to try it", "Test a part with the multimeter" in mission.panel.text(), mission.panel.text())
+	await _place(mission, "Multimeter", _above(mission, "PsuCheck"))
+	check("on the power supply it reads 12.1 V on its own display", meter.get_node("Display").text == "12.1 V",
+		meter.get_node("Display").text)
+	check("and the panel says what that means", "Multimeter on the power supply: 12.1 V. The power supply gives a steady 12 V" in mission.panel.text(),
+		mission.panel.text())
+	check("testing is never a mistake, and the meter goes back to its place",
+		manager.mistakes == 0 and meter.global_position.is_equal_approx(meter.home_transform.origin), str(manager.mistakes))
+	await _place(mission, "Multimeter", _above(mission, "RamProblem"))
+	check("the dead RAM reads wrong: 0.0 V", meter.get_node("Display").text == "0.0 V" and "it's dead" in mission.panel.text(),
+		mission.panel.text())
+	check("and testing fills nothing", not mission.get_node("RamProblem").is_filled())
+	await _place(mission, "Ram", _above(mission, "RamProblem"))
+	await _place(mission, "Multimeter", _above(mission, "RamProblem"))
+	check("once the RAM is swapped, it reads right", meter.get_node("Display").text == "1.2 V" and "new RAM stick" in mission.panel.text(),
+		mission.panel.text())
+	await _place(mission, "Ssd", _above(mission, "DriveProblem"))
+	check("then the spare SSD finishes it, with no mistakes", manager.state == manager.State.SUCCESS and manager.score == 100, str(manager.score))
+
+
+func _test_registry_checks_probes() -> void:
+	var bad := func(probe) -> PackedStringArray:
+		var registry = ModuleRegistry.new()
+		registry.read({"modules": [{"id": "t", "title": "T", "missions": [{
+			"id": "m", "title": "M", "scene": "res://scenes/workbench.tscn", "intro": ["a"], "success": ["b"],
+			"scoring": {"full": 100, "per_mistake": 10}, "parts": {"Ram": {"type": "ram", "name": "RAM"}},
+			"slots": {"Slot": {"accepts": "ram", "name": "slot", "hint": "h", "probe": probe}}}]}]})
+		return registry.errors
+	check("a probe with a reading and its meaning loads", bad.call({"reads": "1.2 V", "means": "fine"}).is_empty())
+	var errors: PackedStringArray = bad.call({"reads": "1.2 V"})
+	check("a probe without what it means is caught", errors.size() == 1 and "probe must be {reads, means}" in errors[0], str(errors))
 
 
 func _test_diagnose_failure() -> void:
