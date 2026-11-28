@@ -253,7 +253,9 @@ func _show_fasteners() -> void:
 
 func _on_body_entered(body: Node) -> void:
 	var part := body as GrabbablePart
-	if part and not part.zones_under.has(self):
+	# A part's own slots (a rack server's network port) move with it, so they
+	# are always "under" it: they never judge the part itself.
+	if part and not part.zones_under.has(self) and not part.is_ancestor_of(self):
 		part.zones_under.append(self)
 
 

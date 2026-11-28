@@ -25,6 +25,10 @@ const MonitorScreen := preload("res://scripts/parts/monitor_screen.gd")
 const OpenWorld := preload("res://scripts/open_world/open_world.gd")
 const MenuScreen3D := preload("res://scripts/ui/menu_screen_3d.gd")
 const MenuPointer := preload("res://scripts/input/menu_pointer.gd")
+const NetworkMission := preload("res://scripts/missions/network_mission.gd")
+const NetworkDevice := preload("res://scripts/network/network_device.gd")
+const LinkLight := preload("res://scripts/parts/link_light.gd")
+const Cat6Cable := preload("res://scenes/network/cat6_cable.tscn")
 
 ## The desk's top, as in scripts/room.gd.
 const TABLE_TOP := 0.9
@@ -41,6 +45,7 @@ var SCENES := {
 	"swap_ssd": _swap_ssd,
 	"cooler_paste": _cooler_paste,
 	"open_world": _open_world,
+	"server_rack": _server_rack,
 }
 
 
@@ -330,6 +335,95 @@ func _open_world() -> Array:
 	items.name = "Items"
 	root.add_child(items)
 	return ["res://scenes/open_world/open_world.tscn", root]
+
+
+## Act 4, "Build a mini server rack" (step 9): three servers and a switch
+## stand on the desk, and a 10-inch rack lies on its back, so the laptop
+## camera sees every machine's front (as the case in Swap in an SSD lies on
+## its side). Slide each machine into a bay, then cable each server to the
+## switch. Each machine carries its own network port(s), a network device
+## (network_device.gd) inside the part; data/modules.json makes the ports wait
+## for the rack to be full.
+func _server_rack() -> Array:
+	var root := Node3D.new()
+	root.set_script(NetworkMission)
+	root.name = "ServerRack"
+	root.mission_id = "build_network.server_rack"
+	var room := Room.instantiate()
+	room.name = "Room"
+	root.add_child(room)
+	var panel := Node3D.new()
+	panel.set_script(InfoPanel)
+	panel.name = "InfoPanel"
+	panel.position = PANEL_AT
+	panel.rotation_degrees = Vector3(PANEL_TILT_DEG, 0, 0)
+	panel.body_size = 36
+	root.add_child(panel)
+
+	var rack := Node3D.new()
+	rack.name = "Rack"
+	rack.position = Vector3(0.27, TABLE_TOP, -0.15)
+	root.add_child(rack)
+	var frame := Color(0.17, 0.18, 0.2)
+	_box(rack, "Base", Vector3(0.29, 0.006, 0.27), Vector3(0, 0.003, 0), frame)
+	_box(rack, "RailLeft", Vector3(0.008, 0.03, 0.27), Vector3(-0.141, 0.015, 0), frame)
+	_box(rack, "RailRight", Vector3(0.008, 0.03, 0.27), Vector3(0.141, 0.015, 0), frame)
+	_label(rack, "Sign", "Rack (lying on its back)", Vector3(0, 0.035, 0.145), 36).rotation_degrees = Vector3(-60, 0, 0)
+	for i in 4:
+		var bay := _zone(rack, "Bay%d" % (i + 1), Vector3(0, 0, -0.09 + 0.06 * i), Vector3(0.27, 0.24, 0.05))
+		_box(bay, "Mesh", Vector3(0.26, 0.002, 0.045), Vector3(0, 0.007, 0), Color(0.3, 0.32, 0.35))
+
+	var servers := [["Server1", "server_1", "Server 1"], ["Server2", "server_2", "Server 2"], ["Server3", "server_3", "Server 3"]]
+	var starts := [Vector3(-0.45, TABLE_TOP, 0.1), Vector3(-0.19, TABLE_TOP, 0.1), Vector3(-0.45, TABLE_TOP, 0.25)]
+	for i in 3:
+		_rack_unit(root, servers[i][0], "server", servers[i][1], servers[i][2], ["Eth0"], starts[i], Color(0.24, 0.26, 0.3))
+	_rack_unit(root, "SwitchUnit", "switch", "switch", "Switch", ["Port1", "Port2", "Port3", "Port4"],
+		Vector3(-0.19, TABLE_TOP, 0.25), Color(0.85, 0.86, 0.88))
+
+	for i in 3:
+		var cable: Node3D = Cat6Cable.instantiate()
+		cable.name = "Cable" + "ABC"[i]
+		cable.end_a_position = Vector3(0.04, TABLE_TOP, 0.1 + 0.08 * i)
+		cable.end_b_position = Vector3(0.22, TABLE_TOP, 0.1 + 0.08 * i)
+		root.add_child(cable)
+	return ["res://scenes/network/server_rack.tscn", root]
+
+
+## A machine that slides into the rack: a 1U box standing on its side (its
+## front, with the ports, faces up) and its network device inside.
+func _rack_unit(root: Node3D, node_name: String, kind: String, device_id: String, title: String, ports: Array, at: Vector3, color: Color) -> RigidBody3D:
+	var unit := _part(root, node_name, at, UNIT, Vector3(0, UNIT.y / 2.0, 0))
+	var mesh := unit.get_node("Mesh")
+	_box(mesh, "Body", UNIT, Vector3(0, UNIT.y / 2.0, 0), color)
+	_box(mesh, "Front", Vector3(UNIT.x, 0.003, UNIT.z), Vector3(0, UNIT.y + 0.0015, 0), color.darkened(0.35))
+	_box(mesh, "Leds", Vector3(0.03, 0.002, 0.006), Vector3(0.09, UNIT.y + 0.004, 0), Color(0.2, 0.85, 0.35))
+	var tag := _label(unit, "Name", title, Vector3(0.0, UNIT.y + 0.035, 0), 40)
+	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	tag.pixel_size = 0.0003
+	var device := StaticBody3D.new()
+	device.set_script(NetworkDevice)
+	device.name = "Device"
+	device.device_id = device_id
+	device.kind = kind
+	device.display_name = title
+	unit.add_child(device)
+	var spacing := 0.04
+	for i in ports.size():
+		var x := -0.08 if ports.size() == 1 else (i - (ports.size() - 1) / 2.0) * spacing
+		var port := _zone(device, ports[i], Vector3(x, UNIT.y, 0), Vector3(0.03, 0.2, 0.03), Vector2.ZERO, "", Vector3(0, 0.002, 0))
+		port.accepts = &"ethernet"
+		port.get_node("CollisionShape3D").position = Vector3(0, -0.06, 0)
+		_box(port, "Socket", Vector3(0.012, 0.002, 0.012), Vector3(0, 0.003, 0), Color(0.1, 0.12, 0.14))
+		var light := _box(port, "Light", Vector3(0.006, 0.003, 0.006), Vector3(0, 0.004, -0.012), Color(0.5, 0.5, 0.5))
+		light.set_script(LinkLight)
+		var port_tag := _label(port, "Tag", "LAN" if kind == "server" else str(i + 1), Vector3(0, 0.005, 0.014), 28)
+		port_tag.rotation_degrees = Vector3(-90, 0, 0)
+		port_tag.pixel_size = 0.0003
+	return unit
+
+
+## A rack machine's size: 10-inch 1U, standing on its side (meters).
+const UNIT := Vector3(0.24, 0.17, 0.04)
 
 
 ## How tall the placeholder cooler is (meters).

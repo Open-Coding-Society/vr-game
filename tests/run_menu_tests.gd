@@ -35,6 +35,10 @@ func _run() -> void:
 	quit(0 if _failures.is_empty() else 1)
 
 
+## Act 4's two extras (Phase 5), after Build a Network's seven.
+const ACT_4_EXTRAS := ["build_network.server_rack", "build_network.pi_cluster"]
+
+
 ## Build a Network's seven missions (Phase 3), in order.
 const BUILD_NETWORK := ["build_network.connect_two", "build_network.switch", "build_network.router",
 	"build_network.send_packets", "build_network.interrupt", "build_network.redundancy", "build_network.distribute"]
@@ -291,9 +295,9 @@ func _test_free_play_lists_the_new_modes() -> void:
 	var manager := root.get_node("TrainingManager")
 	var ids: Array = manager.registry.missions_in("computer").map(func(task) -> String: return task.full_id)
 	check("Free Play's Computer list has Phase 2's tasks after the first six, then Phase 5's Act 2 tasks, then Build a Network's seven",
-		ids.size() == 20 and ids.slice(6, 9) == ["build_computer.build_your_own", "build_computer.swap_ssd", "build_computer.cooler_paste"]
+		ids.size() == 22 and ids.slice(6, 9) == ["build_computer.build_your_own", "build_computer.swap_ssd", "build_computer.cooler_paste"]
 			and ids.slice(9, 13) == ["setup_pc.unbox", "setup_pc.connect_peripherals", "setup_pc.power_on", "setup_pc.go_online"]
-			and ids.slice(13) == BUILD_NETWORK, ids)
+			and ids.slice(13) == BUILD_NETWORK + ACT_4_EXTRAS, ids)
 	var menu := await _menu()
 	menu.show_page("free_play", "computer")
 	await process_frame
@@ -524,7 +528,7 @@ func _test_story_map_states() -> void:
 	s = map.states("irl", is_done)
 	check("finishing it makes the next one playable", s["setup_pc.unbox"] == StoryMap.DONE
 		and s["setup_pc.connect_peripherals"] == StoryMap.NEXT, s)
-	check("progress counts playable tasks only", map.progress("irl", is_done) == [1, 20], map.progress("irl", is_done))
+	check("progress counts playable tasks only", map.progress("irl", is_done) == [1, 22], map.progress("irl", is_done))
 	check("the IRL chapter isn't complete yet", not map.chapter_complete("irl", is_done))
 
 
@@ -552,7 +556,7 @@ func _test_story_act_1_unlocks_in_order() -> void:
 	var after: Dictionary = map.states("irl", is_done)
 	check("finishing Act 1 opens the first task of Act 2",
 		ids.all(func(id) -> bool: return after[id] == StoryMap.DONE) and after["build_computer.install_ram"] == StoryMap.NEXT, after)
-	check("and counts as four of the chapter's twenty playable tasks", map.progress("irl", is_done) == [4, 20], map.progress("irl", is_done))
+	check("and counts as four of the chapter's twenty-two playable tasks", map.progress("irl", is_done) == [4, 22], map.progress("irl", is_done))
 
 
 ## Phase 5, step 6: Act 2 ("Inside the PC") is four playable missions now:
@@ -723,8 +727,8 @@ func _test_story_act_4_unlocks_in_order() -> void:
 	var act: Dictionary = map.chapter("irl").acts[3]
 	var ids: Array = act.tasks.map(func(task) -> String: return task.mission)
 	check("Act 4 is called Small rigs", act.title == "Act 4: Small rigs", act.title)
-	check("Act 4 is the seven Build a Network missions, then two planned tasks", ids == BUILD_NETWORK + ["", ""], ids)
-	check("the planned ones are the server rack and the Raspberry Pi cluster",
+	check("Act 4 is the seven Build a Network missions, then Phase 5's two extras", ids == BUILD_NETWORK + ACT_4_EXTRAS, ids)
+	check("the extras are the server rack and the Raspberry Pi cluster",
 		act.tasks.slice(7).map(func(t) -> String: return t.title) == ["Build a mini server rack", "A Raspberry Pi cluster"])
 	check("each step takes its title from the mission",
 		act.tasks.slice(0, 7).map(func(task) -> String: return task.title) == BUILD_NETWORK.map(func(id) -> String: return manager.registry.mission(id).title))
@@ -744,8 +748,12 @@ func _test_story_act_4_unlocks_in_order() -> void:
 		done[BUILD_NETWORK[at]] = true
 	check("its missions unlock in order: done ones Done, one Next, the rest Locked", wrong.is_empty(), wrong)
 	var after: Dictionary = map.states("irl", is_done)
-	check("the planned tasks stay planned", after["irl.rigs.server_rack"] == StoryMap.PLANNED and after["irl.rigs.pi_cluster"] == StoryMap.PLANNED)
-	check("with Act 4 done, every playable IRL task is done", map.progress("irl", is_done) == [20, 20] and map.chapter_complete("irl", is_done), map.progress("irl", is_done))
+	check("then the server rack is next, and the Pi cluster after it",
+		after["build_network.server_rack"] == StoryMap.NEXT and after["build_network.pi_cluster"] == StoryMap.LOCKED, after)
+	check("no Act 4 task is planned any more", not after.values().has(StoryMap.PLANNED), after)
+	for id in ACT_4_EXTRAS:
+		done[id] = true
+	check("with Act 4 done, every IRL task is done", map.progress("irl", is_done) == [22, 22] and map.chapter_complete("irl", is_done), map.progress("irl", is_done))
 
 
 func _test_free_play_lists_build_network() -> void:
@@ -793,8 +801,8 @@ func _test_roadmap_plays_act_4() -> void:
 	check("Add a switch shows as next", node.call("build_network.switch").get_meta("state") == StoryMap.NEXT)
 	check("the rest of Act 4 shows as locked", BUILD_NETWORK.slice(2).all(func(id) -> bool: return node.call(id).get_meta("state") == StoryMap.LOCKED))
 	check("a locked mission can't be played", menu.find_button("Play_build_network_router") == null)
-	check("the server rack is planned and can't be played", node.call("irl.rigs.server_rack").get_meta("state") == StoryMap.PLANNED
-		and menu.find_button("Play_irl_rigs_server_rack") == null)
+	check("the server rack is locked and can't be played yet", node.call("build_network.server_rack").get_meta("state") == StoryMap.LOCKED
+		and menu.find_button("Play_build_network_server_rack") == null)
 	await _scroll_to(menu, "Play_build_network_switch")
 	await _click(menu, "Play_build_network_switch")
 	check("playing it opens Add a switch", _opened == ["res://scenes/network/switch.tscn"], _opened)

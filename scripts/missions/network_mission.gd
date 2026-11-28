@@ -412,6 +412,8 @@ func _status_lines() -> PackedStringArray:
 	var goal: Dictionary = config.get("goal", {})
 	var out := PackedStringArray()
 	if goal.has("connected"):
+		# Slots that must be filled first (a rack's bays) come before the goal.
+		out.append_array(super._status_lines())
 		out.append(_tick(_goal_connected(goal.connected)) + "%s can reach each other" % _names(goal.connected))
 	elif goal.has("reach"):
 		for id in goal.from:

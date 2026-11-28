@@ -40,6 +40,8 @@ Every image below has a file name. Save the finished image as **`ui/images/<name
 | `task_build_network_interrupt.png` | Free Play: "Interrupt a connection" | 460 × 300 | A cable pulled out of a switch, its light red, with packets stopped before the gap. |
 | `task_build_network_redundancy.png` | Free Play: "Add redundancy" | 460 × 300 | Two switches joined by two cables, one of them cut, the PCs still connected. |
 | `task_build_network_distribute.png` | Free Play: "Split a workload across machines" | 460 × 300 | Four flat Mac minis, each with a few square tiles of one picture on top. |
+| `task_build_network_server_rack.png` | Free Play: "Build a mini server rack" | 460 × 300 | A small rack with servers sliding into its bays and short blue cables to a switch. |
+| `task_build_network_pi_cluster.png` | Free Play: "A Raspberry Pi cluster" | 460 × 300 | Four small Raspberry Pis cabled to one switch, each with a few tiles of one picture. |
 
 The five Phase 2 tasks (`task_build_your_own.png` and the four after it), the seven Build a Network tasks (`task_build_network_*.png`, Phase 3) and Phase 5's tasks (`task_swap_ssd.png`, `task_cooler_paste.png` and the ones listed after them) have no interim icon yet, so their cards show the named placeholder.
 
