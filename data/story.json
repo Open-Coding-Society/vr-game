@@ -20,8 +20,8 @@
           "tasks": [
             {"mission": "build_computer.install_ram"},
             {"mission": "build_computer.identify_components"},
-            {"id": "irl.inside.swap_ssd", "title": "Swap in an SSD"},
-            {"id": "irl.inside.cooler_paste", "title": "Reseat the cooler with thermal paste"}
+            {"mission": "build_computer.swap_ssd"},
+            {"mission": "build_computer.cooler_paste", "title": "Reseat the cooler with thermal paste"}
           ]
         },
         {

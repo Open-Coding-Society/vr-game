@@ -48,7 +48,7 @@ func _tests() -> Array:
 		_test_free_play_starts_task, _test_done_task_shows_best, _test_mission_returns_to_menu,
 		_test_back_to_menu_leaves_early, _test_back_to_menu_without_the_menu, _test_back_button_in_every_mission,
 		_test_menu_reopens_return_page, _test_story_map_states, _test_story_act_1_unlocks_in_order,
-		_test_story_act_3_starts_with_build_your_own, _test_story_act_4_unlocks_in_order,
+		_test_story_act_2_plays_the_new_tasks, _test_free_play_lists_act_2, _test_story_act_3_starts_with_build_your_own, _test_story_act_4_unlocks_in_order,
 		_test_free_play_lists_build_network, _test_roadmap_plays_act_4,
 		_test_story_map_bad_mission,
 		_test_story_chapters, _test_roadmap_plays_next, _test_roadmap_cloud_planned,
@@ -513,12 +513,12 @@ func _test_story_map_states() -> void:
 	check("with nothing done, the first playable task is next", s["setup_pc.unbox"] == StoryMap.NEXT, s)
 	check("later playable tasks are locked", s["setup_pc.connect_peripherals"] == StoryMap.LOCKED
 		and s["build_computer.install_ram"] == StoryMap.LOCKED)
-	check("tasks without a mission are planned", s["irl.inside.swap_ssd"] == StoryMap.PLANNED)
+	check("tasks without a mission are planned", map.states("cloud", is_done)["cloud.internet.follow_a_packet"] == StoryMap.PLANNED)
 	done["setup_pc.unbox"] = true
 	s = map.states("irl", is_done)
 	check("finishing it makes the next one playable", s["setup_pc.unbox"] == StoryMap.DONE
 		and s["setup_pc.connect_peripherals"] == StoryMap.NEXT, s)
-	check("progress counts playable tasks only", map.progress("irl", is_done) == [1, 18], map.progress("irl", is_done))
+	check("progress counts playable tasks only", map.progress("irl", is_done) == [1, 20], map.progress("irl", is_done))
 	check("the IRL chapter isn't complete yet", not map.chapter_complete("irl", is_done))
 
 
@@ -546,7 +546,61 @@ func _test_story_act_1_unlocks_in_order() -> void:
 	var after: Dictionary = map.states("irl", is_done)
 	check("finishing Act 1 opens the first task of Act 2",
 		ids.all(func(id) -> bool: return after[id] == StoryMap.DONE) and after["build_computer.install_ram"] == StoryMap.NEXT, after)
-	check("and counts as four of the chapter's eighteen playable tasks", map.progress("irl", is_done) == [4, 18], map.progress("irl", is_done))
+	check("and counts as four of the chapter's twenty playable tasks", map.progress("irl", is_done) == [4, 20], map.progress("irl", is_done))
+
+
+## Phase 5, step 6: Act 2 ("Inside the PC") is four playable missions now:
+## the two from Module 1, then Swap in an SSD and Reseat the cooler.
+func _test_story_act_2_plays_the_new_tasks() -> void:
+	var manager := root.get_node("TrainingManager")
+	var saves := root.get_node("SaveService")
+	var map = StoryMap.load_from(manager.registry)
+	var act: Dictionary = map.chapter("irl").acts[1]
+	var ids: Array = act.tasks.map(func(task) -> String: return task.mission)
+	check("Act 2 has no planned tasks left: four missions",
+		ids == ["build_computer.install_ram", "build_computer.identify_components", "build_computer.swap_ssd", "build_computer.cooler_paste"], ids)
+	check("the cooler keeps the roadmap's longer title", act.tasks[3].title == "Reseat the cooler with thermal paste", act.tasks[3].title)
+	var done := {"setup_pc.unbox": true, "setup_pc.connect_peripherals": true, "setup_pc.power_on": true,
+		"setup_pc.go_online": true, "build_computer.install_ram": true, "build_computer.identify_components": true}
+	var is_done := func(id: String) -> bool: return done.has(id)
+	var s: Dictionary = map.states("irl", is_done)
+	check("after Module 1's two, Swap in an SSD is next and the cooler is locked",
+		s["build_computer.swap_ssd"] == StoryMap.NEXT and s["build_computer.cooler_paste"] == StoryMap.LOCKED, s)
+	done["build_computer.swap_ssd"] = true
+	s = map.states("irl", is_done)
+	check("then the cooler", s["build_computer.cooler_paste"] == StoryMap.NEXT, s)
+	saves.load_profile()
+	saves.profile.tasks.clear()
+	for id in done:
+		saves.record_task_result(id, 100, 30, 1)
+	_opened.clear()
+	var menu := await _menu()
+	menu.show_page("roadmap", "irl")
+	await process_frame
+	await _click(menu, "Play_build_computer_cooler_paste")
+	check("the roadmap plays Reseat the cooler", _opened == ["res://scenes/build_computer/cooler_paste.tscn"], _opened)
+	manager.return_scene = ""
+	manager.return_page = ""
+	manager.return_label = ""
+	saves.profile.tasks.clear()
+	menu.queue_free()
+
+
+func _test_free_play_lists_act_2() -> void:
+	_opened.clear()
+	var menu := await _menu()
+	menu.show_page("free_play", "computer")
+	await process_frame
+	check("Free Play has a card for Swap in an SSD and for Reseat the cooler",
+		menu.find_button("Task_build_computer_swap_ssd") != null and menu.find_button("Task_build_computer_cooler_paste") != null)
+	await _scroll_to(menu, "Task_build_computer_swap_ssd")
+	await _click(menu, "Task_build_computer_swap_ssd")
+	check("its card starts the mission", _opened == ["res://scenes/build_computer/swap_ssd.tscn"], _opened)
+	var manager := root.get_node("TrainingManager")
+	manager.return_scene = ""
+	manager.return_page = ""
+	manager.return_label = ""
+	menu.queue_free()
 
 
 ## Act 3 opens with Build your own PC, under the roadmap's own title for it.
@@ -560,7 +614,8 @@ func _test_story_act_3_starts_with_build_your_own() -> void:
 	var is_done := func(id: String) -> bool: return done.has(id)
 	check("it is locked until the acts before it are done", map.states("irl", is_done)["build_computer.build_your_own"] == StoryMap.LOCKED)
 	for id in ["setup_pc.unbox", "setup_pc.connect_peripherals", "setup_pc.power_on", "setup_pc.go_online",
-			"build_computer.install_ram", "build_computer.identify_components"]:
+			"build_computer.install_ram", "build_computer.identify_components", "build_computer.swap_ssd",
+			"build_computer.cooler_paste"]:
 		done[id] = true
 	var s: Dictionary = map.states("irl", is_done)
 	check("then it is the next task, ahead of Assemble the system",
@@ -606,7 +661,8 @@ func _test_roadmap_plays_next() -> void:
 		and node.call("setup_pc.go_online").get_meta("state") == StoryMap.LOCKED)
 	check("a locked task can't be played", menu.find_button("Play_setup_pc_power_on") == null
 		and menu.find_button("Play_build_computer_install_ram") == null)
-	check("a planned task can't be played", menu.find_button("Play_irl_inside_swap_ssd") == null)
+	check("Act 2's new tasks are locked this early", menu.find_button("Play_build_computer_swap_ssd") == null
+		and node.call("build_computer.swap_ssd").get_meta("state") == StoryMap.LOCKED)
 	await _click(menu, "Play_setup_pc_connect_peripherals")
 	check("playing the next task opens its mission", _opened == ["res://scenes/setup_pc/connect_peripherals.tscn"], _opened)
 	check("it will come back to this roadmap", manager.return_page == "roadmap:irl" and manager.return_label == "Story Mode",
@@ -624,6 +680,7 @@ func _test_roadmap_cloud_planned() -> void:
 	await process_frame
 	var node: Node = menu.screen.ui_root.find_child("Node_cloud_internet_follow_a_packet", true, false)
 	check("Cloud's tasks are all planned for now", node != null and node.get_meta("state") == StoryMap.PLANNED)
+	check("a planned task can't be played", menu.find_button("Play_cloud_internet_follow_a_packet") == null)
 	menu.queue_free()
 
 
@@ -682,7 +739,7 @@ func _test_story_act_4_unlocks_in_order() -> void:
 	check("its missions unlock in order: done ones Done, one Next, the rest Locked", wrong.is_empty(), wrong)
 	var after: Dictionary = map.states("irl", is_done)
 	check("the planned tasks stay planned", after["irl.rigs.server_rack"] == StoryMap.PLANNED and after["irl.rigs.pi_cluster"] == StoryMap.PLANNED)
-	check("with Act 4 done, every playable IRL task is done", map.progress("irl", is_done) == [18, 18] and map.chapter_complete("irl", is_done), map.progress("irl", is_done))
+	check("with Act 4 done, every playable IRL task is done", map.progress("irl", is_done) == [20, 20] and map.chapter_complete("irl", is_done), map.progress("irl", is_done))
 
 
 func _test_free_play_lists_build_network() -> void:
