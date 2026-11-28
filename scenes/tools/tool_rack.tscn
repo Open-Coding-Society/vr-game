@@ -1,0 +1,274 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/tools/tool.gd" id="1_fktq2"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3f0sc"]
+albedo_color = Color(0.22, 0.23, 0.25, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_ac2hy"]
+material = SubResource("StandardMaterial3D_3f0sc")
+size = Vector3(0.4, 0.012, 0.15)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qog7j"]
+albedo_color = Color(0.22, 0.23, 0.25, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_smh2y"]
+material = SubResource("StandardMaterial3D_qog7j")
+size = Vector3(0.4, 0.02, 0.008)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_6j4xa"]
+size = Vector3(0.05, 0.03, 0.19)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_oydje"]
+albedo_color = Color(0.85, 0.2, 0.15, 1)
+roughness = 0.75
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_xlh6n"]
+material = SubResource("StandardMaterial3D_oydje")
+top_radius = 0.014
+bottom_radius = 0.014
+height = 0.1
+radial_segments = 16
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_arf2f"]
+albedo_color = Color(0.75, 0.76, 0.78, 1)
+roughness = 0.75
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_6h3gv"]
+material = SubResource("StandardMaterial3D_arf2f")
+top_radius = 0.003
+bottom_radius = 0.003
+height = 0.085
+radial_segments = 16
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_iriql"]
+size = Vector3(0.09, 0.03, 0.09)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_anulq"]
+albedo_color = Color(0.15, 0.35, 0.8, 1)
+roughness = 0.75
+
+[sub_resource type="TorusMesh" id="TorusMesh_ui4dn"]
+material = SubResource("StandardMaterial3D_anulq")
+inner_radius = 0.028
+outer_radius = 0.036
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_r7c6e"]
+albedo_color = Color(0.6, 0.62, 0.66, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_dk66i"]
+material = SubResource("StandardMaterial3D_r7c6e")
+size = Vector3(0.016, 0.01, 0.022)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_vcm2s"]
+size = Vector3(0.04, 0.03, 0.12)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_366x1"]
+albedo_color = Color(0.82, 0.83, 0.85, 1)
+roughness = 0.75
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_qhkgv"]
+material = SubResource("StandardMaterial3D_366x1")
+top_radius = 0.008
+bottom_radius = 0.008
+height = 0.085
+radial_segments = 16
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_47kbm"]
+albedo_color = Color(0.55, 0.56, 0.58, 1)
+roughness = 0.75
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_x1iro"]
+material = SubResource("StandardMaterial3D_47kbm")
+top_radius = 0.003
+bottom_radius = 0.003
+height = 0.02
+radial_segments = 16
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sn25r"]
+albedo_color = Color(0.3, 0.3, 0.32, 1)
+roughness = 0.75
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_q3ujk"]
+material = SubResource("StandardMaterial3D_sn25r")
+top_radius = 0.005
+bottom_radius = 0.005
+height = 0.03
+radial_segments = 16
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_y5gbo"]
+size = Vector3(0.08, 0.035, 0.14)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nelam"]
+albedo_color = Color(0.95, 0.75, 0.1, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_djggg"]
+material = SubResource("StandardMaterial3D_nelam")
+size = Vector3(0.072, 0.028, 0.13)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2nsmp"]
+albedo_color = Color(0.55, 0.62, 0.5, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_5phqy"]
+material = SubResource("StandardMaterial3D_2nsmp")
+size = Vector3(0.052, 0.002, 0.032)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hjwnt"]
+albedo_color = Color(0.15, 0.15, 0.16, 1)
+roughness = 0.75
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_7sve0"]
+material = SubResource("StandardMaterial3D_hjwnt")
+top_radius = 0.016
+bottom_radius = 0.016
+height = 0.004
+radial_segments = 16
+
+[node name="ToolRack" type="Node3D" unique_id=615916182]
+
+[node name="Tray" type="MeshInstance3D" parent="." unique_id=2059916828]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, 0)
+mesh = SubResource("BoxMesh_ac2hy")
+
+[node name="Lip" type="MeshInstance3D" parent="." unique_id=1875884439]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, -0.071)
+mesh = SubResource("BoxMesh_smh2y")
+
+[node name="Sign" type="Label3D" parent="." unique_id=1692357558]
+transform = Transform3D(1, 0, 0, 0, 0.81915206, 0.57357645, 0, -0.57357645, 0.81915206, 0, 0.026, -0.071)
+pixel_size = 0.0004
+text = "Tool rack"
+font_size = 40
+outline_size = 8
+
+[node name="Screwdriver" type="RigidBody3D" parent="." unique_id=1011741616]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.135, 0.012, 0)
+script = ExtResource("1_fktq2")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Screwdriver" unique_id=832061681]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("BoxShape3D_6j4xa")
+
+[node name="Mesh" type="Node3D" parent="Screwdriver" unique_id=1602188680]
+
+[node name="Handle" type="MeshInstance3D" parent="Screwdriver/Mesh" unique_id=2058882235]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.014, 0.045)
+mesh = SubResource("CylinderMesh_xlh6n")
+
+[node name="Shaft" type="MeshInstance3D" parent="Screwdriver/Mesh" unique_id=1475786699]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.014, -0.045)
+mesh = SubResource("CylinderMesh_6h3gv")
+
+[node name="Name" type="Label3D" parent="Screwdriver" unique_id=2049773084]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+pixel_size = 0.0003
+billboard = 1
+no_depth_test = true
+text = "Screwdriver"
+font_size = 40
+outline_size = 10
+
+[node name="WristStrap" type="RigidBody3D" parent="." unique_id=1673419523]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.045, 0.012, 0)
+script = ExtResource("1_fktq2")
+tool_type = "wrist_strap"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WristStrap" unique_id=7710068]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("BoxShape3D_iriql")
+
+[node name="Mesh" type="Node3D" parent="WristStrap" unique_id=1255861931]
+
+[node name="Band" type="MeshInstance3D" parent="WristStrap/Mesh" unique_id=489476189]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.004, 0)
+mesh = SubResource("TorusMesh_ui4dn")
+
+[node name="Clip" type="MeshInstance3D" parent="WristStrap/Mesh" unique_id=1308971543]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.036, 0.005, 0)
+mesh = SubResource("BoxMesh_dk66i")
+
+[node name="Name" type="Label3D" parent="WristStrap" unique_id=2075841257]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+pixel_size = 0.0003
+billboard = 1
+no_depth_test = true
+text = "Anti-static wrist strap"
+font_size = 40
+outline_size = 10
+
+[node name="ThermalPaste" type="RigidBody3D" parent="." unique_id=1171565187]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.045, 0.012, 0)
+script = ExtResource("1_fktq2")
+tool_type = "thermal_paste"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ThermalPaste" unique_id=1756323138]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("BoxShape3D_vcm2s")
+
+[node name="Mesh" type="Node3D" parent="ThermalPaste" unique_id=1915571902]
+
+[node name="Syringe" type="MeshInstance3D" parent="ThermalPaste/Mesh" unique_id=920474270]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.008, 0.005)
+mesh = SubResource("CylinderMesh_qhkgv")
+
+[node name="Tip" type="MeshInstance3D" parent="ThermalPaste/Mesh" unique_id=1087161907]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.008, -0.047)
+mesh = SubResource("CylinderMesh_x1iro")
+
+[node name="Plunger" type="MeshInstance3D" parent="ThermalPaste/Mesh" unique_id=2147313835]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.008, 0.06)
+mesh = SubResource("CylinderMesh_q3ujk")
+
+[node name="Name" type="Label3D" parent="ThermalPaste" unique_id=1582538323]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+pixel_size = 0.0003
+billboard = 1
+no_depth_test = true
+text = "Thermal paste"
+font_size = 40
+outline_size = 10
+
+[node name="Multimeter" type="RigidBody3D" parent="." unique_id=883015192]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.14, 0.012, 0)
+script = ExtResource("1_fktq2")
+tool_type = "multimeter"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Multimeter" unique_id=1011212667]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0175, 0)
+shape = SubResource("BoxShape3D_y5gbo")
+
+[node name="Mesh" type="Node3D" parent="Multimeter" unique_id=1668319804]
+
+[node name="Body" type="MeshInstance3D" parent="Multimeter/Mesh" unique_id=463955952]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.014, 0)
+mesh = SubResource("BoxMesh_djggg")
+
+[node name="Screen" type="MeshInstance3D" parent="Multimeter/Mesh" unique_id=1857845182]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.029, -0.035)
+mesh = SubResource("BoxMesh_5phqy")
+
+[node name="Dial" type="MeshInstance3D" parent="Multimeter/Mesh" unique_id=1096054943]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0.02)
+mesh = SubResource("CylinderMesh_7sve0")
+
+[node name="Name" type="Label3D" parent="Multimeter" unique_id=1030795467]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.055, 0)
+pixel_size = 0.0003
+billboard = 1
+no_depth_test = true
+text = "Multimeter"
+font_size = 40
+outline_size = 10
+
+[node name="Display" type="Label3D" parent="Multimeter" unique_id=21428693]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.031, -0.035)
+pixel_size = 0.00025
+modulate = Color(0.1, 0.12, 0.1, 1)
+text = "--.- V"
+font_size = 40
+outline_size = 0

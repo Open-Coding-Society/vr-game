@@ -9,6 +9,7 @@ extends SceneTree
 ## real scenes, move parts the way a grabber does and step physics, so the
 ## SnapZones see the overlaps exactly as in the game.
 
+const ToolRack := preload("res://scenes/tools/tool_rack.tscn")
 const Tool := preload("res://scripts/tools/tool.gd")
 const GrabbablePart := preload("res://scripts/grabbable_part.gd")
 const SnapZone := preload("res://scripts/snap_zone.gd")
@@ -48,7 +49,8 @@ func _run() -> void:
 func _tests() -> Array:
 	return [_test_tool_describes_itself, _test_tool_step_takes_its_tool, _test_tool_step_counts_uses,
 		_test_bare_hands_on_a_tool_step, _test_dropped_tool_floats_home, _test_registry_tool_steps,
-		_test_registry_needs_strap]
+		_test_registry_needs_strap,
+		_test_rack_has_one_of_each, _test_rack_tools_go_home, _test_strap_is_worn]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -257,3 +259,48 @@ func _test_registry_needs_strap() -> void:
 	check("needs_strap with no sensitive part is caught", none_sensitive.size() == 1 and "sensitive" in none_sensitive[0], none_sensitive)
 	var bad := _registry_with(func(m) -> void: m.needs_strap = "yes")
 	check("needs_strap must be true or false", bad.size() == 1 and "true or false" in bad[0], bad)
+
+
+# ---- Step 3: the tool rack ----
+
+func _test_rack_has_one_of_each() -> void:
+	var rack: Node3D = await _fresh(ToolRack.instantiate())
+	var found := {}
+	for node in rack.find_children("*", "RigidBody3D", true, false):
+		if node.get("tool_type") != null:
+			found[node.tool_type] = found.get(node.tool_type, 0) + 1
+	check("the rack has one each of the screwdriver, wrist strap, thermal paste and multimeter",
+		found == {"screwdriver": 1, "wrist_strap": 1, "thermal_paste": 1, "multimeter": 1}, found)
+	var names := ["Screwdriver", "WristStrap", "ThermalPaste", "Multimeter"].filter(func(n) -> bool: return rack.has_node(n))
+	check("each tool has a plain name, for Phase 6's models", names.size() == 4, names)
+	check("each has a Mesh child for its look", names.all(func(n) -> bool: return rack.get_node(n + "/Mesh").get_child_count() > 0))
+	check("the multimeter has a display", rack.get_node("Multimeter/Display") is Label3D)
+	var on_tray := names.all(func(n) -> bool: return absf(rack.get_node(n).position.y - 0.012) < 0.001)
+	check("every tool sits on the tray", on_tray)
+
+
+func _test_rack_tools_go_home() -> void:
+	var rack: Node3D = await _fresh(ToolRack.instantiate())
+	var meter = rack.get_node("Multimeter")
+	meter.return_delay_s = 0.0
+	meter.return_time_s = 0.05
+	await _carry_and_drop(meter, Vector3(0.3, 0.3, 0.3))
+	await create_timer(0.2).timeout
+	check("a tool dropped off the rack goes back to its place on it", meter.is_home(), meter.global_position)
+	meter.show_reading("12.1 V")
+	check("the multimeter shows a reading on its display", rack.get_node("Multimeter/Display").text == "12.1 V")
+
+
+func _test_strap_is_worn() -> void:
+	var bench := Node3D.new()
+	bench.name = "Bench"
+	var rack := ToolRack.instantiate()
+	bench.add_child(rack)
+	var wrist := _zone(bench, "Wrist", Vector3(0.4, 0, 0.3), "wrist_strap")
+	await _fresh(bench)
+	var strap = rack.get_node("WristStrap")
+	strap.return_delay_s = 0.0
+	strap.return_time_s = 0.0
+	await _carry_and_drop(strap, wrist.global_position)
+	check("the strap dropped on the wrist is worn: it stays there", strap.is_installed and wrist.is_filled()
+		and strap.global_position.distance_to(wrist.global_position) < 0.01, strap.global_position)
