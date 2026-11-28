@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://models/ssd_m2/ssd_m2_visual.tscn" id="v_ssd_m2"]
 [ext_resource type="PackedScene" path="res://models/cpu/cpu_visual.tscn" id="v_cpu"]
 [ext_resource type="PackedScene" path="res://models/psu/psu_visual.tscn" id="v_psu"]
+[ext_resource type="PackedScene" path="res://scenes/tools/multimeter.tscn" id="t_meter"]
 
 [sub_resource type="BoxShape3D" id="R1"]
 size = Vector3(0.305, 0.004, 0.244)
@@ -45,6 +46,9 @@ mission_id = "build_computer.diagnose_failure"
 
 [node name="Room" parent="." instance=ExtResource("2_room")]
 
+
+[node name="BackButton" parent="Room"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.53, 1.2, -0.36)
 [node name="Board" type="StaticBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.902, -0.05)
 
@@ -179,6 +183,9 @@ billboard = 1
 pixel_size = 0.0004
 font_size = 48
 outline_size = 10
+
+[node name="Multimeter" parent="." instance=ExtResource("t_meter")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.47, 0.9, 0.17)
 
 [node name="InfoPanel" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.9063, 0.4226, 0, -0.4226, 0.9063, 0, 1.12, -0.32)

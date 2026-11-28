@@ -1,0 +1,59 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/tools/screwdriver.tscn" id="1_smh2y"]
+[ext_resource type="Script" path="res://scripts/tools/tool.gd" id="2_6j4xa"]
+[ext_resource type="PackedScene" path="res://scenes/tools/wrist_strap.tscn" id="3_oydje"]
+[ext_resource type="PackedScene" path="res://scenes/tools/thermal_paste.tscn" id="4_xlh6n"]
+[ext_resource type="PackedScene" path="res://scenes/tools/multimeter.tscn" id="5_arf2f"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6h3gv"]
+albedo_color = Color(0.22, 0.23, 0.25, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_iriql"]
+material = SubResource("StandardMaterial3D_6h3gv")
+size = Vector3(0.4, 0.012, 0.15)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_anulq"]
+albedo_color = Color(0.22, 0.23, 0.25, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_ui4dn"]
+material = SubResource("StandardMaterial3D_anulq")
+size = Vector3(0.4, 0.02, 0.008)
+
+[node name="ToolRack" type="Node3D" unique_id=421736261]
+
+[node name="Tray" type="MeshInstance3D" parent="." unique_id=190158907]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, 0)
+mesh = SubResource("BoxMesh_iriql")
+
+[node name="Lip" type="MeshInstance3D" parent="." unique_id=1183145261]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, -0.071)
+mesh = SubResource("BoxMesh_ui4dn")
+
+[node name="Sign" type="Label3D" parent="." unique_id=1712049975]
+transform = Transform3D(1, 0, 0, 0, 0.81915206, 0.57357645, 0, -0.57357645, 0.81915206, 0, 0.026, -0.071)
+pixel_size = 0.0004
+text = "Tool rack"
+font_size = 40
+outline_size = 8
+
+[node name="Screwdriver" type="RigidBody3D" parent="." unique_id=466681432 instance=ExtResource("1_smh2y")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.135, 0.012, 0)
+script = ExtResource("2_6j4xa")
+
+[node name="WristStrap" type="RigidBody3D" parent="." unique_id=1201807824 instance=ExtResource("3_oydje")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.045, 0.012, 0)
+script = ExtResource("2_6j4xa")
+tool_type = "wrist_strap"
+
+[node name="ThermalPaste" type="RigidBody3D" parent="." unique_id=182063466 instance=ExtResource("4_xlh6n")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.045, 0.012, 0)
+script = ExtResource("2_6j4xa")
+tool_type = "thermal_paste"
+
+[node name="Multimeter" type="RigidBody3D" parent="." unique_id=1636884208 instance=ExtResource("5_arf2f")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.14, 0.012, 0)
+script = ExtResource("2_6j4xa")
+tool_type = "multimeter"

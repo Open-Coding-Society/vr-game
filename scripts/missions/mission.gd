@@ -14,6 +14,11 @@ extends Node3D
 const SnapZone := preload("res://scripts/snap_zone.gd")
 const GrabbablePart := preload("res://scripts/grabbable_part.gd")
 const InfoPanel := preload("res://scripts/ui/info_panel.gd")
+## Where "Back to menu" goes when the mission wasn't started from the menu.
+const MENU_SCENE := "res://scenes/menus/menu.tscn"
+## The registry's shared text (data/modules.json "messages"), filled in.
+func say(key: String, values := {}) -> String:
+	return manager.registry.say(key, values)
 
 ## Full mission id in the registry, e.g. "build_computer.identify_components".
 @export var mission_id: String = ""
@@ -25,6 +30,9 @@ var config: Dictionary = {}
 var zones: Array[SnapZone] = []
 var goals: Array[SnapZone] = []
 var parts: Array[GrabbablePart] = []
+## Parts the registry marks "sensitive": with "needs_strap", touching one
+## without the wrist strap on is a mistake.
+var sensitive_parts: Array[GrabbablePart] = []
 ## Where the mission's problems go (also printed as errors), for tests.
 var problems: PackedStringArray = []
 ## The success panel's lines and the score-saving status under them. Either
@@ -47,6 +55,7 @@ func _ready() -> void:
 		_problem('on_complete is "boot" but the scene has no MonitorScreen (scripts/parts/monitor_screen.gd)')
 	_apply_monitor_text()
 	$Room.grabber.part_grabbed.connect(_on_part_grabbed)
+	$Room.back_button.pressed.connect(leave_early)
 	for zone in zones:
 		zone.snapped.connect(_on_snapped)
 		zone.rejected.connect(_on_rejected)
@@ -54,6 +63,7 @@ func _ready() -> void:
 		zone.swapped.connect(_on_swapped)
 		zone.removed.connect(_on_removed)
 		zone.refused.connect(_on_refused)
+		zone.probed.connect(_on_probed)
 	manager.module_completed.connect(_on_module_completed)
 	var reporter := get_node_or_null("/root/ScoreReporter")
 	if reporter:
@@ -71,6 +81,8 @@ func _apply_registry() -> void:
 			continue
 		part.part_type = StringName(config.parts[path].type)
 		part.display_name = config.parts[path].name
+		if config.parts[path].get("sensitive", false):
+			sensitive_parts.append(part)
 		var tag := part.get_node_or_null("Name") as Label3D
 		if tag:
 			tag.text = part.display_name.left(1).to_upper() + part.display_name.substr(1)
@@ -91,6 +103,12 @@ func _apply_registry() -> void:
 		zone.swappable = slot.get("swappable", false)
 		zone.compat = StringName(slot.get("compat", ""))
 		zone.removable = slot.get("removable", false)
+		zone.required_tool = StringName(slot.get("tool", ""))
+		zone.probe = slot.has("probe")
+		if zone.probe:
+			_probes[zone] = slot
+		if zone.required_tool != &"":
+			zone.accepts = zone.required_tool
 		zones.append(zone)
 		if not zone.working and not slot.get("optional", false):
 			goals.append(zone)
@@ -108,7 +126,9 @@ func _apply_registry() -> void:
 	# The exception: with catalog_parts, a part with a `variant` gets its type
 	# and name from data/parts_catalog.json instead.
 	for node in find_children("*", "Node3D", true, false):
-		if node is GrabbablePart and not parts.has(node) and config.catalog_parts and node.variant != "":
+		if node is GrabbablePart and not parts.has(node) and node.get("tool_type") != null:
+			parts.append(node)  # a tool from the rack: it describes itself
+		elif node is GrabbablePart and not parts.has(node) and config.catalog_parts and node.variant != "":
 			parts.append(node)
 			if node.spec.is_empty():
 				_problem('part "%s" has the variant "%s", which isn\'t in data/parts_catalog.json' % [get_path_to(node), node.variant])
@@ -116,11 +136,25 @@ func _apply_registry() -> void:
 			_problem('"%s" is in the scene but not in the registry' % get_path_to(node))
 
 
-func _on_part_grabbed(_part: GrabbablePart) -> void:
+func _on_part_grabbed(part: GrabbablePart) -> void:
 	var was_intro: bool = manager.state == manager.State.INTRO
 	manager.note_grab()
-	if was_intro:
+	if config.needs_strap and sensitive_parts.has(part) and not is_strap_on():
+		# Hands off until the strap is on: the part stays where it is.
+		$Room.grabber.cancel()
+		manager.note_mistake()
+		_show_checklist(str(config.get("strap_hint", say("strap_first"))))
+	elif was_intro:
 		_show_checklist("")
+
+
+## True once the wrist strap is worn (its slot is filled), or when the mission
+## has no strap at all.
+func is_strap_on() -> bool:
+	for zone in zones:
+		if zone.accepts == &"wrist_strap" and zone.required_tool == &"":
+			return zone.is_filled()
+	return true
 
 
 func _on_snapped(zone: SnapZone, part: GrabbablePart) -> void:
@@ -147,11 +181,16 @@ func _on_snapped(zone: SnapZone, part: GrabbablePart) -> void:
 
 ## What the panel says when a part goes in.
 func _installed_text(zone: SnapZone, part: GrabbablePart) -> String:
-	if zone.pass_through:
-		return zone.role if zone.role != "" else "Yes! On to the next step."
+	if zone.required_tool != &"":
+		# A tool step: one use at a time (a screw out), then the step is done.
+		if not zone.is_filled():
+			return say("step_progress", {"done": zone.installed_parts.size(), "total": zone.capacity})
+		return say("installed_role", {"role": zone.role}) if zone.role != "" else say("step_done")
 	if zone.role != "":
-		return "Yes! " + zone.role
-	return "Yes! The %s goes in the %s." % [part.display_name, zone.display_name]
+		return say("installed_role", {"role": zone.role})
+	if zone.pass_through:
+		return say("next_step")
+	return say("installed", {"part": part.display_name, "slot": zone.display_name})
 
 
 func _on_rejected(zone: SnapZone, part: GrabbablePart) -> void:
@@ -162,9 +201,12 @@ func _on_rejected(zone: SnapZone, part: GrabbablePart) -> void:
 		# The right kind of part, but it doesn't work with the others.
 		_show_checklist(zone.last_problem)
 	elif zone.working:
-		_show_checklist("Not that one. " + zone.hint)
+		_show_checklist(say("working_part", {"hint": zone.hint}))
+	elif zone.required_tool != &"":
+		# A tool step: bare hands (or the wrong tool) can't do it.
+		_show_checklist(say("needs_tool", {"part": part.display_name, "hint": zone.hint}))
 	else:
-		_show_checklist("The %s doesn't go there. %s" % [part.display_name, zone.hint])
+		_show_checklist(say("wrong_part", {"part": part.display_name, "hint": zone.hint}))
 
 
 ## A part was swapped out. Whatever was plugged into it can't stay: every slot
@@ -188,6 +230,25 @@ func _on_refused(zone: SnapZone, _part: GrabbablePart) -> void:
 		_show_checklist(zone.last_problem)
 
 
+## The slots the multimeter can test, with their registry entries.
+var _probes := {}
+
+
+## The multimeter was dropped on a part: its display shows what it reads and
+## the panel says what that means. Not a mistake: testing is how you find the
+## broken part. A broken part that has been replaced reads its "probe_fixed".
+func _on_probed(zone: SnapZone, meter: GrabbablePart) -> void:
+	if manager.state == manager.State.INTRO:
+		manager.note_grab()
+	if manager.state != manager.State.ACTIVE:
+		return
+	var slot: Dictionary = _probes.get(zone, {})
+	var reading: Dictionary = slot.get("probe_fixed", slot.probe) if zone.is_filled() else slot.probe
+	if meter.has_method("show_reading"):
+		meter.show_reading(reading.reads)
+	_show_checklist(say("probe", {"slot": zone.display_name, "reads": reading.reads, "means": reading.means}))
+
+
 func _empty_dependents(zone: SnapZone, seen: Array) -> void:
 	for other in zones:
 		if other.prerequisites.has(zone) and not seen.has(other):
@@ -201,7 +262,7 @@ func _on_blocked(zone: SnapZone, part: GrabbablePart) -> void:
 		return
 	manager.note_mistake()
 	var first := zone.missing_prerequisites().map(func(z) -> String: return z.display_name)
-	_show_checklist("Not yet. First finish: %s. %s" % [name_list(first), zone.hint])
+	_show_checklist(say("too_early", {"first": name_list(first), "hint": zone.hint}))
 
 
 func _on_module_completed(_module_id: String, score: int, duration_s: int) -> void:
@@ -211,15 +272,18 @@ func _on_module_completed(_module_id: String, score: int, duration_s: int) -> vo
 			await screen.play_boot(PackedStringArray(config.boot_lines))
 		if not is_inside_tree() or manager.mission.get("full_id", "") != mission_id:
 			return
-	_result_lines = PackedStringArray(config.success)
+	# Every mode's success panel in the same order: the score, time and
+	# mistakes, what the mission taught, anything the mission adds (a
+	# bonus), then where the game goes next, and last the saving status.
+	_result_lines = PackedStringArray([say("result_score", {"score": score, "time": _clock(duration_s), "mistakes": manager.mistakes})])
+	_result_lines.append_array(PackedStringArray(config.success))
 	_result_lines.append_array(_result_extras())
-	_result_lines.append("Score: %d   Time: %s   Mistakes: %d" % [score, _clock(duration_s), manager.mistakes])
 	next_mission = manager.next_mission_id(mission_id)
 	if manager.return_scene != "":
-		_result_lines.append("Back to %s in %d seconds" % [manager.return_label, roundi(manager.advance_delay_s)])
+		_result_lines.append(say("back_to", {"label": manager.return_label, "seconds": roundi(manager.advance_delay_s)}))
 		get_tree().create_timer(manager.advance_delay_s).timeout.connect(_return_to_menu)
 	elif next_mission != "" and manager.auto_advance:
-		_result_lines.append("Next: %s in %d seconds" % [manager.registry.mission(next_mission).title, roundi(manager.advance_delay_s)])
+		_result_lines.append(say("next_mission", {"title": manager.registry.mission(next_mission).title, "seconds": roundi(manager.advance_delay_s)}))
 		get_tree().create_timer(manager.advance_delay_s).timeout.connect(_open_next)
 	_show_result()
 
@@ -258,14 +322,33 @@ func _result_extras() -> PackedStringArray:
 	return PackedStringArray()
 
 
+## "Back to menu": leave now, finished or not. An unfinished mission ends with
+## no result (nothing is scored or saved); the menu reopens the page the
+## mission was started from (Free Play or the Story roadmap), or the Home page
+## for a mission that wasn't started from the menu.
+func leave_early() -> void:
+	if not is_inside_tree() or _leaving:
+		return
+	_leaving = true
+	for z in zones:
+		z.locked = true
+	if manager.state != manager.State.SUCCESS:
+		manager.leave()
+	var target: String = manager.return_scene if manager.return_scene != "" else MENU_SCENE
+	manager.open_scene(target)
+
+
+var _leaving := false
+
+
 ## Started from the menu: go back to it (it reopens manager.return_page).
 func _return_to_menu() -> void:
-	if is_inside_tree() and manager.state == manager.State.SUCCESS and manager.mission.full_id == mission_id:
+	if is_inside_tree() and not _leaving and manager.state == manager.State.SUCCESS and manager.mission.full_id == mission_id:
 		manager.open_scene(manager.return_scene)
 
 
 func _open_next() -> void:
-	if is_inside_tree() and manager.state == manager.State.SUCCESS and manager.mission.full_id == mission_id:
+	if is_inside_tree() and not _leaving and manager.state == manager.State.SUCCESS and manager.mission.full_id == mission_id:
 		manager.open_scene(manager.registry.mission(next_mission).scene)
 
 
@@ -278,8 +361,8 @@ func _on_report_finished(_ok: bool, message: String) -> void:
 func _show_result() -> void:
 	var out := _result_lines.duplicate()
 	if not config.practice:
-		out.append(_save_message if _save_message != "" else "Saving your score...")
-	panel.show_text("Mission complete!", out)
+		out.append(_save_message if _save_message != "" else say("saving"))
+	panel.show_text(say("result_title"), out)
 
 
 ## One line per slot, ticked once its part is in, then any feedback.

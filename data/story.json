@@ -20,8 +20,8 @@
           "tasks": [
             {"mission": "build_computer.install_ram"},
             {"mission": "build_computer.identify_components"},
-            {"id": "irl.inside.swap_ssd", "title": "Swap in an SSD"},
-            {"id": "irl.inside.cooler_paste", "title": "Reseat the cooler with thermal paste"}
+            {"mission": "build_computer.swap_ssd"},
+            {"mission": "build_computer.cooler_paste", "title": "Reseat the cooler with thermal paste"}
           ]
         },
         {
@@ -44,8 +44,8 @@
             {"mission": "build_network.interrupt"},
             {"mission": "build_network.redundancy"},
             {"mission": "build_network.distribute"},
-            {"id": "irl.rigs.server_rack", "title": "Build a mini server rack"},
-            {"id": "irl.rigs.pi_cluster", "title": "A Raspberry Pi cluster"}
+            {"mission": "build_network.server_rack"},
+            {"mission": "build_network.pi_cluster"}
           ]
         }
       ]

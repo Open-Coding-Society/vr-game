@@ -1,0 +1,37 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/tools/tool.gd" id="1_gqxev"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_xqj75"]
+size = Vector3(0.1, 0.02, 0.1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2de4u"]
+albedo_color = Color(0.55, 0.78, 0.9, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_64fbi"]
+material = SubResource("StandardMaterial3D_2de4u")
+size = Vector3(0.1, 0.006, 0.1)
+
+[node name="Cloth" type="RigidBody3D" unique_id=1194693319]
+script = ExtResource("1_gqxev")
+tool_type = "cloth"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1267722147]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
+shape = SubResource("BoxShape3D_xqj75")
+
+[node name="Mesh" type="Node3D" parent="." unique_id=1876277281]
+
+[node name="Sheet" type="MeshInstance3D" parent="Mesh" unique_id=1065635747]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.003, 0)
+mesh = SubResource("BoxMesh_64fbi")
+
+[node name="Name" type="Label3D" parent="." unique_id=144815168]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+pixel_size = 0.0003
+billboard = 1
+no_depth_test = true
+text = "Cloth"
+font_size = 40
+outline_size = 10

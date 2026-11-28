@@ -35,6 +35,10 @@ func _run() -> void:
 	quit(0 if _failures.is_empty() else 1)
 
 
+## Act 4's two extras (Phase 5), after Build a Network's seven.
+const ACT_4_EXTRAS := ["build_network.server_rack", "build_network.pi_cluster"]
+
+
 ## Build a Network's seven missions (Phase 3), in order.
 const BUILD_NETWORK := ["build_network.connect_two", "build_network.switch", "build_network.router",
 	"build_network.send_packets", "build_network.interrupt", "build_network.redundancy", "build_network.distribute"]
@@ -46,8 +50,10 @@ func _tests() -> Array:
 		_test_ray_transform, _test_home_page, _test_login_placeholder,
 		_test_mode_picker, _test_free_play_lists_tasks, _test_free_play_lists_the_new_modes, _test_free_play_cloud_empty,
 		_test_free_play_starts_task, _test_done_task_shows_best, _test_mission_returns_to_menu,
+		_test_settings_page, _test_settings_comfort_lowers_the_desk, _test_settings_pointer_hand,
+		_test_back_to_menu_leaves_early, _test_back_to_menu_without_the_menu, _test_back_button_in_every_mission,
 		_test_menu_reopens_return_page, _test_story_map_states, _test_story_act_1_unlocks_in_order,
-		_test_story_act_3_starts_with_build_your_own, _test_story_act_4_unlocks_in_order,
+		_test_story_act_2_plays_the_new_tasks, _test_free_play_lists_act_2, _test_story_act_3_starts_with_build_your_own, _test_story_act_4_unlocks_in_order,
 		_test_free_play_lists_build_network, _test_roadmap_plays_act_4,
 		_test_story_map_bad_mission,
 		_test_story_chapters, _test_roadmap_plays_next, _test_roadmap_cloud_planned,
@@ -241,8 +247,14 @@ func _test_mode_picker() -> void:
 	await process_frame
 	for card in ["FreePlayCard", "StoryCard", "OpenWorldCard"]:
 		check("the mode picker has %s" % card, menu.find_button(card) != null)
+	_opened.clear()
 	await _click(menu, "OpenWorldCard")
-	check("Open World says it's coming soon", menu.page == "coming_soon", menu.page)
+	check("Open World opens its scene (Phase 5)", _opened == ["res://scenes/open_world/open_world.tscn"], _opened)
+	var manager := root.get_node("TrainingManager")
+	manager.return_scene = ""
+	manager.return_page = ""
+	manager.return_label = ""
+	await _click(menu, "StoryCard")
 	await _click(menu, "BackButton")
 	check("Back returns to the mode picker", menu.page == "modes", menu.page)
 	menu.queue_free()
@@ -283,9 +295,10 @@ func _test_free_play_lists_the_new_modes() -> void:
 	_opened.clear()
 	var manager := root.get_node("TrainingManager")
 	var ids: Array = manager.registry.missions_in("computer").map(func(task) -> String: return task.full_id)
-	check("Free Play's Computer list has Phase 2's tasks after the first six, then Build a Network's seven",
-		ids.size() == 18 and ids.slice(6, 11) == ["build_computer.build_your_own", "setup_pc.unbox", "setup_pc.connect_peripherals",
-			"setup_pc.power_on", "setup_pc.go_online"] and ids.slice(11) == BUILD_NETWORK, ids)
+	check("Free Play's Computer list has Phase 2's tasks after the first six, then Phase 5's Act 2 tasks, then Build a Network's seven",
+		ids.size() == 22 and ids.slice(6, 9) == ["build_computer.build_your_own", "build_computer.swap_ssd", "build_computer.cooler_paste"]
+			and ids.slice(9, 13) == ["setup_pc.unbox", "setup_pc.connect_peripherals", "setup_pc.power_on", "setup_pc.go_online"]
+			and ids.slice(13) == BUILD_NETWORK + ACT_4_EXTRAS, ids)
 	var menu := await _menu()
 	menu.show_page("free_play", "computer")
 	await process_frame
@@ -356,6 +369,187 @@ func _test_done_task_shows_best() -> void:
 	menu.queue_free()
 
 
+# ---- Phase 5, step 10: Settings ----
+
+func _test_settings_page() -> void:
+	var saves := root.get_node("SaveService")
+	saves.set_setting("comfort", "standing")
+	saves.set_setting("pointer_hand", "right")
+	var menu := await _menu()
+	menu.show_page("modes")
+	await process_frame
+	await _click(menu, "SettingsButton")
+	check("the mode picker opens Settings", menu.page == "settings", menu.page)
+	var names := ["Setting_comfort_standing", "Setting_comfort_seated", "Setting_pointer_hand_right", "Setting_pointer_hand_left"]
+	check("it has Comfort (standing or seated) and the menu pointer's hand", names.all(func(n) -> bool: return menu.find_button(n) != null))
+	var labels: Array = menu.screen.ui_root.find_children("*", "Label", true, false).map(func(l) -> String: return l.text)
+	check("and no dead switches: no volume or hand tracking while they can't work",
+		not labels.any(func(t) -> bool: return "Volume" in t or "Hands" in t), labels)
+	await _click(menu, "Setting_comfort_seated")
+	check("choosing Seated saves it", saves.setting("comfort") == "seated", saves.setting("comfort"))
+	saves.load_profile()
+	check("in the save file", saves.setting("comfort") == "seated")
+	check("and the page shows it chosen", menu.page == "settings" and menu.find_button("Setting_comfort_seated").get_theme_stylebox("normal").bg_color
+		!= menu.find_button("Setting_comfort_standing").get_theme_stylebox("normal").bg_color)
+	await _click(menu, "BackButton")
+	check("Back returns to the mode picker", menu.page == "modes", menu.page)
+	saves.set_setting("comfort", "standing")
+	menu.queue_free()
+	await process_frame
+
+
+func _test_settings_comfort_lowers_the_desk() -> void:
+	var saves := root.get_node("SaveService")
+	var manager := root.get_node("TrainingManager")
+	saves.set_setting("comfort", "seated")
+	var mission: Node3D = load("res://scenes/workbench.tscn").instantiate()
+	root.add_child(mission)
+	await process_frame
+	var room: Node3D = mission.get_node("Room")
+	check("seated, the headset player's origin goes up 20 cm, so the desk is 20 cm lower to them",
+		is_equal_approx(room.xr_origin.position.y, 0.2), room.xr_origin.position)
+	check("the laptop camera stays where it was", is_equal_approx(room.camera.position.y, 1.6), room.camera.position)
+	mission.queue_free()
+	await process_frame
+	saves.set_setting("comfort", "standing")
+	mission = load("res://scenes/workbench.tscn").instantiate()
+	root.add_child(mission)
+	await process_frame
+	check("standing, it's back at the floor", is_equal_approx(mission.get_node("Room").xr_origin.position.y, 0.0))
+	mission.queue_free()
+	manager.leave()
+	await process_frame
+
+
+func _test_settings_pointer_hand() -> void:
+	var saves := root.get_node("SaveService")
+	saves.set_setting("pointer_hand", "right")
+	var menu := await _menu()
+	check("the menu points with the right controller by default", menu.pointer.hand == menu.get_node("XROrigin3D/RightHand"))
+	menu.choose_setting("pointer_hand", "left")
+	check("choosing Left hand points with the left one", menu.pointer.hand == menu.get_node("XROrigin3D/LeftHand")
+		and saves.setting("pointer_hand") == "left")
+	check("aiming forward, as the right one does", menu.pointer.hand.pose == &"aim")
+	menu.queue_free()
+	await process_frame
+	var again := await _menu()
+	check("the next time the menu opens, it still uses the left", again.pointer.hand == again.get_node("XROrigin3D/LeftHand"))
+	again.queue_free()
+	saves.set_setting("pointer_hand", "right")
+	await process_frame
+
+
+# ---- Phase 5, step 1: leave a mission early ----
+
+func _test_back_to_menu_leaves_early() -> void:
+	_opened.clear()
+	var manager := root.get_node("TrainingManager")
+	var saves := root.get_node("SaveService")
+	saves.profile.tasks.clear()
+	manager.return_scene = "res://scenes/menus/menu.tscn"
+	manager.return_page = "roadmap:irl"
+	manager.return_label = "Story Mode"
+	var mission: Node3D = load("res://scenes/build_computer/assemble_system.tscn").instantiate()
+	root.add_child(mission)
+	await process_frame
+	var button = mission.get_node("Room/BackButton")
+	check("every mission has a Back to menu button", button != null and button.get_node("Label").text == "Back to menu")
+	var left := []
+	manager.mission_left.connect(func(id: String) -> void: left.append(id))
+	var finished := []
+	var on_done := func(id: String, _score: int, _time: int) -> void: finished.append(id)
+	manager.module_completed.connect(on_done)
+	manager.note_grab()
+	button.press()
+	check("pressing it opens the menu scene the mission came from", _opened == ["res://scenes/menus/menu.tscn"], _opened)
+	check("the mission ends with no result", manager.state == manager.State.IDLE and left == ["build_computer.assemble_system"] and finished.is_empty(),
+		"%s %s %s" % [manager.state, left, finished])
+	check("nothing is saved for it", not saves.is_task_done("build_computer.assemble_system"))
+	check("the menu will reopen the page it came from", manager.return_page == "roadmap:irl", manager.return_page)
+	check("its slots take nothing more once it's left", mission.zones.all(func(z) -> bool: return z.locked))
+	button.press()
+	check("a second press does nothing more", _opened.size() == 1, _opened)
+	manager.module_completed.disconnect(on_done)
+	mission.queue_free()
+	await process_frame
+	var menu: Node3D = MenuScene.instantiate()
+	root.add_child(menu)
+	await process_frame
+	check("back on the menu, the roadmap it was started from is open", menu.page == "roadmap", menu.page)
+	menu.queue_free()
+	await process_frame
+
+
+func _test_back_to_menu_without_the_menu() -> void:
+	_opened.clear()
+	var manager := root.get_node("TrainingManager")
+	manager.return_scene = ""
+	manager.return_page = ""
+	var mission: Node3D = load("res://scenes/workbench.tscn").instantiate()
+	root.add_child(mission)
+	await process_frame
+	var esc := InputEventAction.new()
+	esc.action = "ui_cancel"
+	esc.pressed = true
+	mission.get_node("Room/BackButton")._unhandled_input(esc)
+	check("Esc on the laptop does the same, and a mission opened on its own goes to the menu's Home",
+		_opened == ["res://scenes/menus/menu.tscn"] and manager.state == manager.State.IDLE, "%s %s" % [_opened, manager.state])
+	mission.queue_free()
+	await process_frame
+
+
+## The button is beside the info panel, off the desk, in sight of the laptop
+## camera, and nothing in any mission's scene sits in front of it.
+func _test_back_button_in_every_mission() -> void:
+	# Headless runs use a 100x100 window; look through the game's real one.
+	var old_size := root.size
+	root.size = Vector2i(ProjectSettings.get_setting("display/window/size/viewport_width"),
+		ProjectSettings.get_setting("display/window/size/viewport_height"))
+	var manager := root.get_node("TrainingManager")
+	var bad := []
+	for id in manager.registry.missions:
+		var mission: Node3D = load(manager.registry.mission(id).scene).instantiate()
+		root.add_child(mission)
+		await process_frame
+		await physics_frame
+		var button: Node3D = mission.get_node("Room/BackButton")
+		var camera: Camera3D = mission.get_node("Room/Camera3D")
+		var at := camera.unproject_position(button.global_position)
+		var view := Rect2(Vector2.ZERO, mission.get_viewport().get_visible_rect().size)
+		if camera.is_position_behind(button.global_position) or not view.has_point(at):
+			bad.append("%s: off screen" % id)
+		elif not button.is_under(at):
+			bad.append("%s: something is in front of it" % id)
+		else:
+			var blocking := _meshes_between(mission, camera.global_position, button)
+			if not blocking.is_empty():
+				bad.append("%s: hidden by %s" % [id, ", ".join(blocking)])
+		mission.queue_free()
+		await process_frame
+	manager.leave()
+	root.size = old_size
+	check("every mission's Back to menu button can be seen and clicked from the laptop camera", bad.is_empty(), bad)
+
+
+## Meshes of a mission (not the room's) on the line from the eye to any of the
+## button's corners: the laptop camera couldn't see the whole button.
+func _meshes_between(mission: Node3D, eye: Vector3, button: Node3D) -> Array:
+	var out := []
+	var half: Vector2 = button.SIZE / 2.0
+	var corners := []
+	for c in [Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1), Vector2(1, 1), Vector2.ZERO]:
+		corners.append(button.global_transform * Vector3(c.x * half.x, c.y * half.y, 0.006))
+	for node in mission.find_children("*", "MeshInstance3D", true, false):
+		if mission.get_node("Room").is_ancestor_of(node) or not node.is_visible_in_tree() or node.mesh == null:
+			continue
+		var box: AABB = node.global_transform * node.mesh.get_aabb()
+		for corner in corners:
+			if box.intersects_segment(eye, corner):
+				out.append(str(mission.get_path_to(node)))
+				break
+	return out
+
+
 func _test_mission_returns_to_menu() -> void:
 	_opened.clear()
 	var manager := root.get_node("TrainingManager")
@@ -400,12 +594,12 @@ func _test_story_map_states() -> void:
 	check("with nothing done, the first playable task is next", s["setup_pc.unbox"] == StoryMap.NEXT, s)
 	check("later playable tasks are locked", s["setup_pc.connect_peripherals"] == StoryMap.LOCKED
 		and s["build_computer.install_ram"] == StoryMap.LOCKED)
-	check("tasks without a mission are planned", s["irl.inside.swap_ssd"] == StoryMap.PLANNED)
+	check("tasks without a mission are planned", map.states("cloud", is_done)["cloud.internet.follow_a_packet"] == StoryMap.PLANNED)
 	done["setup_pc.unbox"] = true
 	s = map.states("irl", is_done)
 	check("finishing it makes the next one playable", s["setup_pc.unbox"] == StoryMap.DONE
 		and s["setup_pc.connect_peripherals"] == StoryMap.NEXT, s)
-	check("progress counts playable tasks only", map.progress("irl", is_done) == [1, 18], map.progress("irl", is_done))
+	check("progress counts playable tasks only", map.progress("irl", is_done) == [1, 22], map.progress("irl", is_done))
 	check("the IRL chapter isn't complete yet", not map.chapter_complete("irl", is_done))
 
 
@@ -433,7 +627,61 @@ func _test_story_act_1_unlocks_in_order() -> void:
 	var after: Dictionary = map.states("irl", is_done)
 	check("finishing Act 1 opens the first task of Act 2",
 		ids.all(func(id) -> bool: return after[id] == StoryMap.DONE) and after["build_computer.install_ram"] == StoryMap.NEXT, after)
-	check("and counts as four of the chapter's eighteen playable tasks", map.progress("irl", is_done) == [4, 18], map.progress("irl", is_done))
+	check("and counts as four of the chapter's twenty-two playable tasks", map.progress("irl", is_done) == [4, 22], map.progress("irl", is_done))
+
+
+## Phase 5, step 6: Act 2 ("Inside the PC") is four playable missions now:
+## the two from Module 1, then Swap in an SSD and Reseat the cooler.
+func _test_story_act_2_plays_the_new_tasks() -> void:
+	var manager := root.get_node("TrainingManager")
+	var saves := root.get_node("SaveService")
+	var map = StoryMap.load_from(manager.registry)
+	var act: Dictionary = map.chapter("irl").acts[1]
+	var ids: Array = act.tasks.map(func(task) -> String: return task.mission)
+	check("Act 2 has no planned tasks left: four missions",
+		ids == ["build_computer.install_ram", "build_computer.identify_components", "build_computer.swap_ssd", "build_computer.cooler_paste"], ids)
+	check("the cooler keeps the roadmap's longer title", act.tasks[3].title == "Reseat the cooler with thermal paste", act.tasks[3].title)
+	var done := {"setup_pc.unbox": true, "setup_pc.connect_peripherals": true, "setup_pc.power_on": true,
+		"setup_pc.go_online": true, "build_computer.install_ram": true, "build_computer.identify_components": true}
+	var is_done := func(id: String) -> bool: return done.has(id)
+	var s: Dictionary = map.states("irl", is_done)
+	check("after Module 1's two, Swap in an SSD is next and the cooler is locked",
+		s["build_computer.swap_ssd"] == StoryMap.NEXT and s["build_computer.cooler_paste"] == StoryMap.LOCKED, s)
+	done["build_computer.swap_ssd"] = true
+	s = map.states("irl", is_done)
+	check("then the cooler", s["build_computer.cooler_paste"] == StoryMap.NEXT, s)
+	saves.load_profile()
+	saves.profile.tasks.clear()
+	for id in done:
+		saves.record_task_result(id, 100, 30, 1)
+	_opened.clear()
+	var menu := await _menu()
+	menu.show_page("roadmap", "irl")
+	await process_frame
+	await _click(menu, "Play_build_computer_cooler_paste")
+	check("the roadmap plays Reseat the cooler", _opened == ["res://scenes/build_computer/cooler_paste.tscn"], _opened)
+	manager.return_scene = ""
+	manager.return_page = ""
+	manager.return_label = ""
+	saves.profile.tasks.clear()
+	menu.queue_free()
+
+
+func _test_free_play_lists_act_2() -> void:
+	_opened.clear()
+	var menu := await _menu()
+	menu.show_page("free_play", "computer")
+	await process_frame
+	check("Free Play has a card for Swap in an SSD and for Reseat the cooler",
+		menu.find_button("Task_build_computer_swap_ssd") != null and menu.find_button("Task_build_computer_cooler_paste") != null)
+	await _scroll_to(menu, "Task_build_computer_swap_ssd")
+	await _click(menu, "Task_build_computer_swap_ssd")
+	check("its card starts the mission", _opened == ["res://scenes/build_computer/swap_ssd.tscn"], _opened)
+	var manager := root.get_node("TrainingManager")
+	manager.return_scene = ""
+	manager.return_page = ""
+	manager.return_label = ""
+	menu.queue_free()
 
 
 ## Act 3 opens with Build your own PC, under the roadmap's own title for it.
@@ -447,7 +695,8 @@ func _test_story_act_3_starts_with_build_your_own() -> void:
 	var is_done := func(id: String) -> bool: return done.has(id)
 	check("it is locked until the acts before it are done", map.states("irl", is_done)["build_computer.build_your_own"] == StoryMap.LOCKED)
 	for id in ["setup_pc.unbox", "setup_pc.connect_peripherals", "setup_pc.power_on", "setup_pc.go_online",
-			"build_computer.install_ram", "build_computer.identify_components"]:
+			"build_computer.install_ram", "build_computer.identify_components", "build_computer.swap_ssd",
+			"build_computer.cooler_paste"]:
 		done[id] = true
 	var s: Dictionary = map.states("irl", is_done)
 	check("then it is the next task, ahead of Assemble the system",
@@ -493,7 +742,8 @@ func _test_roadmap_plays_next() -> void:
 		and node.call("setup_pc.go_online").get_meta("state") == StoryMap.LOCKED)
 	check("a locked task can't be played", menu.find_button("Play_setup_pc_power_on") == null
 		and menu.find_button("Play_build_computer_install_ram") == null)
-	check("a planned task can't be played", menu.find_button("Play_irl_inside_swap_ssd") == null)
+	check("Act 2's new tasks are locked this early", menu.find_button("Play_build_computer_swap_ssd") == null
+		and node.call("build_computer.swap_ssd").get_meta("state") == StoryMap.LOCKED)
 	await _click(menu, "Play_setup_pc_connect_peripherals")
 	check("playing the next task opens its mission", _opened == ["res://scenes/setup_pc/connect_peripherals.tscn"], _opened)
 	check("it will come back to this roadmap", manager.return_page == "roadmap:irl" and manager.return_label == "Story Mode",
@@ -511,6 +761,7 @@ func _test_roadmap_cloud_planned() -> void:
 	await process_frame
 	var node: Node = menu.screen.ui_root.find_child("Node_cloud_internet_follow_a_packet", true, false)
 	check("Cloud's tasks are all planned for now", node != null and node.get_meta("state") == StoryMap.PLANNED)
+	check("a planned task can't be played", menu.find_button("Play_cloud_internet_follow_a_packet") == null)
 	menu.queue_free()
 
 
@@ -547,8 +798,8 @@ func _test_story_act_4_unlocks_in_order() -> void:
 	var act: Dictionary = map.chapter("irl").acts[3]
 	var ids: Array = act.tasks.map(func(task) -> String: return task.mission)
 	check("Act 4 is called Small rigs", act.title == "Act 4: Small rigs", act.title)
-	check("Act 4 is the seven Build a Network missions, then two planned tasks", ids == BUILD_NETWORK + ["", ""], ids)
-	check("the planned ones are the server rack and the Raspberry Pi cluster",
+	check("Act 4 is the seven Build a Network missions, then Phase 5's two extras", ids == BUILD_NETWORK + ACT_4_EXTRAS, ids)
+	check("the extras are the server rack and the Raspberry Pi cluster",
 		act.tasks.slice(7).map(func(t) -> String: return t.title) == ["Build a mini server rack", "A Raspberry Pi cluster"])
 	check("each step takes its title from the mission",
 		act.tasks.slice(0, 7).map(func(task) -> String: return task.title) == BUILD_NETWORK.map(func(id) -> String: return manager.registry.mission(id).title))
@@ -568,8 +819,12 @@ func _test_story_act_4_unlocks_in_order() -> void:
 		done[BUILD_NETWORK[at]] = true
 	check("its missions unlock in order: done ones Done, one Next, the rest Locked", wrong.is_empty(), wrong)
 	var after: Dictionary = map.states("irl", is_done)
-	check("the planned tasks stay planned", after["irl.rigs.server_rack"] == StoryMap.PLANNED and after["irl.rigs.pi_cluster"] == StoryMap.PLANNED)
-	check("with Act 4 done, every playable IRL task is done", map.progress("irl", is_done) == [18, 18] and map.chapter_complete("irl", is_done), map.progress("irl", is_done))
+	check("then the server rack is next, and the Pi cluster after it",
+		after["build_network.server_rack"] == StoryMap.NEXT and after["build_network.pi_cluster"] == StoryMap.LOCKED, after)
+	check("no Act 4 task is planned any more", not after.values().has(StoryMap.PLANNED), after)
+	for id in ACT_4_EXTRAS:
+		done[id] = true
+	check("with Act 4 done, every IRL task is done", map.progress("irl", is_done) == [22, 22] and map.chapter_complete("irl", is_done), map.progress("irl", is_done))
 
 
 func _test_free_play_lists_build_network() -> void:
@@ -617,8 +872,8 @@ func _test_roadmap_plays_act_4() -> void:
 	check("Add a switch shows as next", node.call("build_network.switch").get_meta("state") == StoryMap.NEXT)
 	check("the rest of Act 4 shows as locked", BUILD_NETWORK.slice(2).all(func(id) -> bool: return node.call(id).get_meta("state") == StoryMap.LOCKED))
 	check("a locked mission can't be played", menu.find_button("Play_build_network_router") == null)
-	check("the server rack is planned and can't be played", node.call("irl.rigs.server_rack").get_meta("state") == StoryMap.PLANNED
-		and menu.find_button("Play_irl_rigs_server_rack") == null)
+	check("the server rack is locked and can't be played yet", node.call("build_network.server_rack").get_meta("state") == StoryMap.LOCKED
+		and menu.find_button("Play_build_network_server_rack") == null)
 	await _scroll_to(menu, "Play_build_network_switch")
 	await _click(menu, "Play_build_network_switch")
 	check("playing it opens Add a switch", _opened == ["res://scenes/network/switch.tscn"], _opened)

@@ -50,7 +50,7 @@ static func new_profile() -> Dictionary:
 		"tasks": {},
 		"story": {"irl": {"current": ""}, "cloud": {"current": ""}, "bridge": {"current": ""}},
 		"open_world": {"layout": [], "unlocked_items": []},
-		"settings": {"input": "controllers", "comfort": "standing"},
+		"settings": {"input": "controllers", "comfort": "standing", "pointer_hand": "right"},
 	}
 
 

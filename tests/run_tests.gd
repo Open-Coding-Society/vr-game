@@ -52,7 +52,8 @@ func _run() -> void:
 		_test_registry_checks_requires, _test_next_mission_order,
 		_test_assemble_power_goes_last, _test_assemble_perfect_run,
 		_test_execute_task_data_flow, _test_registry_checks_capacity_and_working,
-		_test_add_capacity_routes_jobs, _test_diagnose_failure,
+		_test_add_capacity_routes_jobs, _test_diagnose_failure, _test_diagnose_with_the_multimeter,
+		_test_registry_checks_probes, _test_registry_messages, _test_success_panel_order, _test_feedback_reads_the_same,
 	]:
 		manager.use_registry(ModuleRegistry.load_from())
 		manager.now_ms = Time.get_ticks_msec
@@ -125,7 +126,8 @@ func _test_registry_loads() -> void:
 	check("it lists the Build a Computer missions first, in order",
 		registry.modules[0].mission_ids == ["build_computer.install_ram",
 			"build_computer.identify_components", "build_computer.assemble_system", "build_computer.execute_task",
-			"build_computer.add_capacity", "build_computer.diagnose_failure", "build_computer.build_your_own"],
+			"build_computer.add_capacity", "build_computer.diagnose_failure", "build_computer.build_your_own",
+			"build_computer.swap_ssd", "build_computer.cooler_paste"],
 		str(registry.modules))
 	check("a mission keeps its module title and full id",
 		registry.mission("build_computer.identify_components").get("module_title") == "Build a Computer")
@@ -317,15 +319,17 @@ func _test_mission_mistake_gives_hint_and_costs_points() -> void:
 
 func _test_every_mission_scene_is_clean() -> void:
 	# Every mission in the registry loads with no scene/registry mismatch, and no
-	# part starts inside a slot (it would install itself on its first drop),
-	# unless it starts installed there (a network cable that starts plugged in).
+	# part starts inside a slot that could take it (it would install itself on
+	# its first drop), unless it starts installed there (a network cable that
+	# starts plugged in). A part may start inside a slot that can't take it yet:
+	# the old SSD in its drive bay, under steps that come first (Phase 5).
 	for module in manager.registry.modules:
 		for full_id in module.mission_ids:
 			var mission := await _fresh(load(manager.registry.mission(full_id).scene))
 			var overlapping := []
 			for zone in mission.zones:
 				for body in zone.get_overlapping_bodies():
-					if body is GrabbablePart and body.installed_zone != zone:
+					if body is GrabbablePart and body.installed_zone != zone and zone.can_take(body):
 						overlapping.append("%s in %s" % [body.name, zone.name])
 			check("%s: loads cleanly, no part starts inside a slot" % full_id,
 				mission.problems.is_empty() and overlapping.is_empty() and mission.zones.size() > 0,
@@ -375,7 +379,8 @@ func _test_next_mission_order() -> void:
 	check("missions chain in registry order",
 		manager.next_mission_id("build_computer.install_ram") == "build_computer.identify_components"
 			and manager.next_mission_id("build_computer.assemble_system") == "build_computer.execute_task")
-	check("the module's last mission has no next one", manager.next_mission_id("build_computer.build_your_own") == "")
+	var last: String = manager.registry.modules[0].mission_ids.back()
+	check("the module's last mission has no next one", manager.next_mission_id(last) == "", last)
 
 
 func _test_assemble_power_goes_last() -> void:
@@ -466,6 +471,106 @@ func _test_add_capacity_routes_jobs() -> void:
 	await _place(mission, "TrainAi", _above(mission, "GpuJobs"))
 	manager.module_completed.disconnect(on_done)
 	check("all jobs routed: done with 2 mistakes, score 80, 90 s", results == [[80, 90, 3]], str(results))
+
+
+## Phase 5, step 7: the multimeter tests a part instead of guessing. The old
+## way (drop a spare on the part you think is broken) still works, above.
+func _test_diagnose_with_the_multimeter() -> void:
+	var mission := await _fresh(DiagnoseFailure)
+	var meter = mission.get_node("Multimeter")
+	meter.return_delay_s = 0.0
+	meter.return_time_s = 0.0
+	check("Diagnose a failure has a multimeter, and still loads cleanly", mission.problems.is_empty(), "; ".join(mission.problems))
+	check("the intro says to try it", "Test a part with the multimeter" in mission.panel.text(), mission.panel.text())
+	await _place(mission, "Multimeter", _above(mission, "PsuCheck"))
+	check("on the power supply it reads 12.1 V on its own display", meter.get_node("Display").text == "12.1 V",
+		meter.get_node("Display").text)
+	check("and the panel says what that means", "Multimeter on the power supply: 12.1 V. The power supply gives a steady 12 V" in mission.panel.text(),
+		mission.panel.text())
+	check("testing is never a mistake, and the meter goes back to its place",
+		manager.mistakes == 0 and meter.global_position.is_equal_approx(meter.home_transform.origin), str(manager.mistakes))
+	await _place(mission, "Multimeter", _above(mission, "RamProblem"))
+	check("the dead RAM reads wrong: 0.0 V", meter.get_node("Display").text == "0.0 V" and "it's dead" in mission.panel.text(),
+		mission.panel.text())
+	check("and testing fills nothing", not mission.get_node("RamProblem").is_filled())
+	await _place(mission, "Ram", _above(mission, "RamProblem"))
+	await _place(mission, "Multimeter", _above(mission, "RamProblem"))
+	check("once the RAM is swapped, it reads right", meter.get_node("Display").text == "1.2 V" and "new RAM stick" in mission.panel.text(),
+		mission.panel.text())
+	await _place(mission, "Ssd", _above(mission, "DriveProblem"))
+	check("then the spare SSD finishes it, with no mistakes", manager.state == manager.State.SUCCESS and manager.score == 100, str(manager.score))
+
+
+## Phase 5, step 11: the text every mission shares is in data/modules.json.
+func _test_registry_messages() -> void:
+	var registry = ModuleRegistry.load_from()
+	check("the shared text loads from data/modules.json's messages", registry.errors.is_empty()
+		and registry.messages.keys() == ModuleRegistry.MESSAGE_DEFAULTS.keys(), str(registry.errors))
+	check("say() fills in the names", registry.say("wrong_part", {"part": "RAM stick", "hint": "Memory goes in the RAM slot."})
+		== "The RAM stick doesn't go there. Memory goes in the RAM slot.")
+	var bad := func(messages: Dictionary) -> PackedStringArray:
+		var r = ModuleRegistry.new()
+		r.read({"messages": messages, "modules": [{"id": "t", "title": "T", "missions": [{
+			"id": "m", "title": "M", "scene": "res://scenes/workbench.tscn", "intro": ["a"], "success": ["b"],
+			"scoring": {"full": 100, "per_mistake": 10}, "parts": {"Ram": {"type": "ram", "name": "RAM"}},
+			"slots": {"Slot": {"accepts": "ram", "name": "slot", "hint": "h"}}}]}]})
+		return r.errors
+	check("a message can be reworded", bad.call({"saving": "Sending your score..."}).is_empty())
+	var unknown: PackedStringArray = bad.call({"hello": "Hi"})
+	check("an unknown message is caught", unknown.size() == 1 and "not a message the game shows" in unknown[0], str(unknown))
+	var lost: PackedStringArray = bad.call({"wrong_part": "Wrong! {hint}"})
+	check("rewording that drops a {name} is caught", lost.size() == 1 and "must keep {part}" in lost[0], str(lost))
+
+
+func _test_success_panel_order() -> void:
+	var mission := await _fresh(IdentifyComponents)
+	manager.return_scene = "res://scenes/menus/menu.tscn"
+	manager.return_label = "Free Play"
+	var old_opener: Callable = manager.scene_opener
+	manager.scene_opener = func(_path: String) -> void: pass
+	manager.note_grab()
+	manager.complete()
+	await _settle()
+	var lines: PackedStringArray = mission.panel.lines
+	check("the success panel's title, then the score, time and mistakes first",
+		mission.panel.title == "Mission complete!" and lines[0].begins_with("Score: ") and "Mistakes: 0" in lines[0], str(lines))
+	check("then what the mission taught", lines[1] == mission.config.success[0], str(lines))
+	check("then where it goes next, with the saving status last",
+		lines[lines.size() - 2].begins_with("Back to Free Play") and (lines[lines.size() - 1].begins_with("Saving your score") or lines[lines.size() - 1].contains("Score")), str(lines))
+	manager.return_scene = ""
+	manager.return_label = ""
+	manager.scene_opener = old_opener
+
+
+## Every kind of feedback starts the same way: "Yes!" for a part that went
+## in (pass-through steps too), and what happened before the hint for a miss.
+func _test_feedback_reads_the_same() -> void:
+	var mission := await _fresh(ExecuteTask)
+	var first: Node = mission.zones[0]
+	check("a pass-through step says Yes! like any other", first.pass_through and mission._installed_text(first, mission.parts[0]).begins_with("Yes! "),
+		mission._installed_text(first, mission.parts[0]))
+	var lines := []
+	for key in ["installed", "installed_role", "next_step", "step_progress", "step_done"]:
+		lines.append(manager.registry.say(key, {"part": "p", "slot": "s", "role": "r", "done": 1, "total": 2}))
+	check("every 'it went in' message starts with Yes!", lines.all(func(l) -> bool: return l.begins_with("Yes! ")), str(lines))
+	var misses := []
+	for key in ["wrong_part", "working_part", "needs_tool", "too_early"]:
+		misses.append(manager.registry.say(key, {"part": "p", "first": "f", "hint": "HINT"}))
+	check("every miss says what happened, then the slot's hint", misses.all(func(l) -> bool: return l.ends_with(". HINT") and not l.begins_with("HINT")),
+		str(misses))
+
+
+func _test_registry_checks_probes() -> void:
+	var bad := func(probe) -> PackedStringArray:
+		var registry = ModuleRegistry.new()
+		registry.read({"modules": [{"id": "t", "title": "T", "missions": [{
+			"id": "m", "title": "M", "scene": "res://scenes/workbench.tscn", "intro": ["a"], "success": ["b"],
+			"scoring": {"full": 100, "per_mistake": 10}, "parts": {"Ram": {"type": "ram", "name": "RAM"}},
+			"slots": {"Slot": {"accepts": "ram", "name": "slot", "hint": "h", "probe": probe}}}]}]})
+		return registry.errors
+	check("a probe with a reading and its meaning loads", bad.call({"reads": "1.2 V", "means": "fine"}).is_empty())
+	var errors: PackedStringArray = bad.call({"reads": "1.2 V"})
+	check("a probe without what it means is caught", errors.size() == 1 and "probe must be {reads, means}" in errors[0], str(errors))
 
 
 func _test_diagnose_failure() -> void:

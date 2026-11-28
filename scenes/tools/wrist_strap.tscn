@@ -1,0 +1,50 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/tools/tool.gd" id="1_k3q3m"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_gbt7b"]
+size = Vector3(0.09, 0.03, 0.09)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ouuvk"]
+albedo_color = Color(0.15, 0.35, 0.8, 1)
+roughness = 0.75
+
+[sub_resource type="TorusMesh" id="TorusMesh_ginpl"]
+material = SubResource("StandardMaterial3D_ouuvk")
+inner_radius = 0.028
+outer_radius = 0.036
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1ykif"]
+albedo_color = Color(0.6, 0.62, 0.66, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_d0jfq"]
+material = SubResource("StandardMaterial3D_1ykif")
+size = Vector3(0.016, 0.01, 0.022)
+
+[node name="WristStrap" type="RigidBody3D" unique_id=1201807824]
+script = ExtResource("1_k3q3m")
+tool_type = "wrist_strap"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1298332658]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("BoxShape3D_gbt7b")
+
+[node name="Mesh" type="Node3D" parent="." unique_id=1945610389]
+
+[node name="Band" type="MeshInstance3D" parent="Mesh" unique_id=1974296529]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.004, 0)
+mesh = SubResource("TorusMesh_ginpl")
+
+[node name="Clip" type="MeshInstance3D" parent="Mesh" unique_id=1874901821]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.036, 0.005, 0)
+mesh = SubResource("BoxMesh_d0jfq")
+
+[node name="Name" type="Label3D" parent="." unique_id=688487844]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+pixel_size = 0.0003
+billboard = 1
+no_depth_test = true
+text = "Wrist strap"
+font_size = 40
+outline_size = 10

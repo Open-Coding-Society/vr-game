@@ -1,0 +1,394 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/missions/network_mission.gd" id="1_mission"]
+[ext_resource type="PackedScene" path="res://scenes/room.tscn" id="2_room"]
+[ext_resource type="Script" path="res://scripts/ui/info_panel.gd" id="3_panel"]
+[ext_resource type="PackedScene" path="res://scenes/network/cat6_cable.tscn" id="4_cable"]
+[ext_resource type="PackedScene" path="res://scenes/network/devices/raspberry_pi.tscn" id="d_pi"]
+[ext_resource type="PackedScene" path="res://scenes/network/devices/switch_gs108.tscn" id="d_switch"]
+[ext_resource type="Script" path="res://scripts/grabbable_part.gd" id="8_part"]
+[ext_resource type="Script" path="res://scripts/network/job_board.gd" id="9_board"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_tile"]
+albedo_color = Color(0.82, 0.6, 0.13, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_tile"]
+material = SubResource("Mat_tile")
+size = Vector3(0.032, 0.01, 0.032)
+
+[sub_resource type="BoxShape3D" id="Shape_tile"]
+size = Vector3(0.04, 0.03, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="Mat_shelf"]
+albedo_color = Color(0.36, 0.38, 0.42, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="Mesh_shelf"]
+material = SubResource("Mat_shelf")
+size = Vector3(0.76, 0.006, 0.06)
+
+[sub_resource type="StandardMaterial3D" id="Mat_seq"]
+albedo_color = Color(0.33, 0.36, 0.41, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_seq"]
+material = SubResource("Mat_seq")
+size = Vector3(1, 0.012, 0.028)
+
+[sub_resource type="StandardMaterial3D" id="Mat_par"]
+albedo_color = Color(0.184, 0.506, 0.969, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_par"]
+material = SubResource("Mat_par")
+size = Vector3(1, 0.012, 0.028)
+
+[node name="PiCluster" type="Node3D"]
+script = ExtResource("1_mission")
+mission_id = "build_network.pi_cluster"
+
+[node name="Room" parent="." instance=ExtResource("2_room")]
+
+[node name="PiA" parent="." instance=ExtResource("d_pi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.42, 0.9, 0.1)
+device_id = "pi_a"
+display_name = "Pi A"
+
+[node name="PiB" parent="." instance=ExtResource("d_pi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.14, 0.9, 0.1)
+device_id = "pi_b"
+display_name = "Pi B"
+
+[node name="PiC" parent="." instance=ExtResource("d_pi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.14, 0.9, 0.1)
+device_id = "pi_c"
+display_name = "Pi C"
+
+[node name="PiD" parent="." instance=ExtResource("d_pi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.42, 0.9, 0.1)
+device_id = "pi_d"
+display_name = "Pi D"
+
+[node name="Switch" parent="." instance=ExtResource("d_switch")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, -0.08)
+device_id = "switch"
+display_name = "Switch"
+
+[node name="CableA" parent="." instance=ExtResource("4_cable")]
+end_a_position = Vector3(-0.5, 0.9, 0)
+end_b_position = Vector3(-0.3, 0.9, 0.0)
+start_ports = Array[NodePath]([NodePath("../PiA/Eth0")])
+
+[node name="CableB" parent="." instance=ExtResource("4_cable")]
+end_a_position = Vector3(-0.22, 0.9, 0)
+end_b_position = Vector3(-0.1, 0.9, 0.02)
+start_ports = Array[NodePath]([NodePath("../PiB/Eth0")])
+
+[node name="CableC" parent="." instance=ExtResource("4_cable")]
+end_a_position = Vector3(0.06, 0.9, 0)
+end_b_position = Vector3(0.1, 0.9, 0.02)
+start_ports = Array[NodePath]([NodePath("../PiC/Eth0")])
+
+[node name="CableD" parent="." instance=ExtResource("4_cable")]
+end_a_position = Vector3(0.34, 0.9, 0)
+end_b_position = Vector3(0.3, 0.9, 0.0)
+start_ports = Array[NodePath]([NodePath("../PiD/Eth0")])
+
+[node name="Shelf" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.903, 0.3)
+mesh = SubResource("Mesh_shelf")
+
+[node name="ShelfLabel" type="Label3D" parent="Shelf"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.004, 0.026)
+pixel_size = 0.0003
+text = "The job: 12 render tiles"
+font_size = 36
+outline_size = 8
+
+[node name="Tiles" type="Node3D" parent="."]
+
+[node name="Tile1" type="RigidBody3D" parent="Tiles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.33, 0.906, 0.3)
+script = ExtResource("8_part")
+part_type = &"job"
+
+[node name="Mesh" type="MeshInstance3D" parent="Tiles/Tile1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005, 0)
+mesh = SubResource("Mesh_tile")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tiles/Tile1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_tile")
+
+[node name="Number" type="Label3D" parent="Tiles/Tile1"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.0105, 0)
+pixel_size = 0.0003
+text = "1"
+font_size = 48
+outline_size = 8
+
+[node name="Tile2" type="RigidBody3D" parent="Tiles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.27, 0.906, 0.3)
+script = ExtResource("8_part")
+part_type = &"job"
+
+[node name="Mesh" type="MeshInstance3D" parent="Tiles/Tile2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005, 0)
+mesh = SubResource("Mesh_tile")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tiles/Tile2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_tile")
+
+[node name="Number" type="Label3D" parent="Tiles/Tile2"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.0105, 0)
+pixel_size = 0.0003
+text = "2"
+font_size = 48
+outline_size = 8
+
+[node name="Tile3" type="RigidBody3D" parent="Tiles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.21, 0.906, 0.3)
+script = ExtResource("8_part")
+part_type = &"job"
+
+[node name="Mesh" type="MeshInstance3D" parent="Tiles/Tile3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005, 0)
+mesh = SubResource("Mesh_tile")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tiles/Tile3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_tile")
+
+[node name="Number" type="Label3D" parent="Tiles/Tile3"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.0105, 0)
+pixel_size = 0.0003
+text = "3"
+font_size = 48
+outline_size = 8
+
+[node name="Tile4" type="RigidBody3D" parent="Tiles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15, 0.906, 0.3)
+script = ExtResource("8_part")
+part_type = &"job"
+
+[node name="Mesh" type="MeshInstance3D" parent="Tiles/Tile4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005, 0)
+mesh = SubResource("Mesh_tile")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tiles/Tile4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_tile")
+
+[node name="Number" type="Label3D" parent="Tiles/Tile4"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.0105, 0)
+pixel_size = 0.0003
+text = "4"
+font_size = 48
+outline_size = 8
+
+[node name="Tile5" type="RigidBody3D" parent="Tiles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.09, 0.906, 0.3)
+script = ExtResource("8_part")
+part_type = &"job"
+
+[node name="Mesh" type="MeshInstance3D" parent="Tiles/Tile5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005, 0)
+mesh = SubResource("Mesh_tile")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tiles/Tile5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_tile")
+
+[node name="Number" type="Label3D" parent="Tiles/Tile5"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.0105, 0)
+pixel_size = 0.0003
+text = "5"
+font_size = 48
+outline_size = 8
+
+[node name="Tile6" type="RigidBody3D" parent="Tiles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.03, 0.906, 0.3)
+script = ExtResource("8_part")
+part_type = &"job"
+
+[node name="Mesh" type="MeshInstance3D" parent="Tiles/Tile6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005, 0)
+mesh = SubResource("Mesh_tile")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tiles/Tile6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_tile")
+
+[node name="Number" type="Label3D" parent="Tiles/Tile6"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.0105, 0)
+pixel_size = 0.0003
+text = "6"
+font_size = 48
+outline_size = 8
+
+[node name="Tile7" type="RigidBody3D" parent="Tiles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.03, 0.906, 0.3)
+script = ExtResource("8_part")
+part_type = &"job"
+
+[node name="Mesh" type="MeshInstance3D" parent="Tiles/Tile7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005, 0)
+mesh = SubResource("Mesh_tile")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tiles/Tile7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_tile")
+
+[node name="Number" type="Label3D" parent="Tiles/Tile7"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.0105, 0)
+pixel_size = 0.0003
+text = "7"
+font_size = 48
+outline_size = 8
+
+[node name="Tile8" type="RigidBody3D" parent="Tiles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.09, 0.906, 0.3)
+script = ExtResource("8_part")
+part_type = &"job"
+
+[node name="Mesh" type="MeshInstance3D" parent="Tiles/Tile8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005, 0)
+mesh = SubResource("Mesh_tile")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tiles/Tile8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_tile")
+
+[node name="Number" type="Label3D" parent="Tiles/Tile8"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.0105, 0)
+pixel_size = 0.0003
+text = "8"
+font_size = 48
+outline_size = 8
+
+[node name="Tile9" type="RigidBody3D" parent="Tiles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, 0.906, 0.3)
+script = ExtResource("8_part")
+part_type = &"job"
+
+[node name="Mesh" type="MeshInstance3D" parent="Tiles/Tile9"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005, 0)
+mesh = SubResource("Mesh_tile")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tiles/Tile9"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_tile")
+
+[node name="Number" type="Label3D" parent="Tiles/Tile9"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.0105, 0)
+pixel_size = 0.0003
+text = "9"
+font_size = 48
+outline_size = 8
+
+[node name="Tile10" type="RigidBody3D" parent="Tiles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.21, 0.906, 0.3)
+script = ExtResource("8_part")
+part_type = &"job"
+
+[node name="Mesh" type="MeshInstance3D" parent="Tiles/Tile10"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005, 0)
+mesh = SubResource("Mesh_tile")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tiles/Tile10"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_tile")
+
+[node name="Number" type="Label3D" parent="Tiles/Tile10"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.0105, 0)
+pixel_size = 0.0003
+text = "10"
+font_size = 48
+outline_size = 8
+
+[node name="Tile11" type="RigidBody3D" parent="Tiles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.27, 0.906, 0.3)
+script = ExtResource("8_part")
+part_type = &"job"
+
+[node name="Mesh" type="MeshInstance3D" parent="Tiles/Tile11"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005, 0)
+mesh = SubResource("Mesh_tile")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tiles/Tile11"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_tile")
+
+[node name="Number" type="Label3D" parent="Tiles/Tile11"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.0105, 0)
+pixel_size = 0.0003
+text = "11"
+font_size = 48
+outline_size = 8
+
+[node name="Tile12" type="RigidBody3D" parent="Tiles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.33, 0.906, 0.3)
+script = ExtResource("8_part")
+part_type = &"job"
+
+[node name="Mesh" type="MeshInstance3D" parent="Tiles/Tile12"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005, 0)
+mesh = SubResource("Mesh_tile")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tiles/Tile12"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0)
+shape = SubResource("Shape_tile")
+
+[node name="Number" type="Label3D" parent="Tiles/Tile12"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.0105, 0)
+pixel_size = 0.0003
+text = "12"
+font_size = 48
+outline_size = 8
+
+[node name="JobBoard" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.27, 0.9, -0.1)
+script = ExtResource("9_board")
+
+[node name="TimeBar" type="Node3D" parent="JobBoard"]
+transform = Transform3D(1, 0, 0, 0, 0.9063, 0.4226, 0, -0.4226, 0.9063, 0.21, 0.15, -0.12)
+script = ExtResource("3_panel")
+size = Vector2(0.36, 0.17)
+body_size = 34
+
+[node name="SequentialBar" type="Node3D" parent="JobBoard"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="JobBoard/SequentialBar"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0, 0)
+mesh = SubResource("Mesh_seq")
+
+[node name="ParallelBar" type="Node3D" parent="JobBoard"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, 0.04)
+visible = false
+
+[node name="Mesh" type="MeshInstance3D" parent="JobBoard/ParallelBar"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0, 0)
+mesh = SubResource("Mesh_par")
+
+[node name="SeqLabel" type="Label3D" parent="JobBoard"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -0.005, 0.013, 0)
+pixel_size = 0.0005
+text = "1 machine"
+font_size = 44
+outline_size = 8
+horizontal_alignment = 2
+
+[node name="ParLabel" type="Label3D" parent="JobBoard"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -0.005, 0.013, 0.04)
+pixel_size = 0.0005
+text = "Split"
+font_size = 44
+outline_size = 8
+horizontal_alignment = 2
+
+[node name="InfoPanel" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.9063, 0.4226, 0, -0.4226, 0.9063, -0.02, 1.12, -0.32)
+script = ExtResource("3_panel")

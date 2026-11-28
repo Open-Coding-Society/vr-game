@@ -1,4 +1,24 @@
 {
+  "messages": {
+    "installed": "Yes! The {part} goes in the {slot}.",
+    "installed_role": "Yes! {role}",
+    "next_step": "Yes! On to the next step.",
+    "step_progress": "Yes! {done} of {total} done.",
+    "step_done": "Yes! That's done.",
+    "wrong_part": "The {part} doesn't go there. {hint}",
+    "working_part": "Not that one. {hint}",
+    "needs_tool": "Not with the {part}. {hint}",
+    "too_early": "Not yet. First finish: {first}. {hint}",
+    "strap_first": "Put on the anti-static wrist strap first: a spark of static from your hand can kill a part you touch.",
+    "probe": "Multimeter on the {slot}: {reads}. {means}",
+    "result_title": "Mission complete!",
+    "result_score": "Score: {score}   Time: {time}   Mistakes: {mistakes}",
+    "bonus": "{why}: +{points}",
+    "bonus_missed": "{how} for {points} more points.",
+    "back_to": "Back to {label} in {seconds} seconds",
+    "next_mission": "Next: {title} in {seconds} seconds",
+    "saving": "Saving your score..."
+  },
   "modules": [
     {
       "id": "build_computer",
@@ -292,7 +312,8 @@
           "scene": "res://scenes/build_computer/diagnose_failure.tscn",
           "intro": [
             "This computer won't start properly: when it turns on, it beeps and shows no picture.",
-            "Find the broken part and swap in the right spare from the table. Drop the spare on the part you think is broken."
+            "Find the broken part and swap in the right spare from the table. Drop the spare on the part you think is broken.",
+            "Not sure? Test a part with the multimeter: drop it on the part to see a reading."
           ],
           "success": [
             "Fixed! Bad memory failed the start-up test, and a dead drive hid the operating system. Each part fails in its own way, which is how you can tell them apart."
@@ -324,7 +345,15 @@
               "accepts": "ram",
               "name": "Problem 1: beeps, no picture",
               "hint": "Beeping with no picture is the start-up memory test failing: nothing can run without working RAM.",
-              "role": "The new RAM passes the memory test. The computer starts... but now the screen says \"No boot device found\"."
+              "role": "The new RAM passes the memory test. The computer starts... but now the screen says \"No boot device found\".",
+              "probe": {
+                "reads": "0.0 V",
+                "means": "This RAM stick gets no power to its chips: it's dead, so the memory test fails and the PC beeps."
+              },
+              "probe_fixed": {
+                "reads": "1.2 V",
+                "means": "The new RAM stick has the power it needs."
+              }
             },
             "DriveProblem": {
               "accepts": "storage",
@@ -332,17 +361,33 @@
               "requires": [
                 "RamProblem"
               ],
-              "hint": "\"No boot device\" means the computer can't find the drive that holds the operating system: that's storage."
+              "hint": "\"No boot device\" means the computer can't find the drive that holds the operating system: that's storage.",
+              "probe": {
+                "reads": "0.0 V",
+                "means": "This drive gets no power: it's dead, so the PC can't find the operating system on it."
+              },
+              "probe_fixed": {
+                "reads": "3.3 V",
+                "means": "The new drive has the power it needs."
+              }
             },
             "CpuCheck": {
               "working": true,
               "name": "CPU",
-              "hint": "The CPU is fine: a dead CPU usually means no beeps at all, because nothing can run the start-up test."
+              "hint": "The CPU is fine: a dead CPU usually means no beeps at all, because nothing can run the start-up test.",
+              "probe": {
+                "reads": "1.2 V",
+                "means": "The CPU gets steady power: it's working."
+              }
             },
             "PsuCheck": {
               "working": true,
               "name": "power supply",
-              "hint": "The power supply is fine: the computer turns on and beeps, so it's getting power."
+              "hint": "The power supply is fine: the computer turns on and beeps, so it's getting power.",
+              "probe": {
+                "reads": "12.1 V",
+                "means": "The power supply gives a steady 12 V: it's working."
+              }
             }
           }
         },
@@ -454,6 +499,210 @@
               "name": "power button",
               "hint": "Press the power button with the finger once every part is in.",
               "role": "Power on!"
+            }
+          }
+        },
+        {
+          "id": "swap_ssd",
+          "title": "Swap in an SSD",
+          "description": "Open a PC with the right tools, take out its old drive and fit a new SSD.",
+          "topic": "Storage",
+          "difficulty": "Intermediate",
+          "scene": "res://scenes/build_computer/swap_ssd.tscn",
+          "needs_strap": true,
+          "intro": [
+            "This PC's old drive is slow and nearly full. Swap in the new SSD.",
+            "Put on the wrist strap before you touch the drives. Use the screwdriver from the tool rack: four screws hold the side panel on, and one holds the drive."
+          ],
+          "success": [
+            "Swapped! The new SSD now holds the operating system and your files, and keeps them when the power is off. Memory (RAM) forgets everything at power off; storage doesn't."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "parts": {
+            "SidePanel": {
+              "type": "side_panel",
+              "name": "side panel"
+            },
+            "OldSsd": {
+              "type": "old_ssd",
+              "name": "old SSD",
+              "sensitive": true
+            },
+            "NewSsd": {
+              "type": "storage",
+              "name": "new SSD",
+              "sensitive": true
+            }
+          },
+          "slots": {
+            "Wrist": {
+              "accepts": "wrist_strap",
+              "name": "put on the wrist strap",
+              "hint": "The wrist strap goes on your wrist: it keeps static away from the parts.",
+              "role": "The strap is on: static from your body now goes to ground instead of into the parts."
+            },
+            "Case/PanelScrews": {
+              "tool": "screwdriver",
+              "capacity": 4,
+              "name": "side panel screws out",
+              "hint": "Use the screwdriver for that: four screws hold the side panel on."
+            },
+            "PanelSpot": {
+              "accepts": "side_panel",
+              "pass_through": true,
+              "requires": [
+                "Case/PanelScrews"
+              ],
+              "name": "side panel off",
+              "hint": "Put the side panel down here, out of the way.",
+              "role": "The case is open. The drive is in its bay at the front."
+            },
+            "Case/DriveScrew": {
+              "tool": "screwdriver",
+              "requires": [
+                "PanelSpot"
+              ],
+              "name": "drive screw out",
+              "hint": "Use the screwdriver for that: one screw holds the drive in its bay."
+            },
+            "OldTray": {
+              "accepts": "old_ssd",
+              "requires": [
+                "Case/DriveScrew"
+              ],
+              "name": "old SSD out",
+              "hint": "The old drive goes in the tray for old parts."
+            },
+            "Case/DriveBay": {
+              "accepts": "storage",
+              "requires": [
+                "OldTray"
+              ],
+              "name": "new SSD in",
+              "hint": "The new SSD goes in the drive bay, where the old one was.",
+              "role": "The new SSD is in. Storage keeps your files even with the power off."
+            },
+            "Case/ScrewDown": {
+              "tool": "screwdriver",
+              "requires": [
+                "Case/DriveBay"
+              ],
+              "name": "drive screw back in",
+              "hint": "Use the screwdriver for that: screw the new drive down so it can't shake loose."
+            },
+            "Case/CloseCase": {
+              "accepts": "side_panel",
+              "requires": [
+                "Case/ScrewDown"
+              ],
+              "name": "side panel back on",
+              "hint": "The side panel goes back on the case last, once the drive is screwed down."
+            }
+          }
+        },
+        {
+          "id": "cooler_paste",
+          "title": "Reseat the cooler",
+          "description": "Take off a CPU cooler, clean off the old thermal paste, put on new paste and fit the cooler again.",
+          "topic": "Cooling",
+          "difficulty": "Intermediate",
+          "scene": "res://scenes/build_computer/cooler_paste.tscn",
+          "intro": [
+            "This PC runs hot: the screen says the CPU is at 95 °C, so it slows itself down to stay safe.",
+            "The old thermal paste has dried out. Take the cooler off, wipe the old paste away with the cloth, put on new paste and fit the cooler again."
+          ],
+          "success": [
+            "Cool! Thermal paste fills the tiny gaps between the CPU and the cooler, so heat can flow out of the CPU. Dried-out paste traps the heat; fresh paste brought the CPU down from 95 °C to 45 °C."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "monitor": {
+            "start": [
+              "CPU temperature: 95 °C",
+              "Too hot! The CPU is slowing itself down to stay safe."
+            ]
+          },
+          "on_complete": "boot",
+          "boot_lines": [
+            "Restarting...",
+            "CPU fan: 1,250 RPM",
+            "CPU temperature: 45 °C"
+          ],
+          "parts": {
+            "Cooler": {
+              "type": "cooler",
+              "name": "CPU cooler"
+            },
+            "FanPlug": {
+              "type": "fan_plug",
+              "name": "cooler's fan plug"
+            }
+          },
+          "slots": {
+            "CoolerScrews": {
+              "tool": "screwdriver",
+              "capacity": 2,
+              "name": "cooler screws out",
+              "hint": "Use the screwdriver for that: two screws hold the cooler down on the CPU."
+            },
+            "CoolerSpot": {
+              "accepts": "cooler",
+              "pass_through": true,
+              "requires": [
+                "CoolerScrews"
+              ],
+              "name": "cooler off",
+              "hint": "Put the cooler down here while you work on the CPU.",
+              "role": "The cooler is off. The old paste on the CPU is dry and crumbly."
+            },
+            "WipePaste": {
+              "tool": "cloth",
+              "requires": [
+                "CoolerSpot"
+              ],
+              "name": "old paste wiped off",
+              "hint": "Use the cloth for that: wipe the old, dried paste off the top of the CPU.",
+              "role": "Clean. The old paste has to come off, or the new paste can't spread thin."
+            },
+            "NewPaste": {
+              "tool": "thermal_paste",
+              "requires": [
+                "WipePaste"
+              ],
+              "name": "new paste on",
+              "hint": "Use the thermal paste for that: a pea-sized dot in the middle of the CPU.",
+              "role": "A pea-sized dot is enough: the cooler presses it into a thin, even layer."
+            },
+            "CoolerBack": {
+              "accepts": "cooler",
+              "requires": [
+                "NewPaste"
+              ],
+              "name": "cooler back on",
+              "hint": "The cooler goes back on top of the CPU, once the new paste is on."
+            },
+            "CoolerFasten": {
+              "tool": "screwdriver",
+              "capacity": 2,
+              "requires": [
+                "CoolerBack"
+              ],
+              "name": "cooler screws back in",
+              "hint": "Use the screwdriver for that: screw the cooler down so it presses on the CPU."
+            },
+            "FanHeader": {
+              "accepts": "fan_plug",
+              "requires": [
+                "CoolerFasten"
+              ],
+              "name": "fan plugged into CPU_FAN",
+              "hint": "The cooler's fan plugs into the CPU_FAN header on the board, so the board can speed it up when the CPU gets hot.",
+              "role": "The fan is plugged in: the board now spins it faster as the CPU warms up."
             }
           }
         }
@@ -1918,6 +2167,442 @@
               "name": "Mac mini D's Job slot",
               "hint": "Render tiles go on a Mac mini's Job slot. Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
               "role": "Mac mini D works on its tiles at the same time as the others.",
+              "capacity": 4,
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port1": {
+              "accepts": "ethernet",
+              "name": "Switch port 1",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port2": {
+              "accepts": "ethernet",
+              "name": "Switch port 2",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port3": {
+              "accepts": "ethernet",
+              "name": "Switch port 3",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port4": {
+              "accepts": "ethernet",
+              "name": "Switch port 4",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port5": {
+              "accepts": "ethernet",
+              "name": "Switch port 5",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port6": {
+              "accepts": "ethernet",
+              "name": "Switch port 6",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port7": {
+              "accepts": "ethernet",
+              "name": "Switch port 7",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            },
+            "Switch/Port8": {
+              "accepts": "ethernet",
+              "name": "Switch port 8",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Any free port works: the switch learns which PC is on which port.",
+              "optional": true,
+              "removable": true
+            }
+          }
+        },
+        {
+          "id": "server_rack",
+          "title": "Build a mini server rack",
+          "description": "Slide three servers and a switch into a rack, then cable each server to the switch.",
+          "topic": "Networks",
+          "difficulty": "Intermediate",
+          "image": "task_build_network_server_rack",
+          "scene": "res://scenes/network/server_rack.tscn",
+          "intro": [
+            "A server rack holds many machines in a small space, each in its own bay. This one lies on its back so you can see every machine's front.",
+            "Slide the three servers and the switch into the rack's four bays. Then cable each server to the switch."
+          ],
+          "success": [
+            "Racked and cabled! A rack packs many servers into a small space with short cables between them.",
+            "Data centers are rooms full of racks like this one, holding thousands of servers."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "goal": {
+            "connected": [
+              "server_1",
+              "server_2",
+              "server_3"
+            ]
+          },
+          "parts": {
+            "Server1": {
+              "type": "rack_unit",
+              "name": "server 1"
+            },
+            "Server2": {
+              "type": "rack_unit",
+              "name": "server 2"
+            },
+            "Server3": {
+              "type": "rack_unit",
+              "name": "server 3"
+            },
+            "SwitchUnit": {
+              "type": "rack_unit",
+              "name": "switch"
+            },
+            "CableA/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableA/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            }
+          },
+          "slots": {
+            "Rack/Bay1": {
+              "accepts": "rack_unit",
+              "name": "rack bay 1",
+              "hint": "Each machine slides into its own bay in the rack: the servers and the switch alike.",
+              "role": "In the rack. One machine per bay, stacked close together."
+            },
+            "Rack/Bay2": {
+              "accepts": "rack_unit",
+              "name": "rack bay 2",
+              "hint": "Each machine slides into its own bay in the rack: the servers and the switch alike.",
+              "role": "In the rack. One machine per bay, stacked close together."
+            },
+            "Rack/Bay3": {
+              "accepts": "rack_unit",
+              "name": "rack bay 3",
+              "hint": "Each machine slides into its own bay in the rack: the servers and the switch alike.",
+              "role": "In the rack. One machine per bay, stacked close together."
+            },
+            "Rack/Bay4": {
+              "accepts": "rack_unit",
+              "name": "rack bay 4",
+              "hint": "Each machine slides into its own bay in the rack: the servers and the switch alike.",
+              "role": "In the rack. One machine per bay, stacked close together."
+            },
+            "Server1/Device/Eth0": {
+              "accepts": "ethernet",
+              "name": "Server 1 LAN port",
+              "hint": "Cable each server's LAN port to one of the switch's ports: in a rack, the switch joins the servers with short cables.",
+              "role": "The server's LAN port: it talks to the other servers through the switch.",
+              "optional": true,
+              "removable": true,
+              "requires": [
+                "Rack/Bay1",
+                "Rack/Bay2",
+                "Rack/Bay3",
+                "Rack/Bay4"
+              ]
+            },
+            "Server2/Device/Eth0": {
+              "accepts": "ethernet",
+              "name": "Server 2 LAN port",
+              "hint": "Cable each server's LAN port to one of the switch's ports: in a rack, the switch joins the servers with short cables.",
+              "role": "The server's LAN port: it talks to the other servers through the switch.",
+              "optional": true,
+              "removable": true,
+              "requires": [
+                "Rack/Bay1",
+                "Rack/Bay2",
+                "Rack/Bay3",
+                "Rack/Bay4"
+              ]
+            },
+            "Server3/Device/Eth0": {
+              "accepts": "ethernet",
+              "name": "Server 3 LAN port",
+              "hint": "Cable each server's LAN port to one of the switch's ports: in a rack, the switch joins the servers with short cables.",
+              "role": "The server's LAN port: it talks to the other servers through the switch.",
+              "optional": true,
+              "removable": true,
+              "requires": [
+                "Rack/Bay1",
+                "Rack/Bay2",
+                "Rack/Bay3",
+                "Rack/Bay4"
+              ]
+            },
+            "SwitchUnit/Device/Port1": {
+              "accepts": "ethernet",
+              "name": "switch port 1",
+              "hint": "Cable each server's LAN port to one of the switch's ports: in a rack, the switch joins the servers with short cables.",
+              "role": "A switch port: the switch passes data between the servers.",
+              "optional": true,
+              "removable": true,
+              "requires": [
+                "Rack/Bay1",
+                "Rack/Bay2",
+                "Rack/Bay3",
+                "Rack/Bay4"
+              ]
+            },
+            "SwitchUnit/Device/Port2": {
+              "accepts": "ethernet",
+              "name": "switch port 2",
+              "hint": "Cable each server's LAN port to one of the switch's ports: in a rack, the switch joins the servers with short cables.",
+              "role": "A switch port: the switch passes data between the servers.",
+              "optional": true,
+              "removable": true,
+              "requires": [
+                "Rack/Bay1",
+                "Rack/Bay2",
+                "Rack/Bay3",
+                "Rack/Bay4"
+              ]
+            },
+            "SwitchUnit/Device/Port3": {
+              "accepts": "ethernet",
+              "name": "switch port 3",
+              "hint": "Cable each server's LAN port to one of the switch's ports: in a rack, the switch joins the servers with short cables.",
+              "role": "A switch port: the switch passes data between the servers.",
+              "optional": true,
+              "removable": true,
+              "requires": [
+                "Rack/Bay1",
+                "Rack/Bay2",
+                "Rack/Bay3",
+                "Rack/Bay4"
+              ]
+            },
+            "SwitchUnit/Device/Port4": {
+              "accepts": "ethernet",
+              "name": "switch port 4",
+              "hint": "Cable each server's LAN port to one of the switch's ports: in a rack, the switch joins the servers with short cables.",
+              "role": "A switch port: the switch passes data between the servers.",
+              "optional": true,
+              "removable": true,
+              "requires": [
+                "Rack/Bay1",
+                "Rack/Bay2",
+                "Rack/Bay3",
+                "Rack/Bay4"
+              ]
+            }
+          }
+        },
+        {
+          "id": "pi_cluster",
+          "title": "A Raspberry Pi cluster",
+          "description": "Cable four Raspberry Pis to a switch, then split a job across all of them.",
+          "topic": "Parallel computing",
+          "difficulty": "Advanced",
+          "image": "task_build_network_pi_cluster",
+          "scene": "res://scenes/network/pi_cluster.tscn",
+          "intro": [
+            "Four Raspberry Pis: small, cheap computers. On their own each one is slow; together they're a cluster.",
+            "Cable all four Pis to the switch. Then share the 12 render tiles out between them: drag each tile onto a Pi's Job slot."
+          ],
+          "success": [
+            "The cluster did the job together.",
+            "A cluster is many small computers working on one job over a network. Adding a machine adds speed, which is how big computing jobs are done."
+          ],
+          "scoring": {
+            "full": 90,
+            "per_mistake": 10,
+            "balanced_bonus": 10
+          },
+          "goal": {
+            "jobs_done": 12,
+            "min_machines": 4
+          },
+          "parts": {
+            "CableA/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableA/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableB/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableC/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableD/EndA": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "CableD/EndB": {
+              "type": "ethernet",
+              "name": "Ethernet plug"
+            },
+            "Tiles/Tile1": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile2": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile3": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile4": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile5": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile6": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile7": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile8": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile9": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile10": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile11": {
+              "type": "job",
+              "name": "render tile"
+            },
+            "Tiles/Tile12": {
+              "type": "job",
+              "name": "render tile"
+            }
+          },
+          "slots": {
+            "PiA/Eth0": {
+              "accepts": "ethernet",
+              "name": "Pi A LAN port",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "The Raspberry Pi's LAN port: it gets its work over the network.",
+              "optional": true,
+              "removable": true
+            },
+            "PiA/Job": {
+              "accepts": "job",
+              "name": "Pi A's Job slot",
+              "hint": "Render tiles go on a Raspberry Pi's Job slot. Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Pi A works on its tiles at the same time as the others.",
+              "capacity": 4,
+              "optional": true,
+              "removable": true
+            },
+            "PiB/Eth0": {
+              "accepts": "ethernet",
+              "name": "Pi B LAN port",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "The Raspberry Pi's LAN port: it gets its work over the network.",
+              "optional": true,
+              "removable": true
+            },
+            "PiB/Job": {
+              "accepts": "job",
+              "name": "Pi B's Job slot",
+              "hint": "Render tiles go on a Raspberry Pi's Job slot. Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Pi B works on its tiles at the same time as the others.",
+              "capacity": 4,
+              "optional": true,
+              "removable": true
+            },
+            "PiC/Eth0": {
+              "accepts": "ethernet",
+              "name": "Pi C LAN port",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "The Raspberry Pi's LAN port: it gets its work over the network.",
+              "optional": true,
+              "removable": true
+            },
+            "PiC/Job": {
+              "accepts": "job",
+              "name": "Pi C's Job slot",
+              "hint": "Render tiles go on a Raspberry Pi's Job slot. Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Pi C works on its tiles at the same time as the others.",
+              "capacity": 4,
+              "optional": true,
+              "removable": true
+            },
+            "PiD/Eth0": {
+              "accepts": "ethernet",
+              "name": "Pi D LAN port",
+              "hint": "Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "The Raspberry Pi's LAN port: it gets its work over the network.",
+              "optional": true,
+              "removable": true
+            },
+            "PiD/Job": {
+              "accepts": "job",
+              "name": "Pi D's Job slot",
+              "hint": "Render tiles go on a Raspberry Pi's Job slot. Parallel computing splits a job so many machines work at once. It's faster, but sending the work takes time too.",
+              "role": "Pi D works on its tiles at the same time as the others.",
               "capacity": 4,
               "optional": true,
               "removable": true

@@ -32,6 +32,20 @@ extends Area3D
 ##   that isn't on the network takes no work). The part is turned away
 ##   (`refused`) and `last_problem` says why; that isn't counted as a mistake.
 ##
+## - `required_tool`: a tool step (Phase 5). The zone takes only that tool
+##   (scripts/tools/tool.gd), and only to use it: each drop of the tool is one
+##   use (a screw undone), the tool goes back to its rack, and the step is done
+##   after `capacity` uses. Anything else dropped here, bare hands included, is
+##   turned away with the hint ("Use the screwdriver for that."). A child
+##   named "Fasteners" shows what the tool works on: one of its children (a
+##   screw) is hidden per use. Children of "Fastens" do the opposite: one
+##   appears per use (a screw going in).
+##
+## - `probe`: what the multimeter reads here (Phase 5, Diagnose a failure).
+##   Dropping the multimeter on the zone tests the part under it (`probed`):
+##   nothing is installed and it isn't a mistake; the mission shows the
+##   reading. Set by the mission from the registry's "probe".
+##
 ## A child named "Replaced" (e.g. the old, faulty part's mesh) is hidden once
 ## the zone is full, so the new part doesn't sit on top of the old one.
 
@@ -50,6 +64,8 @@ signal swapped(zone, old_part)
 signal removed(zone, part)
 ## The `gate` turned a part of the right type away; `last_problem` says why.
 signal refused(zone, part)
+## The multimeter was dropped here to test the part (see `probe`).
+signal probed(zone, part)
 
 ## The part type this zone takes, e.g. &"ram". Matches GrabbablePart.part_type.
 @export var accepts: StringName = &"ram"
@@ -74,6 +90,10 @@ signal refused(zone, part)
 @export var compat: StringName = &""
 ## See above: an installed part can be pulled out again.
 @export var removable := false
+## See above: the tool this step needs (&"" for an ordinary slot).
+@export var required_tool: StringName = &""
+## See above: true when the multimeter can test the part here.
+@export var probe := false
 
 ## See above: may the zone take this part now? "" for yes, else why not.
 var gate: Callable
@@ -131,7 +151,9 @@ func judge(part: GrabbablePart) -> void:
 	if part.is_installed or locked:
 		return
 	last_problem = ""
-	if working:
+	if probe and part.get("tool_type") == "multimeter":
+		probed.emit(self, part)
+	elif working:
 		rejected.emit(self, part)
 	elif can_take(part) and gate.is_valid() and str(gate.call(part)) != "":
 		last_problem = str(gate.call(part))
@@ -139,6 +161,13 @@ func judge(part: GrabbablePart) -> void:
 	elif can_take(part) and compat_problem(part) != "":
 		last_problem = compat_problem(part)
 		rejected.emit(self, part)
+	elif can_take(part) and required_tool != &"":
+		# A tool step: the tool is used here, not installed, so it's free to
+		# go back to its rack (GrabbablePart.drop sends it home).
+		installed_parts.append(part)
+		installed_part = part
+		_show_fasteners()
+		snapped.emit(self, part)
 	elif can_take(part):
 		if is_filled():
 			# Swappable: the newest part makes room for this one.
@@ -199,6 +228,7 @@ func eject_all() -> void:
 	var leaving := installed_parts.duplicate()
 	installed_parts.clear()
 	installed_part = null
+	_show_fasteners()
 	for part in leaving:
 		part.uninstall()
 		removed.emit(self, part)
@@ -206,9 +236,26 @@ func eject_all() -> void:
 		get_node("Replaced").visible = true
 
 
+## A tool step's fasteners: one child of "Fasteners" is hidden per use, so
+## the screws come out one by one, and one child of "Fastens" shows per use
+## (screwing in). Undoing the step puts them back as they were.
+func _show_fasteners() -> void:
+	var uses := installed_parts.size()
+	var fasteners := get_node_or_null("Fasteners")
+	if fasteners:
+		for i in fasteners.get_child_count():
+			fasteners.get_child(i).visible = i >= uses
+	var fastens := get_node_or_null("Fastens")
+	if fastens:
+		for i in fastens.get_child_count():
+			fastens.get_child(i).visible = i < uses
+
+
 func _on_body_entered(body: Node) -> void:
 	var part := body as GrabbablePart
-	if part and not part.zones_under.has(self):
+	# A part's own slots (a rack server's network port) move with it, so they
+	# are always "under" it: they never judge the part itself.
+	if part and not part.zones_under.has(self) and not part.is_ancestor_of(self):
 		part.zones_under.append(self)
 
 

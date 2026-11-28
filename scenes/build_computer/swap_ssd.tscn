@@ -1,0 +1,456 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/missions/mission.gd" id="1_pkykj"]
+[ext_resource type="PackedScene" path="res://scenes/room.tscn" id="2_b40eq"]
+[ext_resource type="Script" path="res://scripts/room.gd" id="3_tdprn"]
+[ext_resource type="Script" path="res://scripts/ui/info_panel.gd" id="4_s1ucx"]
+[ext_resource type="PackedScene" path="res://scenes/tools/tool_rack.tscn" id="5_wk3jf"]
+[ext_resource type="Script" path="res://scripts/snap_zone.gd" id="6_12hc6"]
+[ext_resource type="PackedScene" path="res://models/board/board_visual.tscn" id="7_vtord"]
+[ext_resource type="Script" path="res://scripts/model_visual.gd" id="8_m8bjf"]
+[ext_resource type="Script" path="res://scripts/grabbable_part.gd" id="9_uhke8"]
+[ext_resource type="PackedScene" path="res://models/ssd_sata/ssd_sata_visual.tscn" id="10_ehsjd"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_5djef"]
+size = Vector3(0.1, 0.12, 0.1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_scf2q"]
+albedo_color = Color(0.2, 0.3, 0.5, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_1by0j"]
+material = SubResource("StandardMaterial3D_scf2q")
+size = Vector3(0.09, 0.002, 0.09)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_exesx"]
+albedo_color = Color(0.3, 0.31, 0.33, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_xfkjt"]
+material = SubResource("StandardMaterial3D_exesx")
+size = Vector3(0.36, 0.006, 0.36)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1fbhd"]
+albedo_color = Color(0.3, 0.31, 0.33, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_fedqm"]
+material = SubResource("StandardMaterial3D_1fbhd")
+size = Vector3(0.36, 0.12, 0.006)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6o6oq"]
+albedo_color = Color(0.3, 0.31, 0.33, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_m1kal"]
+material = SubResource("StandardMaterial3D_6o6oq")
+size = Vector3(0.36, 0.04, 0.006)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wcrgs"]
+albedo_color = Color(0.3, 0.31, 0.33, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_tp6hp"]
+material = SubResource("StandardMaterial3D_wcrgs")
+size = Vector3(0.006, 0.12, 0.36)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_64hsx"]
+albedo_color = Color(0.3, 0.31, 0.33, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_btb2f"]
+material = SubResource("StandardMaterial3D_64hsx")
+size = Vector3(0.006, 0.12, 0.36)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5xsk5"]
+albedo_color = Color(0.55, 0.56, 0.58, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_cgnsm"]
+material = SubResource("StandardMaterial3D_5xsk5")
+size = Vector3(0.12, 0.004, 0.08)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_w0lfr"]
+size = Vector3(0.38, 0.16, 0.38)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pbk0x"]
+albedo_color = Color(0.8, 0.8, 0.82, 1)
+roughness = 0.75
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_3nlcf"]
+material = SubResource("StandardMaterial3D_pbk0x")
+top_radius = 0.005
+bottom_radius = 0.005
+height = 0.006
+radial_segments = 16
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6kt0t"]
+albedo_color = Color(0.8, 0.8, 0.82, 1)
+roughness = 0.75
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_wp0ri"]
+material = SubResource("StandardMaterial3D_6kt0t")
+top_radius = 0.005
+bottom_radius = 0.005
+height = 0.006
+radial_segments = 16
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_uwgy6"]
+albedo_color = Color(0.8, 0.8, 0.82, 1)
+roughness = 0.75
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_0nwkj"]
+material = SubResource("StandardMaterial3D_uwgy6")
+top_radius = 0.005
+bottom_radius = 0.005
+height = 0.006
+radial_segments = 16
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2huq6"]
+albedo_color = Color(0.8, 0.8, 0.82, 1)
+roughness = 0.75
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_seeyw"]
+material = SubResource("StandardMaterial3D_2huq6")
+top_radius = 0.005
+bottom_radius = 0.005
+height = 0.006
+radial_segments = 16
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_yga77"]
+size = Vector3(0.05, 0.16, 0.06)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_e3ynw"]
+albedo_color = Color(0.8, 0.8, 0.82, 1)
+roughness = 0.75
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_0wcvx"]
+material = SubResource("StandardMaterial3D_e3ynw")
+top_radius = 0.004
+bottom_radius = 0.004
+height = 0.008
+radial_segments = 16
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_0an2l"]
+size = Vector3(0.12, 0.16, 0.09)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_atpfo"]
+size = Vector3(0.05, 0.16, 0.06)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rqq08"]
+albedo_color = Color(0.8, 0.8, 0.82, 1)
+roughness = 0.75
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_cv0e1"]
+material = SubResource("StandardMaterial3D_rqq08")
+top_radius = 0.004
+bottom_radius = 0.004
+height = 0.008
+radial_segments = 16
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_o1aig"]
+size = Vector3(0.38, 0.16, 0.38)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_rjtm4"]
+size = Vector3(0.36, 0.012, 0.36)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_q485w"]
+albedo_color = Color(0.42, 0.43, 0.46, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_2ka2b"]
+material = SubResource("StandardMaterial3D_q485w")
+size = Vector3(0.36, 0.006, 0.36)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_cnbbx"]
+size = Vector3(0.38, 0.12, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mxhs2"]
+albedo_color = Color(0.2, 0.3, 0.5, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_bjxb4"]
+material = SubResource("StandardMaterial3D_mxhs2")
+size = Vector3(0.37, 0.002, 0.29)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bhs1t"]
+size = Vector3(0.1, 0.012, 0.07)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_l3jta"]
+size = Vector3(0.1, 0.012, 0.07)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pw1mw"]
+size = Vector3(0.13, 0.12, 0.11)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cyw0p"]
+albedo_color = Color(0.2, 0.3, 0.5, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_nsrfr"]
+material = SubResource("StandardMaterial3D_cyw0p")
+size = Vector3(0.12, 0.002, 0.1)
+
+[node name="SwapSsd" type="Node3D" unique_id=418887758]
+script = ExtResource("1_pkykj")
+mission_id = "build_computer.swap_ssd"
+
+[node name="Room" type="Node3D" parent="." unique_id=2038456111 instance=ExtResource("2_b40eq")]
+script = ExtResource("3_tdprn")
+
+[node name="InfoPanel" type="Node3D" parent="." unique_id=717389665]
+transform = Transform3D(1, 0, 0, 0, 0.90630776, 0.42261827, 0, -0.42261827, 0.90630776, -0.02, 1.12, -0.32)
+script = ExtResource("4_s1ucx")
+body_size = 34
+
+[node name="ToolRack" type="Node3D" parent="." unique_id=421736261 instance=ExtResource("5_wk3jf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.33, 0.9, 0.2)
+
+[node name="Wrist" type="Area3D" parent="." unique_id=803110646]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.06, 0.9, 0.25)
+script = ExtResource("6_12hc6")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Wrist" unique_id=2143654189]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+shape = SubResource("BoxShape3D_5djef")
+
+[node name="SnapPoint" type="Marker3D" parent="Wrist" unique_id=892417774]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.002, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="Wrist" unique_id=433601630]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.001, 0)
+mesh = SubResource("BoxMesh_1by0j")
+
+[node name="Label" type="Label3D" parent="Wrist" unique_id=2066036987]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.003, 0)
+pixel_size = 0.0004
+text = "Your wrist"
+font_size = 48
+outline_size = 8
+
+[node name="Case" type="Node3D" parent="." unique_id=714381991]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, 0.9, 0.02)
+
+[node name="Shell" type="Node3D" parent="Case" unique_id=699945965]
+
+[node name="Floor" type="MeshInstance3D" parent="Case/Shell" unique_id=985058320]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.003, 0)
+mesh = SubResource("BoxMesh_xfkjt")
+
+[node name="Back" type="MeshInstance3D" parent="Case/Shell" unique_id=1477130551]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, -0.177)
+mesh = SubResource("BoxMesh_fedqm")
+
+[node name="Front" type="MeshInstance3D" parent="Case/Shell" unique_id=1215208506]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0.177)
+mesh = SubResource("BoxMesh_m1kal")
+
+[node name="Left" type="MeshInstance3D" parent="Case/Shell" unique_id=941585163]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.177, 0.06, 0)
+mesh = SubResource("BoxMesh_tp6hp")
+
+[node name="Right" type="MeshInstance3D" parent="Case/Shell" unique_id=1799125089]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.177, 0.06, 0)
+mesh = SubResource("BoxMesh_btb2f")
+
+[node name="Motherboard" type="Node3D" parent="Case/Shell" unique_id=785079296 instance=ExtResource("7_vtord")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.008, 0.055)
+script = ExtResource("8_m8bjf")
+hide_nodes = PackedStringArray("Cube_027_MATb_0")
+
+[node name="DriveBracket" type="MeshInstance3D" parent="Case/Shell" unique_id=1279138192]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.07, 0.008, -0.125)
+mesh = SubResource("BoxMesh_cgnsm")
+
+[node name="PanelScrews" type="Area3D" parent="Case" unique_id=236395068]
+script = ExtResource("6_12hc6")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Case/PanelScrews" unique_id=1167644927]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+shape = SubResource("BoxShape3D_w0lfr")
+
+[node name="SnapPoint" type="Marker3D" parent="Case/PanelScrews" unique_id=908114614]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.002, 0)
+
+[node name="Fasteners" type="Node3D" parent="Case/PanelScrews" unique_id=475849130]
+
+[node name="Screw1" type="MeshInstance3D" parent="Case/PanelScrews/Fasteners" unique_id=1928031802]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0.128, -0.16)
+mesh = SubResource("CylinderMesh_3nlcf")
+
+[node name="Screw2" type="MeshInstance3D" parent="Case/PanelScrews/Fasteners" unique_id=717447311]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0.128, -0.16)
+mesh = SubResource("CylinderMesh_wp0ri")
+
+[node name="Screw3" type="MeshInstance3D" parent="Case/PanelScrews/Fasteners" unique_id=859664404]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0.128, 0.16)
+mesh = SubResource("CylinderMesh_0nwkj")
+
+[node name="Screw4" type="MeshInstance3D" parent="Case/PanelScrews/Fasteners" unique_id=101246693]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16, 0.128, 0.16)
+mesh = SubResource("CylinderMesh_seeyw")
+
+[node name="DriveScrew" type="Area3D" parent="Case" unique_id=1678266894]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.135, 0.01, -0.125)
+script = ExtResource("6_12hc6")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Case/DriveScrew" unique_id=681151836]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+shape = SubResource("BoxShape3D_yga77")
+
+[node name="SnapPoint" type="Marker3D" parent="Case/DriveScrew" unique_id=568499438]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.002, 0)
+
+[node name="Fasteners" type="Node3D" parent="Case/DriveScrew" unique_id=1214980345]
+
+[node name="Screw" type="MeshInstance3D" parent="Case/DriveScrew/Fasteners" unique_id=8027041]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.004, 0)
+mesh = SubResource("CylinderMesh_0wcvx")
+
+[node name="DriveBay" type="Area3D" parent="Case" unique_id=37849597]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.07, 0.01, -0.125)
+script = ExtResource("6_12hc6")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Case/DriveBay" unique_id=689333734]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+shape = SubResource("BoxShape3D_0an2l")
+
+[node name="SnapPoint" type="Marker3D" parent="Case/DriveBay" unique_id=1947084612]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.002, 0)
+
+[node name="ScrewDown" type="Area3D" parent="Case" unique_id=1276667672]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.135, 0.01, -0.125)
+script = ExtResource("6_12hc6")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Case/ScrewDown" unique_id=1069846443]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+shape = SubResource("BoxShape3D_atpfo")
+
+[node name="SnapPoint" type="Marker3D" parent="Case/ScrewDown" unique_id=2125320738]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.002, 0)
+
+[node name="Fastens" type="Node3D" parent="Case/ScrewDown" unique_id=1206169309]
+
+[node name="Screw" type="MeshInstance3D" parent="Case/ScrewDown/Fastens" unique_id=648841604]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.004, 0)
+visible = false
+mesh = SubResource("CylinderMesh_cv0e1")
+
+[node name="CloseCase" type="Area3D" parent="Case" unique_id=715703043]
+script = ExtResource("6_12hc6")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Case/CloseCase" unique_id=779847267]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+shape = SubResource("BoxShape3D_o1aig")
+
+[node name="SnapPoint" type="Marker3D" parent="Case/CloseCase" unique_id=1963407654]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.123, 0)
+
+[node name="SidePanel" type="RigidBody3D" parent="." unique_id=431993533]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, 1.023, 0.02)
+script = ExtResource("9_uhke8")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SidePanel" unique_id=1477528271]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.003, 0)
+shape = SubResource("BoxShape3D_rjtm4")
+
+[node name="Mesh" type="Node3D" parent="SidePanel" unique_id=2069242633]
+
+[node name="Sheet" type="MeshInstance3D" parent="SidePanel/Mesh" unique_id=846509573]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.003, 0)
+mesh = SubResource("BoxMesh_2ka2b")
+
+[node name="Name" type="Label3D" parent="SidePanel" unique_id=1825671]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 0.03, 0.1)
+pixel_size = 0.0004
+billboard = 1
+text = "Side panel"
+font_size = 48
+outline_size = 8
+
+[node name="PanelSpot" type="Area3D" parent="." unique_id=1470796736]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.33, 0.9, -0.12)
+script = ExtResource("6_12hc6")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PanelSpot" unique_id=711526142]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+shape = SubResource("BoxShape3D_cnbbx")
+
+[node name="SnapPoint" type="Marker3D" parent="PanelSpot" unique_id=1420506417]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.002, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="PanelSpot" unique_id=1812655359]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.001, 0)
+mesh = SubResource("BoxMesh_bjxb4")
+
+[node name="Label" type="Label3D" parent="PanelSpot" unique_id=1994116160]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.003, 0)
+pixel_size = 0.0004
+text = "Side panel"
+font_size = 48
+outline_size = 8
+
+[node name="OldSsd" type="RigidBody3D" parent="." unique_id=1716575923]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.27, 0.90999997, -0.105000004)
+script = ExtResource("9_uhke8")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="OldSsd" unique_id=1096364394]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.003, 0)
+shape = SubResource("BoxShape3D_bhs1t")
+
+[node name="Mesh" type="Node3D" parent="OldSsd" unique_id=1291907261]
+
+[node name="SsdSataVisual" type="Node3D" parent="OldSsd/Mesh" unique_id=2082602528 instance=ExtResource("10_ehsjd")]
+script = ExtResource("8_m8bjf")
+hide_nodes = PackedStringArray()
+
+[node name="Name" type="Label3D" parent="OldSsd" unique_id=852721824]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
+pixel_size = 0.0004
+billboard = 1
+text = "Old SSD"
+font_size = 48
+outline_size = 8
+
+[node name="NewSsd" type="RigidBody3D" parent="." unique_id=1638640714]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.9, 0.08)
+script = ExtResource("9_uhke8")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NewSsd" unique_id=571707882]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.003, 0)
+shape = SubResource("BoxShape3D_l3jta")
+
+[node name="Mesh" type="Node3D" parent="NewSsd" unique_id=277402645]
+
+[node name="SsdSataVisual" type="Node3D" parent="NewSsd/Mesh" unique_id=1865830768 instance=ExtResource("10_ehsjd")]
+script = ExtResource("8_m8bjf")
+hide_nodes = PackedStringArray()
+
+[node name="Name" type="Label3D" parent="NewSsd" unique_id=1901342036]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
+pixel_size = 0.0004
+billboard = 1
+text = "New SSD"
+font_size = 48
+outline_size = 8
+
+[node name="OldTray" type="Area3D" parent="." unique_id=1278490030]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.9, 0.26)
+script = ExtResource("6_12hc6")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="OldTray" unique_id=1532898814]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+shape = SubResource("BoxShape3D_pw1mw")
+
+[node name="SnapPoint" type="Marker3D" parent="OldTray" unique_id=1715607225]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.002, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="OldTray" unique_id=1438491250]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.001, 0)
+mesh = SubResource("BoxMesh_nsrfr")
+
+[node name="Label" type="Label3D" parent="OldTray" unique_id=1000154430]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.003, 0)
+pixel_size = 0.0004
+text = "Old parts"
+font_size = 48
+outline_size = 8

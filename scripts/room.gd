@@ -10,12 +10,18 @@ extends Node3D
 
 const MouseGrabber := preload("res://scripts/input/mouse_grabber.gd")
 const VRGrabber := preload("res://scripts/input/vr_grabber.gd")
+const BackButton := preload("res://scripts/ui/back_button.gd")
 
 ## Standing eye height for the laptop camera (meters). VR rule 2; replace with
 ## the comfortable height measured in step 0.
 const EYE_HEIGHT := 1.6
 ## Height of the table top (meters). The table mesh is 0.05 m thick at 0.875.
 const TABLE_TOP := 0.9
+
+## Settings, Comfort "seated": the headset player sits, so the room is set
+## this much lower around them (meters): the desk comes down to a seated
+## reach. The laptop's camera doesn't change.
+const SEATED_LOWER := 0.2
 
 ## Where the camera looks: the middle of the work area on the table.
 @export var focus := Vector3(0, TABLE_TOP, -0.1)
@@ -24,6 +30,9 @@ const TABLE_TOP := 0.9
 @onready var mouse_grabber: MouseGrabber = $MouseGrabber
 @onready var vr_grabber: VRGrabber = $VRGrabber
 @onready var xr_origin: XROrigin3D = $XROrigin3D
+## The "Back to menu" button (scripts/ui/back_button.gd). Missions connect to
+## its `pressed` signal.
+@onready var back_button: BackButton = $BackButton
 
 ## The grab layer in use: vr_grabber in the headset, mouse_grabber on a laptop.
 ## Missions connect to its part_grabbed signal.
@@ -51,3 +60,14 @@ func _ready() -> void:
 		xr_origin.visible = false
 		vr_grabber.set_physics_process(false)
 		grabber = mouse_grabber
+	apply_comfort()
+	back_button.setup(camera, [$XROrigin3D/LeftHand, $XROrigin3D/RightHand] if in_vr else [])
+	back_button.face(camera.global_position)
+
+
+## Applies the Comfort setting (SaveService): seated raises the player's
+## origin by SEATED_LOWER, which brings the desk down to them in the headset.
+func apply_comfort() -> void:
+	var saves := get_node_or_null("/root/SaveService")
+	var comfort: String = saves.setting("comfort", "standing") if saves else "standing"
+	xr_origin.position.y = SEATED_LOWER if comfort == "seated" else 0.0

@@ -36,6 +36,7 @@ func _ready() -> void:
 		$Camera3D.make_current()
 		$XROrigin3D.visible = false
 	pointer.use_vr(in_vr)
+	apply_pointer_hand()
 	var manager_for_story := _manager()
 	story = StoryMap.load_from(manager_for_story.registry if manager_for_story else null)
 	for problem in story.errors:
@@ -72,6 +73,8 @@ func show_page(name: String, arg := "") -> void:
 			content = _story_page()
 		"roadmap":
 			content = _roadmap_page(arg if arg != "" else "irl")
+		"settings":
+			content = _settings_page()
 		_:
 			content = _coming_soon_page(arg)
 	var frame := MenuTheme.panel()
@@ -96,6 +99,21 @@ func launch_task(full_id: String, return_page: String, label: String) -> void:
 	manager.return_page = return_page
 	manager.return_label = label
 	manager.open_scene(mission.scene)
+
+
+## Opens Open World (scenes/open_world/open_world.tscn). "Back to menu" there
+## comes back to the mode picker.
+func open_world() -> void:
+	var manager := _manager()
+	if manager == null:
+		return
+	manager.return_scene = scene_file_path
+	manager.return_page = "modes"
+	manager.return_label = "the menu"
+	manager.open_scene(OPEN_WORLD_SCENE)
+
+
+const OPEN_WORLD_SCENE := "res://scenes/open_world/open_world.tscn"
 
 
 ## The button named `button_name` on the current page, or null.
@@ -156,10 +174,69 @@ func _modes_page() -> Control:
 		"Follow a roadmap: from plugging in a PC to building rigs, or into the cloud.", [],
 		func(): show_page("story")))
 	cards.add_child(_card("OpenWorldCard", "mode_open_world", "Open World",
-		"Your own desk and room, every part and tool.", ["Coming soon"],
-		func(): show_page("coming_soon", "Open World")))
+		"Your own desk and room, every part and tool.", [], open_world))
 	column.add_child(cards)
+	var settings := _button("SettingsButton", MenuTheme.secondary_button("Settings"), func(): show_page("settings"))
+	settings.custom_minimum_size = Vector2(240, 80)
+	settings.size_flags_horizontal = Control.SIZE_SHRINK_END
+	column.add_child(settings)
 	return column
+
+
+## The settings (Phase 5), each with its choices. Only settings that really
+## change something are here: no volume while the game has no sound, and no
+## hand tracking until it's built.
+const SETTINGS := [
+	{"key": "comfort", "title": "Comfort", "default": "standing",
+		"help": "Seated lowers the desk by 20 cm in the headset, so everything is in reach sitting down.",
+		"options": [["standing", "Standing"], ["seated", "Seated"]]},
+	{"key": "pointer_hand", "title": "Menu pointer", "default": "right",
+		"help": "The controller whose ray points at menus and panels in the headset.",
+		"options": [["right", "Right hand"], ["left", "Left hand"]]},
+]
+
+
+## Settings: one row per setting, its choices as buttons (the chosen one
+## filled). Choices are saved through SaveService straight away.
+func _settings_page() -> Control:
+	var column := _page_column("Settings", "modes")
+	var saves := get_node_or_null("/root/SaveService")
+	for s in SETTINGS:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 20)
+		var text := VBoxContainer.new()
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		text.add_child(MenuTheme.label(s.title, MenuTheme.SIZE_BODY + 4))
+		var help := MenuTheme.label(s.help, MenuTheme.SIZE_SMALL, MenuTheme.MUTED)
+		help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		text.add_child(help)
+		row.add_child(text)
+		var chosen: String = saves.setting(s.key, s.default) if saves else s.default
+		for option in s.options:
+			var look: Button = MenuTheme.primary_button(option[1]) if option[0] == chosen else MenuTheme.secondary_button(option[1])
+			var b := _button("Setting_%s_%s" % [s.key, option[0]], look, choose_setting.bind(s.key, option[0]))
+			b.custom_minimum_size = Vector2(250, 80)
+			row.add_child(b)
+		column.add_child(row)
+	column.add_child(MenuTheme.label("These change how the game feels in the headset; on a laptop they make no difference.",
+		MenuTheme.SIZE_SMALL, MenuTheme.MUTED))
+	return column
+
+
+## Saves a setting, applies it, and shows the page again with it chosen.
+func choose_setting(key: String, value: String) -> void:
+	var saves := get_node_or_null("/root/SaveService")
+	if saves:
+		saves.set_setting(key, value)
+	apply_pointer_hand()
+	show_page("settings")
+
+
+## Points the menu with the controller the "pointer_hand" setting names.
+func apply_pointer_hand() -> void:
+	var saves := get_node_or_null("/root/SaveService")
+	var side: String = saves.setting("pointer_hand", "right") if saves else "right"
+	pointer.set_hand($XROrigin3D/LeftHand if side == "left" else $XROrigin3D/RightHand)
 
 
 func _free_play_page(category: String) -> Control:

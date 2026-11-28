@@ -14,6 +14,9 @@ enum State { IDLE, INTRO, ACTIVE, SUCCESS }
 
 ## A mission was loaded and is waiting for the student's first grab.
 signal mission_started(module_id: String)
+## The student left a mission before finishing it ("Back to menu"). Nothing is
+## scored or saved for it.
+signal mission_left(module_id: String)
 signal state_changed(state: State)
 ## The plan's success signal. `attempts` and `mistakes` are on the manager too.
 signal module_completed(module_id: String, score: int, duration_s: int)
@@ -43,7 +46,10 @@ var return_scene := ""
 var return_page := ""
 var return_label := ""
 ## Opens a scene by path. Tests swap it so nothing really changes scene.
-var scene_opener: Callable = func(path: String) -> void: get_tree().change_scene_to_file(path)
+## The change waits for the end of the frame: a scene is often opened from a
+## click, and changing it while that click is still being handled took the
+## menu's screen out of the tree under it (the `!is_inside_tree()` error).
+var scene_opener: Callable = func(path: String) -> void: get_tree().change_scene_to_file.call_deferred(path)
 var _started_ms := 0
 
 
@@ -125,6 +131,17 @@ func complete() -> void:
 	duration_s = roundi((now_ms.call() - _started_ms) / 1000.0)
 	_set_state(State.SUCCESS)
 	module_completed.emit(mission.full_id, score, duration_s)
+
+
+## The student leaves the mission early: it ends with no result. Nothing
+## listens to `module_completed` for it, so nothing is scored or saved.
+func leave() -> void:
+	if state == State.IDLE:
+		return
+	var left_id: String = mission.get("full_id", "")
+	mission = {}
+	_set_state(State.IDLE)
+	mission_left.emit(left_id)
 
 
 func _set_state(new_state: State) -> void:

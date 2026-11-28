@@ -72,6 +72,9 @@ func _tests() -> Array:
 		_test_interrupt_scene, _test_interrupt_cut_and_restore, _test_interrupt_other_cable_is_not_the_cut,
 		_test_message_waits_for_a_cut_link, _test_redundancy_scene, _test_redundancy_second_path,
 		_test_redundancy_loop_on_one_switch_fails, _test_redundancy_really_cuts, _test_redundancy_ring_and_line,
+		_test_server_rack_scene, _test_server_rack_ports_wait_for_the_rack, _test_server_rack_perfect_run,
+		_test_server_rack_unit_off_the_rack, _test_pi_cluster_scene, _test_pi_cluster_needs_all_four,
+		_test_pi_cluster_even_run,
 		_test_registry_checks_streams,
 		_test_job_board_sums, _test_job_board_even_spread, _test_distribute_scene, _test_unconnected_mini_turns_work_away,
 		_test_distribute_even_run, _test_distribute_uneven_run, _test_tiles_can_move, _test_slot_gate]
@@ -1234,3 +1237,101 @@ func _test_slot_gate() -> void:
 	reason[0] = ""
 	await _carry_and_drop(a, p1.global_position)
 	check("gate: and let it in once it says yes", a.is_installed)
+
+
+# ---- Phase 5, step 9: Act 4 extras ----
+
+const SERVER_RACK := "res://scenes/network/server_rack.tscn"
+const PI_CLUSTER := "res://scenes/network/pi_cluster.tscn"
+
+
+## Slides the three servers and the switch into the rack's four bays.
+func _rack_all(mission: Node3D) -> void:
+	for pair in [["Server1", "Rack/Bay1"], ["Server2", "Rack/Bay2"], ["Server3", "Rack/Bay3"], ["SwitchUnit", "Rack/Bay4"]]:
+		await _drag(mission, pair[0], _over(mission, pair[1]))
+
+
+func _test_server_rack_scene() -> void:
+	var mission := await _mission(SERVER_RACK)
+	check("server rack: the scene loads with no problems", mission.problems.is_empty(), mission.problems)
+	check("server rack: three servers and a switch, each with its network device inside",
+		mission.devices.keys() == ["server_1", "server_2", "server_3", "switch"], mission.devices.keys())
+	check("server rack: the switch carries four ports", mission.devices.switch.ports().size() == 4)
+	mission.get_node("Room/MouseGrabber").part_grabbed.emit(mission.get_node("Server1"))
+	var lines: PackedStringArray = mission.panel.lines
+	check("server rack: the checklist lists the four bays before the goal",
+		lines.size() >= 5 and lines[0] == "[  ] rack bay 1" and lines[4].contains("can reach each other"), lines)
+	var r = ModuleRegistry.load_from()
+	check("server rack: it's build_network.server_rack, a connected goal", r.mission("build_network.server_rack").goal == {"connected": ["server_1", "server_2", "server_3"]})
+
+
+func _test_server_rack_ports_wait_for_the_rack() -> void:
+	var mission := await _mission(SERVER_RACK)
+	await _drag(mission, "Server1", _over(mission, "Rack/Bay1"))
+	await _drag(mission, "CableA/EndA", _over(mission, "Server1/Device/Eth0"))
+	check("server rack: cables wait until every machine is in the rack: a mistake, and the plug goes back",
+		manager.mistakes == 1 and not mission.get_node("CableA/EndA").is_installed, manager.mistakes)
+	check("server rack: the panel says what comes first", "Not yet. First finish: rack bay 2" in mission.panel.text(), mission.panel.text())
+
+
+func _test_server_rack_perfect_run() -> void:
+	var mission := await _mission(SERVER_RACK)
+	await _rack_all(mission)
+	var server: GrabbablePart = mission.get_node("Server2")
+	check("server rack: each machine stands in its bay", server.is_installed and server.installed_zone == mission.get_node("Rack/Bay2"))
+	check("server rack: the checklist ticks the bays", "[x] rack bay 4" in mission.panel.text(), mission.panel.text())
+	check("server rack: its ports went into the rack with it",
+		mission.get_node("Server2/Device/Eth0").global_position.distance_to(mission.get_node("Rack/Bay2").global_position + Vector3(-0.08, 0.17, 0)) < 0.01,
+		mission.get_node("Server2/Device/Eth0").global_position)
+	await _plug(mission, "CableA/EndA", "Server1/Device/Eth0")
+	await _plug(mission, "CableA/EndB", "SwitchUnit/Device/Port1")
+	await _plug(mission, "CableB/EndA", "Server2/Device/Eth0")
+	await _plug(mission, "CableB/EndB", "SwitchUnit/Device/Port2")
+	check("server rack: two servers cabled isn't the goal yet", manager.state == manager.State.ACTIVE, manager.state)
+	await _plug(mission, "CableC/EndA", "Server3/Device/Eth0")
+	await _plug(mission, "CableC/EndB", "SwitchUnit/Device/Port4")
+	check("server rack: with all three cabled to the switch, the mission is complete at full score",
+		manager.state == manager.State.SUCCESS and manager.mistakes == 0 and manager.score == 100, "%s %s" % [manager.state, manager.score])
+	check("server rack: the ports' lights are on", mission.get_node("Server3/Device/Eth0/Light").is_lit)
+
+
+func _test_server_rack_unit_off_the_rack() -> void:
+	var mission := await _mission(SERVER_RACK)
+	var server: GrabbablePart = mission.get_node("Server1")
+	await _drag(mission, "Server1", Vector3(0.0, 0.9, -0.15))
+	check("server rack: a machine let go away from the rack just goes back, and its own port never judges it",
+		manager.mistakes == 0 and not server.is_installed and server.global_position.is_equal_approx(server.home_transform.origin), manager.mistakes)
+
+
+func _test_pi_cluster_scene() -> void:
+	var mission := await _mission(PI_CLUSTER)
+	check("pi cluster: the scene loads with no problems", mission.problems.is_empty(), mission.problems)
+	check("pi cluster: four Raspberry Pis with Job slots", mission.job_zones.keys() == ["pi_a", "pi_b", "pi_c", "pi_d"]
+		and mission.job_zones.values().all(func(z) -> bool: return z.capacity == 4), mission.job_zones.keys())
+	check("pi cluster: none is on the switch yet", ["pi_a", "pi_b", "pi_c", "pi_d"].all(func(id) -> bool: return not mission._on_network(id)))
+	check("pi cluster: each cable starts in its Pi", ["A", "B", "C", "D"].all(func(c) -> bool: return mission.get_node("Cable%s/EndA" % c).is_installed))
+	await _tile(mission, 1, "PiA")
+	check("pi cluster: a Pi that isn't on the network turns work away", not mission.get_node("Tiles/Tile1").is_installed
+		and "Pi A isn't on the network" in mission.panel.text(), mission.panel.text())
+
+
+func _test_pi_cluster_needs_all_four() -> void:
+	var mission := await _mission(PI_CLUSTER)
+	for pair in [["CableA/EndB", "Switch/Port1"], ["CableB/EndB", "Switch/Port2"], ["CableC/EndB", "Switch/Port3"]]:
+		await _plug(mission, pair[0], pair[1])
+	var pis := ["PiA", "PiB", "PiC"]
+	for n in range(1, 13):
+		await _tile(mission, n, pis[(n - 1) % 3])
+	check("pi cluster: 12 tiles on three Pis isn't enough: the cluster is all four", manager.state == manager.State.ACTIVE, mission.job_counts)
+
+
+func _test_pi_cluster_even_run() -> void:
+	var mission := await _mission(PI_CLUSTER)
+	for pair in [["CableA/EndB", "Switch/Port1"], ["CableB/EndB", "Switch/Port2"], ["CableC/EndB", "Switch/Port3"], ["CableD/EndB", "Switch/Port4"]]:
+		await _plug(mission, pair[0], pair[1])
+	var pis := ["PiA", "PiB", "PiC", "PiD"]
+	for n in range(1, 13):
+		await _tile(mission, n, pis[(n - 1) % 4])
+	check("pi cluster: 3 tiles on each of the four Pis finishes it, with the even-spread bonus: 100",
+		manager.state == manager.State.SUCCESS and manager.score == 100, "%s %s" % [manager.state, manager.score])
+

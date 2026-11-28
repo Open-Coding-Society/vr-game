@@ -12,6 +12,7 @@ extends RefCounted
 
 const Compatibility := preload("res://scripts/parts/compatibility.gd")
 const PartsCatalog := preload("res://scripts/parts/parts_catalog.gd")
+const Tool := preload("res://scripts/tools/tool.gd")
 
 const DEFAULT_PATH := "res://data/modules.json"
 ## Free Play's two lists. A module says which one its missions go in.
@@ -23,6 +24,34 @@ const ON_COMPLETE := ["boot"]
 ## network_mission.gd has one small check for each). A mission with a goal
 ## finishes when the goal is met, not when its slots are full.
 const GOAL_KINDS := ["connected", "reach", "delivered", "cut_then_restore", "survives_any_single_cut", "jobs_done"]
+
+## The text every mission shares (Phase 5's consistency pass): what the panel
+## says when a part goes in, when it's turned away, and on the success panel.
+## data/modules.json's "messages" can reword any of them; {names} in braces
+## are filled in. A mission's own text (intro, hints, roles) stays with it.
+const MESSAGE_DEFAULTS := {
+	"installed": "Yes! The {part} goes in the {slot}.",
+	"installed_role": "Yes! {role}",
+	"next_step": "Yes! On to the next step.",
+	"step_progress": "Yes! {done} of {total} done.",
+	"step_done": "Yes! That's done.",
+	"wrong_part": "The {part} doesn't go there. {hint}",
+	"working_part": "Not that one. {hint}",
+	"needs_tool": "Not with the {part}. {hint}",
+	"too_early": "Not yet. First finish: {first}. {hint}",
+	"strap_first": "Put on the anti-static wrist strap first: a spark of static from your hand can kill a part you touch.",
+	"probe": "Multimeter on the {slot}: {reads}. {means}",
+	"result_title": "Mission complete!",
+	"result_score": "Score: {score}   Time: {time}   Mistakes: {mistakes}",
+	"bonus": "{why}: +{points}",
+	"bonus_missed": "{how} for {points} more points.",
+	"back_to": "Back to {label} in {seconds} seconds",
+	"next_mission": "Next: {title} in {seconds} seconds",
+	"saving": "Saving your score...",
+}
+
+## MESSAGE_DEFAULTS, with any rewording from the file.
+var messages: Dictionary = MESSAGE_DEFAULTS.duplicate()
 
 ## Every mission by its full id ("module.mission"), each a Dictionary with the
 ## mission's fields plus "full_id" and "module_title".
@@ -55,6 +84,39 @@ func read(data: Dictionary) -> void:
 		return
 	for module in module_list:
 		_read_module(module)
+	_read_messages(data.get("messages", {}))
+
+
+## The file's "messages": each must be a known key and text, keeping every
+## {name} the default has, so no blank ends up on a panel.
+func _read_messages(given) -> void:
+	if typeof(given) != TYPE_DICTIONARY:
+		errors.append("messages: must map message names to text")
+		return
+	for key in given:
+		if not MESSAGE_DEFAULTS.has(key):
+			errors.append("messages.%s: not a message the game shows (%s)" % [key, ", ".join(MESSAGE_DEFAULTS.keys())])
+		elif typeof(given[key]) != TYPE_STRING or given[key] == "":
+			errors.append("messages.%s: must be text" % key)
+		else:
+			var missing := _placeholders(MESSAGE_DEFAULTS[key]).filter(func(p) -> bool: return not "{%s}" % p in given[key])
+			if not missing.is_empty():
+				errors.append("messages.%s: must keep %s" % [key, ", ".join(missing.map(func(p) -> String: return "{%s}" % p))])
+			else:
+				messages[key] = given[key]
+
+
+## A shared message with its {names} filled in, e.g.
+## say("wrong_part", {"part": "RAM stick", "hint": "..."}).
+func say(key: String, values := {}) -> String:
+	return str(messages.get(key, MESSAGE_DEFAULTS.get(key, key))).format(values)
+
+
+static func _placeholders(text: String) -> Array:
+	var out := []
+	for m in RegEx.create_from_string("\\{([a-z_]+)\\}").search_all(text):
+		out.append(m.get_string(1))
+	return out
 
 
 func mission(full_id: String) -> Dictionary:
@@ -124,6 +186,9 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 	elif scoring.has("balanced_bonus") and not _is_whole(scoring.balanced_bonus, 0, 1000):
 		errors.append("%s.scoring.balanced_bonus: must be a whole number from 0 to 1000" % full_id)
 	var types := _read_parts(full_id, m.get("parts"))
+	# Tools come from the tool rack and describe themselves, so any slot may
+	# take one without the mission listing it as a part.
+	types.append_array(Tool.TYPES.keys())
 	# With catalog_parts, the scene also has parts that take their type from
 	# data/parts_catalog.json (a `variant`), so slots can accept those types.
 	if m.has("catalog_parts") and typeof(m.catalog_parts) != TYPE_BOOL:
@@ -135,6 +200,22 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 	_read_on_complete(full_id, m)
 	_read_monitor(full_id, m)
 	_read_goal(full_id, m)
+	# Phase 5: touching a "sensitive" part without the wrist strap on costs a
+	# mistake, so the mission needs somewhere to wear the strap.
+	if m.has("needs_strap") and typeof(m.needs_strap) != TYPE_BOOL:
+		errors.append("%s.needs_strap: must be true or false" % full_id)
+	elif m.get("needs_strap", false):
+		var slots_in = m.get("slots", {})
+		var wears: bool = typeof(slots_in) == TYPE_DICTIONARY and slots_in.values().any(
+			func(slot) -> bool: return typeof(slot) == TYPE_DICTIONARY and slot.get("accepts") == "wrist_strap")
+		if not wears:
+			errors.append('%s.needs_strap: needs a slot that accepts "wrist_strap", where the strap is worn' % full_id)
+		var parts_in = m.get("parts", {})
+		if typeof(parts_in) != TYPE_DICTIONARY or not parts_in.values().any(
+				func(part) -> bool: return typeof(part) == TYPE_DICTIONARY and part.get("sensitive", false) == true):
+			errors.append('%s.needs_strap: no part is "sensitive", so the strap would never matter' % full_id)
+	if m.has("strap_hint") and (typeof(m.strap_hint) != TYPE_STRING or m.strap_hint == ""):
+		errors.append("%s.strap_hint: must be text" % full_id)
 	if m.has("stream") and (typeof(m.stream) != TYPE_DICTIONARY or typeof(m.stream.get("from")) != TYPE_STRING
 			or typeof(m.stream.get("to")) != TYPE_STRING):
 		errors.append("%s.stream: must be {from, to}, the devices packets keep flowing between" % full_id)
@@ -152,6 +233,7 @@ func _read_mission(module_id: String, module_title: String, m, category := "comp
 	copy.image = str(m.get("image", "task_" + m.id))
 	copy.practice = bool(m.get("practice", false))
 	copy.catalog_parts = bool(m.get("catalog_parts", false))
+	copy.needs_strap = bool(m.get("needs_strap", false))
 	copy.scoring = {"full": int(scoring.full), "per_mistake": int(scoring.per_mistake),
 		"balanced_bonus": int(scoring.get("balanced_bonus", 0))}
 	missions[full_id] = copy
@@ -237,6 +319,8 @@ func _read_parts(full_id: String, parts) -> Array:
 		else:
 			types.append(part.type)
 			_read_message(full_id, path, part)
+			if part.has("sensitive") and typeof(part.sensitive) != TYPE_BOOL:
+				errors.append('%s: part "%s" sensitive must be true or false' % [full_id, path])
 	return types
 
 
@@ -261,6 +345,18 @@ func _read_slots(full_id: String, slots, part_types: Array) -> void:
 	for path in slots:
 		var slot = slots[path]
 		var is_working: bool = typeof(slot) == TYPE_DICTIONARY and typeof(slot.get("working")) == TYPE_BOOL and slot.working
+		# A tool step names its tool, which is what it accepts.
+		var tool = slot.get("tool") if typeof(slot) == TYPE_DICTIONARY else null
+		if tool != null:
+			if not tool in Tool.TYPES:
+				errors.append('%s: slot "%s" tool must be one of %s' % [full_id, path, ", ".join(Tool.TYPES.keys())])
+			elif slot.has("accepts") and slot.accepts != tool:
+				errors.append('%s: slot "%s" is a %s step, so it can only accept "%s"' % [full_id, path, tool, tool])
+			elif typeof(slot.get("name")) != TYPE_STRING or typeof(slot.get("hint")) != TYPE_STRING:
+				errors.append('%s: slot "%s" needs name and hint' % [full_id, path])
+			elif not _is_whole(slot.get("capacity", 1), 1, 20):
+				errors.append('%s: slot "%s" capacity must be a whole number from 1 to 20' % [full_id, path])
+			continue  # the tool is used, not installed, so one tool does every step
 		if typeof(slot) != TYPE_DICTIONARY or (not is_working and not _is_id(slot.get("accepts"))) \
 				or typeof(slot.get("name")) != TYPE_STRING or typeof(slot.get("hint")) != TYPE_STRING:
 			errors.append('%s: slot "%s" needs accepts, name and hint' % [full_id, path])
@@ -294,9 +390,17 @@ func _read_slot_options(full_id: String, slots: Dictionary) -> void:
 			continue
 		if slot.has("role") and typeof(slot.role) != TYPE_STRING:
 			errors.append('%s: slot "%s" role must be text' % [full_id, path])
+		if slot.has("tool") and (slot.get("pass_through", false) or slot.get("swappable", false) or slot.get("removable", false)):
+			errors.append('%s: slot "%s" is a tool step, so it can\'t also be pass_through, swappable or removable' % [full_id, path])
 		for flag in ["pass_through", "working", "swappable", "removable", "optional"]:
 			if slot.has(flag) and typeof(slot[flag]) != TYPE_BOOL:
 				errors.append('%s: slot "%s" %s must be true or false' % [full_id, path, flag])
+		for key in ["probe", "probe_fixed"]:
+			if slot.has(key) and (typeof(slot[key]) != TYPE_DICTIONARY or not _is_text(slot[key].get("reads"))
+					or not _is_text(slot[key].get("means"))):
+				errors.append('%s: slot "%s" %s must be {reads, means}: what the multimeter shows and what it tells you' % [full_id, path, key])
+		if slot.has("probe_fixed") and not slot.has("probe"):
+			errors.append('%s: slot "%s" has probe_fixed but no probe' % [full_id, path])
 		if slot.has("compat") and not slot.compat in Compatibility.RULES:
 			errors.append('%s: slot "%s" compat must be one of %s' % [full_id, path, ", ".join(Compatibility.RULES)])
 		elif slot.has("compat"):
@@ -348,6 +452,10 @@ func _requires_loop(slots: Dictionary, start: String, at: String, seen: Dictiona
 
 static func _is_id(value) -> bool:
 	return typeof(value) == TYPE_STRING and RegEx.create_from_string("^[a-z0-9_]+$").search(value) != null
+
+
+static func _is_text(value) -> bool:
+	return typeof(value) == TYPE_STRING and value != ""
 
 
 static func _is_text_list(value) -> bool:

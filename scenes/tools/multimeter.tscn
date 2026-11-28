@@ -1,0 +1,72 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/tools/tool.gd" id="1_brnpu"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_k863q"]
+size = Vector3(0.08, 0.035, 0.14)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_p4hjy"]
+albedo_color = Color(0.95, 0.75, 0.1, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_0cyee"]
+material = SubResource("StandardMaterial3D_p4hjy")
+size = Vector3(0.072, 0.028, 0.13)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6ryca"]
+albedo_color = Color(0.55, 0.62, 0.5, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BoxMesh_kueq4"]
+material = SubResource("StandardMaterial3D_6ryca")
+size = Vector3(0.052, 0.002, 0.032)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wcilb"]
+albedo_color = Color(0.15, 0.15, 0.16, 1)
+roughness = 0.75
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_oet7m"]
+material = SubResource("StandardMaterial3D_wcilb")
+top_radius = 0.016
+bottom_radius = 0.016
+height = 0.004
+radial_segments = 16
+
+[node name="Multimeter" type="RigidBody3D" unique_id=1636884208]
+script = ExtResource("1_brnpu")
+tool_type = "multimeter"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1822493399]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0175, 0)
+shape = SubResource("BoxShape3D_k863q")
+
+[node name="Mesh" type="Node3D" parent="." unique_id=151570058]
+
+[node name="Body" type="MeshInstance3D" parent="Mesh" unique_id=2009172182]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.014, 0)
+mesh = SubResource("BoxMesh_0cyee")
+
+[node name="Screen" type="MeshInstance3D" parent="Mesh" unique_id=1835480402]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.029, -0.035)
+mesh = SubResource("BoxMesh_kueq4")
+
+[node name="Dial" type="MeshInstance3D" parent="Mesh" unique_id=2065997776]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0.02)
+mesh = SubResource("CylinderMesh_oet7m")
+
+[node name="Name" type="Label3D" parent="." unique_id=1811168438]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.085, 0)
+pixel_size = 0.0003
+billboard = 1
+no_depth_test = true
+text = "Multimeter"
+font_size = 40
+outline_size = 10
+
+[node name="Display" type="Label3D" parent="." unique_id=1140650876]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.031, -0.035)
+pixel_size = 0.00025
+modulate = Color(0.1, 0.12, 0.1, 1)
+text = "--.- V"
+font_size = 40
+outline_size = 0

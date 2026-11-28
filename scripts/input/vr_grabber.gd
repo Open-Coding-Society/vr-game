@@ -84,6 +84,17 @@ func part_near(point: Vector3) -> GrabbablePart:
 	return best
 
 
+## Lets go of the held part without dropping it anywhere: it goes straight
+## back home. Missions use it for a part that can't be touched yet.
+func cancel() -> void:
+	if held == null:
+		return
+	var part := held
+	held = null
+	_holding_hand = null
+	part.cancel_grab()
+
+
 func release() -> void:
 	if held == null:
 		return

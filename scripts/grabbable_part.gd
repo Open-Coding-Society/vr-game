@@ -33,6 +33,10 @@ signal removed(part, zone)
 ## text of its Name label and its tier's colour, and `spec` holds its specs.
 @export var variant: String = ""
 
+## Open World: a dropped part stays where it was let go. No slot judges it
+## and it doesn't go back home; the scene sets it down (open_world.gd).
+@export var free_placement := false
+
 ## The part's catalog entry ({} for a part with no variant).
 var spec: Dictionary = {}
 
@@ -108,6 +112,9 @@ func drop() -> void:
 		return
 	is_held = false
 	dropped.emit(self)
+	if free_placement:
+		home_transform = global_transform
+		return
 	var zone := zone_for_drop()
 	if zone:
 		zone.judge(self)
@@ -115,11 +122,24 @@ func drop() -> void:
 		return_home()
 
 
+## The grab is called off (the mission says the part can't be touched yet):
+## the part goes back where it was, and no zone judges it.
+func cancel_grab() -> void:
+	if not is_held:
+		return
+	is_held = false
+	return_home()
+
+
 ## The one zone that decides about this drop, or null when over none:
-## the nearest zone that takes this part, else the nearest zone at all.
+## the nearest zone that takes this part; else the nearest that takes this
+## kind of part but not yet (it says what comes first); else the nearest
+## zone at all. So when several slots share a spot (Phase 5's steps at the
+## CPU), the one that's about this part is the one that explains.
 func zone_for_drop() -> Area3D:
 	var taking := zones_under.filter(func(z) -> bool: return z.can_take(self))
-	var pool := taking if not taking.is_empty() else zones_under
+	var its_kind := zones_under.filter(func(z) -> bool: return z.accepts == part_type and not z.working)
+	var pool := taking if not taking.is_empty() else (its_kind if not its_kind.is_empty() else zones_under)
 	var best: Area3D = null
 	for zone in pool:
 		if best == null or _distance_to(zone) < _distance_to(best):
