@@ -125,10 +125,14 @@ func cancel_grab() -> void:
 
 
 ## The one zone that decides about this drop, or null when over none:
-## the nearest zone that takes this part, else the nearest zone at all.
+## the nearest zone that takes this part; else the nearest that takes this
+## kind of part but not yet (it says what comes first); else the nearest
+## zone at all. So when several slots share a spot (Phase 5's steps at the
+## CPU), the one that's about this part is the one that explains.
 func zone_for_drop() -> Area3D:
 	var taking := zones_under.filter(func(z) -> bool: return z.can_take(self))
-	var pool := taking if not taking.is_empty() else zones_under
+	var its_kind := zones_under.filter(func(z) -> bool: return z.accepts == part_type and not z.working)
+	var pool := taking if not taking.is_empty() else (its_kind if not its_kind.is_empty() else zones_under)
 	var best: Area3D = null
 	for zone in pool:
 		if best == null or _distance_to(zone) < _distance_to(best):

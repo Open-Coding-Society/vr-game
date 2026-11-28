@@ -557,6 +557,109 @@
               "hint": "The side panel goes back on the case last, once the drive is screwed down."
             }
           }
+        },
+        {
+          "id": "cooler_paste",
+          "title": "Reseat the cooler",
+          "description": "Take off a CPU cooler, clean off the old thermal paste, put on new paste and fit the cooler again.",
+          "topic": "Cooling",
+          "difficulty": "Intermediate",
+          "scene": "res://scenes/build_computer/cooler_paste.tscn",
+          "intro": [
+            "This PC runs hot: the screen says the CPU is at 95 °C, so it slows itself down to stay safe.",
+            "The old thermal paste has dried out. Take the cooler off, wipe the old paste away with the cloth, put on new paste and fit the cooler again."
+          ],
+          "success": [
+            "Cool! Thermal paste fills the tiny gaps between the CPU and the cooler, so heat can flow out of the CPU. Dried-out paste traps the heat; fresh paste brought the CPU down from 95 °C to 45 °C."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "monitor": {
+            "start": [
+              "CPU temperature: 95 °C",
+              "Too hot! The CPU is slowing itself down to stay safe."
+            ]
+          },
+          "on_complete": "boot",
+          "boot_lines": [
+            "Restarting...",
+            "CPU fan: 1,250 RPM",
+            "CPU temperature: 45 °C"
+          ],
+          "parts": {
+            "Cooler": {
+              "type": "cooler",
+              "name": "CPU cooler"
+            },
+            "FanPlug": {
+              "type": "fan_plug",
+              "name": "cooler's fan plug"
+            }
+          },
+          "slots": {
+            "CoolerScrews": {
+              "tool": "screwdriver",
+              "capacity": 2,
+              "name": "cooler screws out",
+              "hint": "Use the screwdriver for that: two screws hold the cooler down on the CPU."
+            },
+            "CoolerSpot": {
+              "accepts": "cooler",
+              "pass_through": true,
+              "requires": [
+                "CoolerScrews"
+              ],
+              "name": "cooler off",
+              "hint": "Put the cooler down here while you work on the CPU.",
+              "role": "The cooler is off. The old paste on the CPU is dry and crumbly."
+            },
+            "WipePaste": {
+              "tool": "cloth",
+              "requires": [
+                "CoolerSpot"
+              ],
+              "name": "old paste wiped off",
+              "hint": "Use the cloth for that: wipe the old, dried paste off the top of the CPU.",
+              "role": "Clean. The old paste has to come off, or the new paste can't spread thin."
+            },
+            "NewPaste": {
+              "tool": "thermal_paste",
+              "requires": [
+                "WipePaste"
+              ],
+              "name": "new paste on",
+              "hint": "Use the thermal paste for that: a pea-sized dot in the middle of the CPU.",
+              "role": "A pea-sized dot is enough: the cooler presses it into a thin, even layer."
+            },
+            "CoolerBack": {
+              "accepts": "cooler",
+              "requires": [
+                "NewPaste"
+              ],
+              "name": "cooler back on",
+              "hint": "The cooler goes back on top of the CPU, once the new paste is on."
+            },
+            "CoolerFasten": {
+              "tool": "screwdriver",
+              "capacity": 2,
+              "requires": [
+                "CoolerBack"
+              ],
+              "name": "cooler screws back in",
+              "hint": "Use the screwdriver for that: screw the cooler down so it presses on the CPU."
+            },
+            "FanHeader": {
+              "accepts": "fan_plug",
+              "requires": [
+                "CoolerFasten"
+              ],
+              "name": "fan plugged into CPU_FAN",
+              "hint": "The cooler's fan plugs into the CPU_FAN header on the board, so the board can speed it up when the CPU gets hot.",
+              "role": "The fan is plugged in: the board now spins it faster as the CPU warms up."
+            }
+          }
         }
       ]
     },

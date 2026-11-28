@@ -126,7 +126,7 @@ func _test_registry_loads() -> void:
 		registry.modules[0].mission_ids == ["build_computer.install_ram",
 			"build_computer.identify_components", "build_computer.assemble_system", "build_computer.execute_task",
 			"build_computer.add_capacity", "build_computer.diagnose_failure", "build_computer.build_your_own",
-			"build_computer.swap_ssd"],
+			"build_computer.swap_ssd", "build_computer.cooler_paste"],
 		str(registry.modules))
 	check("a mission keeps its module title and full id",
 		registry.mission("build_computer.identify_components").get("module_title") == "Build a Computer")

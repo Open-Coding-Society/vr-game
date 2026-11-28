@@ -285,9 +285,9 @@ func _test_free_play_lists_the_new_modes() -> void:
 	var manager := root.get_node("TrainingManager")
 	var ids: Array = manager.registry.missions_in("computer").map(func(task) -> String: return task.full_id)
 	check("Free Play's Computer list has Phase 2's tasks after the first six, then Phase 5's Act 2 tasks, then Build a Network's seven",
-		ids.size() == 19 and ids.slice(6, 8) == ["build_computer.build_your_own", "build_computer.swap_ssd"]
-			and ids.slice(8, 12) == ["setup_pc.unbox", "setup_pc.connect_peripherals", "setup_pc.power_on", "setup_pc.go_online"]
-			and ids.slice(12) == BUILD_NETWORK, ids)
+		ids.size() == 20 and ids.slice(6, 9) == ["build_computer.build_your_own", "build_computer.swap_ssd", "build_computer.cooler_paste"]
+			and ids.slice(9, 13) == ["setup_pc.unbox", "setup_pc.connect_peripherals", "setup_pc.power_on", "setup_pc.go_online"]
+			and ids.slice(13) == BUILD_NETWORK, ids)
 	var menu := await _menu()
 	menu.show_page("free_play", "computer")
 	await process_frame

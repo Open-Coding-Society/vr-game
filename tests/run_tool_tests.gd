@@ -11,6 +11,7 @@ extends SceneTree
 
 const ToolRack := preload("res://scenes/tools/tool_rack.tscn")
 const SwapSsd := preload("res://scenes/build_computer/swap_ssd.tscn")
+const CoolerPaste := preload("res://scenes/build_computer/cooler_paste.tscn")
 const Tool := preload("res://scripts/tools/tool.gd")
 const GrabbablePart := preload("res://scripts/grabbable_part.gd")
 const SnapZone := preload("res://scripts/snap_zone.gd")
@@ -53,7 +54,8 @@ func _tests() -> Array:
 		_test_registry_needs_strap,
 		_test_rack_has_one_of_each, _test_rack_tools_go_home, _test_strap_is_worn,
 		_test_swap_ssd_loads, _test_swap_ssd_perfect_run, _test_swap_ssd_strap_first,
-		_test_swap_ssd_order_and_bare_hands]
+		_test_swap_ssd_order_and_bare_hands,
+		_test_cooler_loads, _test_cooler_perfect_run, _test_cooler_order]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -441,4 +443,68 @@ func _test_swap_ssd_order_and_bare_hands() -> void:
 	await _drag(mission, "SidePanel", _over(mission, "PanelSpot"))
 	check("the side panel won't come off before its screws are out", manager.mistakes == 3 and "Not yet" in mission.panel.text(),
 		mission.panel.text())
+
+
+# ---- Step 5: Act 2, Reseat the cooler ----
+
+const COOLER_RUN := [
+	["ToolRack/Screwdriver", "CoolerScrews"], ["ToolRack/Screwdriver", "CoolerScrews"],
+	["Cooler", "CoolerSpot"],
+	["Cloth", "WipePaste"],
+	["ToolRack/ThermalPaste", "NewPaste"],
+	["Cooler", "CoolerBack"],
+	["ToolRack/Screwdriver", "CoolerFasten"], ["ToolRack/Screwdriver", "CoolerFasten"],
+	["FanPlug", "FanHeader"],
+]
+
+
+func _cooler() -> Node3D:
+	var mission := await _mission(CoolerPaste)
+	mission.get_node("Monitor/MonitorScreen").line_seconds = 0.0
+	return mission
+
+
+func _test_cooler_loads() -> void:
+	var mission := await _cooler()
+	check("Reseat the cooler loads with nothing out of place", mission.problems.is_empty(), "; ".join(mission.problems))
+	var screen = mission.get_node("Monitor/MonitorScreen")
+	check("the monitor starts at 95 °C", screen.is_on and "95 °C" in screen.text(), screen.text())
+	check("it has seven steps", mission.goals.size() == 7, mission.goals.size())
+	check("the old paste is on the CPU and the new dot isn't yet",
+		mission.get_node("WipePaste/Fasteners/OldPaste").visible and not mission.get_node("NewPaste/Fastens/Dot").visible)
+
+
+func _test_cooler_perfect_run() -> void:
+	var mission := await _cooler()
+	await _drag_all(mission, COOLER_RUN.slice(0, 3))
+	var cooler: GrabbablePart = mission.get_node("Cooler")
+	check("two screws out and the cooler comes off onto its spot",
+		cooler.global_position.distance_to(mission.get_node("CoolerSpot").global_position) < 0.01, cooler.global_position)
+	await _drag_all(mission, COOLER_RUN.slice(3, 5))
+	check("the cloth wipes the old paste off, and the paste leaves a dot",
+		not mission.get_node("WipePaste/Fasteners/OldPaste").visible and mission.get_node("NewPaste/Fastens/Dot").visible)
+	check("the cloth went back to its place on the desk", mission.get_node("Cloth").is_home())
+	await _drag_all(mission, COOLER_RUN.slice(5))
+	check("the cooler is back on the CPU", cooler.is_installed and cooler.installed_zone == mission.get_node("CoolerBack"))
+	await create_timer(0.1).timeout
+	check("with the fan plugged in, the mission is complete at full score",
+		manager.state == manager.State.SUCCESS and manager.mistakes == 0 and manager.score == 100,
+		"%s %s %s" % [manager.state, manager.mistakes, manager.score])
+	var screen = mission.get_node("Monitor/MonitorScreen")
+	check("the monitor restarts and shows the CPU at 45 °C", "45 °C" in screen.text(), screen.text())
+	check("the panel says what thermal paste does", "Thermal paste fills the tiny gaps" in mission.panel.text(), mission.panel.text())
+
+
+func _test_cooler_order() -> void:
+	var mission := await _cooler()
+	await _drag(mission, "Cooler", _over(mission, "CoolerSpot"))
+	check("the cooler won't come off with its screws in", manager.mistakes == 1 and "Not yet" in mission.panel.text(), mission.panel.text())
+	await _drag_all(mission, COOLER_RUN.slice(0, 3))
+	await _drag(mission, "ToolRack/ThermalPaste", _over(mission, "NewPaste"))
+	check("new paste before the old is wiped off is a mistake", manager.mistakes == 2 and "Not yet" in mission.panel.text(),
+		mission.panel.text())
+	check("and no dot goes on", not mission.get_node("NewPaste/Fastens/Dot").visible)
+	await _drag(mission, "FanPlug", _over(mission, "FanHeader"))
+	check("the fan plug waits until the cooler is screwed back down", manager.mistakes == 3 and not mission.get_node("FanPlug").is_installed,
+		manager.mistakes)
 

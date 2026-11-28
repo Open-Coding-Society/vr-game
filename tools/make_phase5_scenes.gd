@@ -20,6 +20,9 @@ const Room := preload("res://scenes/room.tscn")
 const ToolRack := preload("res://scenes/tools/tool_rack.tscn")
 const BoardVisual := preload("res://models/board/board_visual.tscn")
 const SsdVisual := preload("res://models/ssd_sata/ssd_sata_visual.tscn")
+const CpuVisual := preload("res://models/cpu/cpu_visual.tscn")
+const MonitorShape := preload("res://scenes/setup_pc/props/monitor.tscn")
+const MonitorScreen := preload("res://scripts/parts/monitor_screen.gd")
 
 ## The desk's top, as in scripts/room.gd.
 const TABLE_TOP := 0.9
@@ -31,6 +34,7 @@ const PANEL_TILT_DEG := -25.0
 var SCENES := {
 	"tool_rack": _tool_rack,
 	"swap_ssd": _swap_ssd,
+	"cooler_paste": _cooler_paste,
 }
 
 
@@ -163,6 +167,99 @@ func _swap_ssd() -> Array:
 	_label(new_ssd, "Name", "New SSD", Vector3(0, 0.03, 0), 48).billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_zone(root, "OldTray", Vector3(0.5, TABLE_TOP, 0.26), Vector3(0.13, 0.12, 0.11), Vector2(0.12, 0.1), "Old parts")
 	return ["res://scenes/build_computer/swap_ssd.tscn", root]
+
+
+## Act 2, "Reseat the cooler" (step 5): a motherboard on the desk with its
+## CPU and cooler, and a monitor showing the CPU's temperature. Unscrew the
+## cooler and put it down, wipe the old paste off with the cloth, put a dot of
+## new paste on, put the cooler back and screw it down, plug its fan into
+## CPU_FAN. The monitor then restarts and shows the cooler CPU. Every step at
+## the CPU is a slot over the socket; `requires` decides which one is next.
+func _cooler_paste() -> Array:
+	var root := _mission("CoolerPaste", "build_computer.cooler_paste", 36)
+	var rack := ToolRack.instantiate()
+	rack.position = Vector3(-0.33, TABLE_TOP, 0.2)
+	root.add_child(rack)
+
+	var board := Node3D.new()
+	board.name = "Motherboard"
+	board.position = Vector3(0, TABLE_TOP + 0.002, 0)
+	root.add_child(board)
+	board.add_child(BoardVisual.instantiate())
+	var socket := Vector3(0.056, 0.0015, 0.008)
+	var cpu := CpuVisual.instantiate()
+	cpu.name = "Cpu"
+	cpu.position = socket
+	board.add_child(cpu)
+	var socket_at: Vector3 = board.position + socket
+	var at_cpu := Vector3(0.12, 0.16, 0.12)
+
+	var unscrew := _zone(root, "CoolerScrews", socket_at, at_cpu)
+	var screws := Node3D.new()
+	screws.name = "Fasteners"
+	unscrew.add_child(screws)
+	for i in 2:
+		_cylinder(screws, "Screw%d" % (i + 1), 0.005, 0.006, Vector3(0.045 * (1 if i else -1), COOLER_H + 0.003, 0.045 * (-1 if i else 1)), Vector3.ZERO, Color(0.8, 0.8, 0.82))
+	var wipe := _zone(root, "WipePaste", socket_at, at_cpu)
+	var old_paste := Node3D.new()
+	old_paste.name = "Fasteners"
+	wipe.add_child(old_paste)
+	_cylinder(old_paste, "OldPaste", 0.014, 0.0012, Vector3(0, 0.0045, 0), Vector3.ZERO, Color(0.55, 0.55, 0.5))
+	var paste := _zone(root, "NewPaste", socket_at, at_cpu)
+	var dot := Node3D.new()
+	dot.name = "Fastens"
+	paste.add_child(dot)
+	_cylinder(dot, "Dot", 0.005, 0.002, Vector3(0, 0.0045, 0), Vector3.ZERO, Color(0.85, 0.86, 0.88)).visible = false
+	_zone(root, "CoolerBack", socket_at, at_cpu)
+	var fasten := _zone(root, "CoolerFasten", socket_at, at_cpu)
+	var new_screws := Node3D.new()
+	new_screws.name = "Fastens"
+	fasten.add_child(new_screws)
+	for i in 2:
+		_cylinder(new_screws, "Screw%d" % (i + 1), 0.005, 0.006, Vector3(0.045 * (1 if i else -1), COOLER_H + 0.003, 0.045 * (-1 if i else 1)), Vector3.ZERO, Color(0.8, 0.8, 0.82)).visible = false
+	var header := _zone(root, "FanHeader", board.position + Vector3(0.0, 0.0015, -0.085), Vector3(0.04, 0.12, 0.04))
+	var header_label := _label(header, "Label", "CPU_FAN", Vector3(0, 0.006, 0.018), 32)
+	header_label.rotation_degrees = Vector3(-90, 0, 0)
+	_box(header, "Pins", Vector3(0.012, 0.006, 0.005), Vector3(0, 0.003, 0), Color(0.95, 0.95, 0.95))
+
+	# The cooler starts on the CPU; its home moves to the spot on the desk (a
+	# pass-through slot), then it goes back on the CPU.
+	var cooler := _part(root, "Cooler", socket_at + Vector3(0, 0.004, 0), Vector3(0.1, COOLER_H, 0.1), Vector3(0, COOLER_H / 2.0, 0))
+	var fins := cooler.get_node("Mesh")
+	_box(fins, "Heatsink", Vector3(0.092, 0.04, 0.092), Vector3(0, 0.02, 0), Color(0.72, 0.73, 0.75))
+	_cylinder(fins, "Fan", 0.043, 0.016, Vector3(0, 0.048, 0), Vector3.ZERO, Color(0.12, 0.12, 0.13))
+	_cylinder(fins, "Hub", 0.014, 0.018, Vector3(0, 0.049, 0), Vector3.ZERO, Color(0.25, 0.25, 0.27))
+	_label(cooler, "Name", "CPU cooler", Vector3(0, COOLER_H + 0.03, 0), 48).billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_zone(root, "CoolerSpot", Vector3(-0.38, TABLE_TOP, -0.15), Vector3(0.17, 0.12, 0.17), Vector2(0.16, 0.16), "Cooler")
+
+	var plug := _part(root, "FanPlug", Vector3(0.15, TABLE_TOP + 0.004, 0.07), Vector3(0.03, 0.02, 0.02), Vector3(0, 0.006, 0))
+	_box(plug.get_node("Mesh"), "Plug", Vector3(0.012, 0.008, 0.006), Vector3(0, 0.004, 0), Color(0.1, 0.1, 0.1))
+	_box(plug.get_node("Mesh"), "Wire", Vector3(0.05, 0.002, 0.003), Vector3(-0.03, 0.002, 0), Color(0.15, 0.15, 0.15))
+	_label(plug, "Name", "Fan plug", Vector3(0, 0.03, 0), 40).billboard = BaseMaterial3D.BILLBOARD_ENABLED
+
+	var cloth := _tool(root, "Cloth", "cloth", Vector3(0.47, TABLE_TOP, 0.24), Vector3(0.1, 0.02, 0.1))
+	_box(cloth.get_node("Mesh"), "Sheet", Vector3(0.1, 0.006, 0.1), Vector3(0, 0.003, 0), Color(0.55, 0.78, 0.9))
+
+	var monitor := Node3D.new()
+	monitor.name = "Monitor"
+	monitor.position = Vector3(0.46, TABLE_TOP, -0.2)
+	monitor.rotation_degrees = Vector3(0, -40, 0)
+	root.add_child(monitor)
+	var shape := MonitorShape.instantiate()
+	shape.name = "Shape"
+	monitor.add_child(shape)
+	var screen := Node3D.new()
+	screen.set_script(MonitorScreen)
+	screen.name = "MonitorScreen"
+	screen.position = Vector3(0, 0.185, -0.002)
+	screen.size = Vector2(0.34, 0.21)
+	screen.pixels_per_meter = 2400
+	monitor.add_child(screen)
+	return ["res://scenes/build_computer/cooler_paste.tscn", root]
+
+
+## How tall the placeholder cooler is (meters).
+const COOLER_H := 0.065
 
 
 ## How tall the placeholder case's walls are, and its front lip (meters).
