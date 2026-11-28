@@ -41,11 +41,30 @@ func _ready() -> void:
 
 ## Switches to the controller (headset) or the mouse (laptop).
 func use_vr(on: bool) -> void:
+	_vr_wanted = on
 	in_vr = on and hand != null
 	_ray.visible = in_vr
 	if in_vr and not hand.button_pressed.is_connected(_on_hand_pressed):
 		hand.button_pressed.connect(_on_hand_pressed)
 		hand.button_released.connect(_on_hand_released)
+
+
+## Points with another controller (Settings: the menu pointer's hand). The
+## old one stops clicking.
+func set_hand(new_hand: XRController3D) -> void:
+	if new_hand == hand:
+		return
+	if hand and hand.button_pressed.is_connected(_on_hand_pressed):
+		hand.button_pressed.disconnect(_on_hand_pressed)
+		hand.button_released.disconnect(_on_hand_released)
+	hand = new_hand
+	if hand:
+		hand.pose = &"aim"
+	use_vr(_vr_wanted)
+
+
+## What use_vr() was last asked for, kept for set_hand().
+var _vr_wanted := false
 
 
 func _physics_process(delta: float) -> void:

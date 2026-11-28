@@ -50,6 +50,7 @@ func _tests() -> Array:
 		_test_ray_transform, _test_home_page, _test_login_placeholder,
 		_test_mode_picker, _test_free_play_lists_tasks, _test_free_play_lists_the_new_modes, _test_free_play_cloud_empty,
 		_test_free_play_starts_task, _test_done_task_shows_best, _test_mission_returns_to_menu,
+		_test_settings_page, _test_settings_comfort_lowers_the_desk, _test_settings_pointer_hand,
 		_test_back_to_menu_leaves_early, _test_back_to_menu_without_the_menu, _test_back_button_in_every_mission,
 		_test_menu_reopens_return_page, _test_story_map_states, _test_story_act_1_unlocks_in_order,
 		_test_story_act_2_plays_the_new_tasks, _test_free_play_lists_act_2, _test_story_act_3_starts_with_build_your_own, _test_story_act_4_unlocks_in_order,
@@ -366,6 +367,76 @@ func _test_done_task_shows_best() -> void:
 	check("a finished task is marked Done", row != null and row.get_parent().find_child("DoneTag", true, false) != null)
 	check("an unfinished task isn't", other != null and other.get_parent().find_child("DoneTag", true, false) == null)
 	menu.queue_free()
+
+
+# ---- Phase 5, step 10: Settings ----
+
+func _test_settings_page() -> void:
+	var saves := root.get_node("SaveService")
+	saves.set_setting("comfort", "standing")
+	saves.set_setting("pointer_hand", "right")
+	var menu := await _menu()
+	menu.show_page("modes")
+	await process_frame
+	await _click(menu, "SettingsButton")
+	check("the mode picker opens Settings", menu.page == "settings", menu.page)
+	var names := ["Setting_comfort_standing", "Setting_comfort_seated", "Setting_pointer_hand_right", "Setting_pointer_hand_left"]
+	check("it has Comfort (standing or seated) and the menu pointer's hand", names.all(func(n) -> bool: return menu.find_button(n) != null))
+	var labels: Array = menu.screen.ui_root.find_children("*", "Label", true, false).map(func(l) -> String: return l.text)
+	check("and no dead switches: no volume or hand tracking while they can't work",
+		not labels.any(func(t) -> bool: return "Volume" in t or "Hands" in t), labels)
+	await _click(menu, "Setting_comfort_seated")
+	check("choosing Seated saves it", saves.setting("comfort") == "seated", saves.setting("comfort"))
+	saves.load_profile()
+	check("in the save file", saves.setting("comfort") == "seated")
+	check("and the page shows it chosen", menu.page == "settings" and menu.find_button("Setting_comfort_seated").get_theme_stylebox("normal").bg_color
+		!= menu.find_button("Setting_comfort_standing").get_theme_stylebox("normal").bg_color)
+	await _click(menu, "BackButton")
+	check("Back returns to the mode picker", menu.page == "modes", menu.page)
+	saves.set_setting("comfort", "standing")
+	menu.queue_free()
+	await process_frame
+
+
+func _test_settings_comfort_lowers_the_desk() -> void:
+	var saves := root.get_node("SaveService")
+	var manager := root.get_node("TrainingManager")
+	saves.set_setting("comfort", "seated")
+	var mission: Node3D = load("res://scenes/workbench.tscn").instantiate()
+	root.add_child(mission)
+	await process_frame
+	var room: Node3D = mission.get_node("Room")
+	check("seated, the headset player's origin goes up 20 cm, so the desk is 20 cm lower to them",
+		is_equal_approx(room.xr_origin.position.y, 0.2), room.xr_origin.position)
+	check("the laptop camera stays where it was", is_equal_approx(room.camera.position.y, 1.6), room.camera.position)
+	mission.queue_free()
+	await process_frame
+	saves.set_setting("comfort", "standing")
+	mission = load("res://scenes/workbench.tscn").instantiate()
+	root.add_child(mission)
+	await process_frame
+	check("standing, it's back at the floor", is_equal_approx(mission.get_node("Room").xr_origin.position.y, 0.0))
+	mission.queue_free()
+	manager.leave()
+	await process_frame
+
+
+func _test_settings_pointer_hand() -> void:
+	var saves := root.get_node("SaveService")
+	saves.set_setting("pointer_hand", "right")
+	var menu := await _menu()
+	check("the menu points with the right controller by default", menu.pointer.hand == menu.get_node("XROrigin3D/RightHand"))
+	menu.choose_setting("pointer_hand", "left")
+	check("choosing Left hand points with the left one", menu.pointer.hand == menu.get_node("XROrigin3D/LeftHand")
+		and saves.setting("pointer_hand") == "left")
+	check("aiming forward, as the right one does", menu.pointer.hand.pose == &"aim")
+	menu.queue_free()
+	await process_frame
+	var again := await _menu()
+	check("the next time the menu opens, it still uses the left", again.pointer.hand == again.get_node("XROrigin3D/LeftHand"))
+	again.queue_free()
+	saves.set_setting("pointer_hand", "right")
+	await process_frame
 
 
 # ---- Phase 5, step 1: leave a mission early ----

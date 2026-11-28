@@ -65,7 +65,9 @@ var _leaving := false
 func _ready() -> void:
 	_catalog = PartsCatalog.shared()
 	pointer.camera = room.camera
-	pointer.hand = room.get_node("XROrigin3D/RightHand")
+	var side: String = saves.setting("pointer_hand", "right") if saves else "right"
+	pointer.hand = room.get_node("XROrigin3D/LeftHand" if side == "left" else "XROrigin3D/RightHand")
+	pointer.hand.pose = &"aim"
 	pointer.use_vr(room.in_vr)
 	room.grabber.part_dropped.connect(_on_part_dropped)
 	room.back_button.pressed.connect(leave)

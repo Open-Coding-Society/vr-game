@@ -18,6 +18,11 @@ const EYE_HEIGHT := 1.6
 ## Height of the table top (meters). The table mesh is 0.05 m thick at 0.875.
 const TABLE_TOP := 0.9
 
+## Settings, Comfort "seated": the headset player sits, so the room is set
+## this much lower around them (meters): the desk comes down to a seated
+## reach. The laptop's camera doesn't change.
+const SEATED_LOWER := 0.2
+
 ## Where the camera looks: the middle of the work area on the table.
 @export var focus := Vector3(0, TABLE_TOP, -0.1)
 
@@ -55,5 +60,14 @@ func _ready() -> void:
 		xr_origin.visible = false
 		vr_grabber.set_physics_process(false)
 		grabber = mouse_grabber
+	apply_comfort()
 	back_button.setup(camera, [$XROrigin3D/LeftHand, $XROrigin3D/RightHand] if in_vr else [])
 	back_button.face(camera.global_position)
+
+
+## Applies the Comfort setting (SaveService): seated raises the player's
+## origin by SEATED_LOWER, which brings the desk down to them in the headset.
+func apply_comfort() -> void:
+	var saves := get_node_or_null("/root/SaveService")
+	var comfort: String = saves.setting("comfort", "standing") if saves else "standing"
+	xr_origin.position.y = SEATED_LOWER if comfort == "seated" else 0.0
