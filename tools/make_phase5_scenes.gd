@@ -22,6 +22,9 @@ const SsdVisual := preload("res://models/ssd_sata/ssd_sata_visual.tscn")
 const CpuVisual := preload("res://models/cpu/cpu_visual.tscn")
 const MonitorShape := preload("res://scenes/setup_pc/props/monitor.tscn")
 const MonitorScreen := preload("res://scripts/parts/monitor_screen.gd")
+const OpenWorld := preload("res://scripts/open_world/open_world.gd")
+const MenuScreen3D := preload("res://scripts/ui/menu_screen_3d.gd")
+const MenuPointer := preload("res://scripts/input/menu_pointer.gd")
 
 ## The desk's top, as in scripts/room.gd.
 const TABLE_TOP := 0.9
@@ -37,6 +40,7 @@ var SCENES := {
 	"tool_rack": _tool_rack,
 	"swap_ssd": _swap_ssd,
 	"cooler_paste": _cooler_paste,
+	"open_world": _open_world,
 }
 
 
@@ -296,6 +300,36 @@ func _cooler_paste() -> Array:
 	screen.pixels_per_meter = 2400
 	monitor.add_child(screen)
 	return ["res://scenes/build_computer/cooler_paste.tscn", root]
+
+
+## Open World v1 (step 8): the room and its desk, the tool rack, the spawn
+## panel where a mission's info panel would be, the menu pointer for it, and
+## an empty "Items" node the spawned parts go under (scripts/open_world/
+## open_world.gd does the rest).
+func _open_world() -> Array:
+	var root := Node3D.new()
+	root.set_script(OpenWorld)
+	root.name = "OpenWorld"
+	var room := Room.instantiate()
+	room.name = "Room"
+	root.add_child(room)
+	_place_rack(root)
+	var screen := Node3D.new()
+	screen.set_script(MenuScreen3D)
+	screen.name = "SpawnScreen"
+	screen.position = Vector3(-0.02, 1.09, -0.34)
+	screen.rotation_degrees = Vector3(PANEL_TILT_DEG, 0, 0)
+	screen.size = Vector2(0.74, 0.38)
+	screen.pixels_per_meter = 1500
+	root.add_child(screen)
+	var pointer := Node3D.new()
+	pointer.set_script(MenuPointer)
+	pointer.name = "MenuPointer"
+	root.add_child(pointer)
+	var items := Node3D.new()
+	items.name = "Items"
+	root.add_child(items)
+	return ["res://scenes/open_world/open_world.tscn", root]
 
 
 ## How tall the placeholder cooler is (meters).

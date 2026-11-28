@@ -98,6 +98,21 @@ func launch_task(full_id: String, return_page: String, label: String) -> void:
 	manager.open_scene(mission.scene)
 
 
+## Opens Open World (scenes/open_world/open_world.tscn). "Back to menu" there
+## comes back to the mode picker.
+func open_world() -> void:
+	var manager := _manager()
+	if manager == null:
+		return
+	manager.return_scene = scene_file_path
+	manager.return_page = "modes"
+	manager.return_label = "the menu"
+	manager.open_scene(OPEN_WORLD_SCENE)
+
+
+const OPEN_WORLD_SCENE := "res://scenes/open_world/open_world.tscn"
+
+
 ## The button named `button_name` on the current page, or null.
 func find_button(button_name: String) -> Button:
 	return screen.ui_root.find_child(button_name, true, false) as Button
@@ -156,8 +171,7 @@ func _modes_page() -> Control:
 		"Follow a roadmap: from plugging in a PC to building rigs, or into the cloud.", [],
 		func(): show_page("story")))
 	cards.add_child(_card("OpenWorldCard", "mode_open_world", "Open World",
-		"Your own desk and room, every part and tool.", ["Coming soon"],
-		func(): show_page("coming_soon", "Open World")))
+		"Your own desk and room, every part and tool.", [], open_world))
 	column.add_child(cards)
 	return column
 

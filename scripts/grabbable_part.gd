@@ -33,6 +33,10 @@ signal removed(part, zone)
 ## text of its Name label and its tier's colour, and `spec` holds its specs.
 @export var variant: String = ""
 
+## Open World: a dropped part stays where it was let go. No slot judges it
+## and it doesn't go back home; the scene sets it down (open_world.gd).
+@export var free_placement := false
+
 ## The part's catalog entry ({} for a part with no variant).
 var spec: Dictionary = {}
 
@@ -108,6 +112,9 @@ func drop() -> void:
 		return
 	is_held = false
 	dropped.emit(self)
+	if free_placement:
+		home_transform = global_transform
+		return
 	var zone := zone_for_drop()
 	if zone:
 		zone.judge(self)

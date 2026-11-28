@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/open_world/open_world.gd" id="1_eltau"]
+[ext_resource type="PackedScene" path="res://scenes/room.tscn" id="2_n1ymx"]
+[ext_resource type="Script" path="res://scripts/room.gd" id="3_v5xe8"]
+[ext_resource type="PackedScene" path="res://scenes/tools/tool_rack.tscn" id="4_rlg3v"]
+[ext_resource type="Script" path="res://scripts/ui/menu_screen_3d.gd" id="5_81nm6"]
+[ext_resource type="Script" path="res://scripts/input/menu_pointer.gd" id="6_1ej1u"]
+
+[node name="OpenWorld" type="Node3D" unique_id=1343475269]
+script = ExtResource("1_eltau")
+
+[node name="Room" type="Node3D" parent="." unique_id=124197643 instance=ExtResource("2_n1ymx")]
+script = ExtResource("3_v5xe8")
+
+[node name="ToolRack" type="Node3D" parent="." unique_id=421736261 instance=ExtResource("4_rlg3v")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.33, 0.9, 0.2)
+
+[node name="SpawnScreen" type="Node3D" parent="." unique_id=1856136170]
+transform = Transform3D(1, 0, 0, 0, 0.90630776, 0.42261827, 0, -0.42261827, 0.90630776, -0.02, 1.09, -0.34)
+script = ExtResource("5_81nm6")
+size = Vector2(0.74, 0.38)
+pixels_per_meter = 1500
+
+[node name="MenuPointer" type="Node3D" parent="." unique_id=1677595626]
+script = ExtResource("6_1ej1u")
+click_actions = PackedStringArray("trigger_click", "select_button")
+
+[node name="Items" type="Node3D" parent="." unique_id=27301861]

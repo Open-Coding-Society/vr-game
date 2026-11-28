@@ -242,8 +242,14 @@ func _test_mode_picker() -> void:
 	await process_frame
 	for card in ["FreePlayCard", "StoryCard", "OpenWorldCard"]:
 		check("the mode picker has %s" % card, menu.find_button(card) != null)
+	_opened.clear()
 	await _click(menu, "OpenWorldCard")
-	check("Open World says it's coming soon", menu.page == "coming_soon", menu.page)
+	check("Open World opens its scene (Phase 5)", _opened == ["res://scenes/open_world/open_world.tscn"], _opened)
+	var manager := root.get_node("TrainingManager")
+	manager.return_scene = ""
+	manager.return_page = ""
+	manager.return_label = ""
+	await _click(menu, "StoryCard")
 	await _click(menu, "BackButton")
 	check("Back returns to the mode picker", menu.page == "modes", menu.page)
 	menu.queue_free()
