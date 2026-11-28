@@ -32,6 +32,14 @@ extends Area3D
 ##   that isn't on the network takes no work). The part is turned away
 ##   (`refused`) and `last_problem` says why; that isn't counted as a mistake.
 ##
+## - `required_tool`: a tool step (Phase 5). The zone takes only that tool
+##   (scripts/tools/tool.gd), and only to use it: each drop of the tool is one
+##   use (a screw undone), the tool goes back to its rack, and the step is done
+##   after `capacity` uses. Anything else dropped here, bare hands included, is
+##   turned away with the hint ("Use the screwdriver for that."). A child
+##   named "Fasteners" shows what the tool works on: one of its children (a
+##   screw) is hidden per use.
+##
 ## A child named "Replaced" (e.g. the old, faulty part's mesh) is hidden once
 ## the zone is full, so the new part doesn't sit on top of the old one.
 
@@ -74,6 +82,8 @@ signal refused(zone, part)
 @export var compat: StringName = &""
 ## See above: an installed part can be pulled out again.
 @export var removable := false
+## See above: the tool this step needs (&"" for an ordinary slot).
+@export var required_tool: StringName = &""
 
 ## See above: may the zone take this part now? "" for yes, else why not.
 var gate: Callable
@@ -139,6 +149,13 @@ func judge(part: GrabbablePart) -> void:
 	elif can_take(part) and compat_problem(part) != "":
 		last_problem = compat_problem(part)
 		rejected.emit(self, part)
+	elif can_take(part) and required_tool != &"":
+		# A tool step: the tool is used here, not installed, so it's free to
+		# go back to its rack (GrabbablePart.drop sends it home).
+		installed_parts.append(part)
+		installed_part = part
+		_show_fasteners()
+		snapped.emit(self, part)
 	elif can_take(part):
 		if is_filled():
 			# Swappable: the newest part makes room for this one.
@@ -199,11 +216,23 @@ func eject_all() -> void:
 	var leaving := installed_parts.duplicate()
 	installed_parts.clear()
 	installed_part = null
+	_show_fasteners()
 	for part in leaving:
 		part.uninstall()
 		removed.emit(self, part)
 	if has_node("Replaced"):
 		get_node("Replaced").visible = true
+
+
+## A tool step's fasteners (children of "Fasteners"): one is hidden per use,
+## so the screws come out one by one; all show again when the step is undone.
+func _show_fasteners() -> void:
+	var fasteners := get_node_or_null("Fasteners")
+	if fasteners == null:
+		return
+	var uses := installed_parts.size()
+	for i in fasteners.get_child_count():
+		fasteners.get_child(i).visible = i >= uses
 
 
 func _on_body_entered(body: Node) -> void:

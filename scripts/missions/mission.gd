@@ -16,6 +16,9 @@ const GrabbablePart := preload("res://scripts/grabbable_part.gd")
 const InfoPanel := preload("res://scripts/ui/info_panel.gd")
 ## Where "Back to menu" goes when the mission wasn't started from the menu.
 const MENU_SCENE := "res://scenes/menus/menu.tscn"
+## What a mission with "needs_strap" says when a sensitive part is touched
+## without the wrist strap on (a mission can say it its own way: "strap_hint").
+const STRAP_HINT := "Put on the anti-static wrist strap first: a spark of static from your hand can kill a part you touch."
 
 ## Full mission id in the registry, e.g. "build_computer.identify_components".
 @export var mission_id: String = ""
@@ -27,6 +30,9 @@ var config: Dictionary = {}
 var zones: Array[SnapZone] = []
 var goals: Array[SnapZone] = []
 var parts: Array[GrabbablePart] = []
+## Parts the registry marks "sensitive": with "needs_strap", touching one
+## without the wrist strap on is a mistake.
+var sensitive_parts: Array[GrabbablePart] = []
 ## Where the mission's problems go (also printed as errors), for tests.
 var problems: PackedStringArray = []
 ## The success panel's lines and the score-saving status under them. Either
@@ -74,6 +80,8 @@ func _apply_registry() -> void:
 			continue
 		part.part_type = StringName(config.parts[path].type)
 		part.display_name = config.parts[path].name
+		if config.parts[path].get("sensitive", false):
+			sensitive_parts.append(part)
 		var tag := part.get_node_or_null("Name") as Label3D
 		if tag:
 			tag.text = part.display_name.left(1).to_upper() + part.display_name.substr(1)
@@ -94,6 +102,9 @@ func _apply_registry() -> void:
 		zone.swappable = slot.get("swappable", false)
 		zone.compat = StringName(slot.get("compat", ""))
 		zone.removable = slot.get("removable", false)
+		zone.required_tool = StringName(slot.get("tool", ""))
+		if zone.required_tool != &"":
+			zone.accepts = zone.required_tool
 		zones.append(zone)
 		if not zone.working and not slot.get("optional", false):
 			goals.append(zone)
@@ -111,7 +122,9 @@ func _apply_registry() -> void:
 	# The exception: with catalog_parts, a part with a `variant` gets its type
 	# and name from data/parts_catalog.json instead.
 	for node in find_children("*", "Node3D", true, false):
-		if node is GrabbablePart and not parts.has(node) and config.catalog_parts and node.variant != "":
+		if node is GrabbablePart and not parts.has(node) and node.get("tool_type") != null:
+			parts.append(node)  # a tool from the rack: it describes itself
+		elif node is GrabbablePart and not parts.has(node) and config.catalog_parts and node.variant != "":
 			parts.append(node)
 			if node.spec.is_empty():
 				_problem('part "%s" has the variant "%s", which isn\'t in data/parts_catalog.json' % [get_path_to(node), node.variant])
@@ -119,11 +132,23 @@ func _apply_registry() -> void:
 			_problem('"%s" is in the scene but not in the registry' % get_path_to(node))
 
 
-func _on_part_grabbed(_part: GrabbablePart) -> void:
+func _on_part_grabbed(part: GrabbablePart) -> void:
 	var was_intro: bool = manager.state == manager.State.INTRO
 	manager.note_grab()
-	if was_intro:
+	if config.needs_strap and sensitive_parts.has(part) and not is_strap_on():
+		manager.note_mistake()
+		_show_checklist(str(config.get("strap_hint", STRAP_HINT)))
+	elif was_intro:
 		_show_checklist("")
+
+
+## True once the wrist strap is worn (its slot is filled), or when the mission
+## has no strap at all.
+func is_strap_on() -> bool:
+	for zone in zones:
+		if zone.accepts == &"wrist_strap" and zone.required_tool == &"":
+			return zone.is_filled()
+	return true
 
 
 func _on_snapped(zone: SnapZone, part: GrabbablePart) -> void:
@@ -150,6 +175,11 @@ func _on_snapped(zone: SnapZone, part: GrabbablePart) -> void:
 
 ## What the panel says when a part goes in.
 func _installed_text(zone: SnapZone, part: GrabbablePart) -> String:
+	if zone.required_tool != &"":
+		# A tool step: one use at a time (a screw out), then the step is done.
+		if not zone.is_filled():
+			return "Good. %d of %d done." % [zone.installed_parts.size(), zone.capacity]
+		return ("Yes! " + zone.role) if zone.role != "" else "Yes! That's done."
 	if zone.pass_through:
 		return zone.role if zone.role != "" else "Yes! On to the next step."
 	if zone.role != "":
@@ -166,6 +196,9 @@ func _on_rejected(zone: SnapZone, part: GrabbablePart) -> void:
 		_show_checklist(zone.last_problem)
 	elif zone.working:
 		_show_checklist("Not that one. " + zone.hint)
+	elif zone.required_tool != &"":
+		# A tool step: bare hands (or the wrong tool) can't do it.
+		_show_checklist(zone.hint)
 	else:
 		_show_checklist("The %s doesn't go there. %s" % [part.display_name, zone.hint])
 
