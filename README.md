@@ -56,6 +56,10 @@ The work follows the team build plan (`OCSVR_Training_Plan.md` section 5 in the 
 | `scripts/missions/build_pc_mission.gd` | What only Build your own PC does, on top of `mission.gd`: the reason on the monitor, the balanced bonus, the build on the results card |
 | `tests/run_tests.gd` | Headless checks (below) |
 | `tests/run_mode_tests.gd` | Headless checks for the cables, Set up a pre-built PC and Build your own PC |
+| `scripts/tools/tool.gd` | A tool (screwdriver, wrist strap, thermal paste, multimeter, cloth): a part you use, not install. A slot with `"tool"` in the registry is a tool step |
+| `scenes/tools/` | One scene per tool, and the tool rack that holds one of each |
+| `scripts/open_world/open_world.gd` | Open World: the spawn panel, parts that stay where they're put, and the desk saved through `SaveService` |
+| `tools/make_phase5_scenes.gd` | Writes Phase 5's placeholder scenes (the tools, the rack, Swap in an SSD, Reseat the cooler, Open World, the server rack) from code |
 
 The VR rules from the build plan, and where they show up:
 
@@ -128,6 +132,10 @@ godot --headless --script res://tests/run_mode_tests.gd  # cables, Set up a pre-
 godot --headless --script res://tests/run_menu_tests.gd  # menus, Free Play, Story roadmap
 godot --headless --script res://tests/run_save_tests.gd  # local saves
 godot --headless --script res://tests/run_api_tests.gd   # score saving, against a fake server
+godot --headless --script res://tests/run_network_tests.gd     # Build a Network, the server rack, the Pi cluster
+godot --headless --script res://tests/run_tool_tests.gd        # tools, the tool rack, Swap in an SSD, Reseat the cooler
+godot --headless --script res://tests/run_open_world_tests.gd  # Open World: spawning, placing, the saved desk
+godot --headless --script res://tools/e2e_menu_flow.gd         # the menus to every mode and back, with real scene changes
 ```
 
 Look for `ALL PASSED` at the end. Godot exits with 0 even if a test script fails to load, so the exit code alone isn't enough.

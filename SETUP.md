@@ -52,9 +52,13 @@ GODOT=/Applications/Godot.app/Contents/MacOS/Godot
 $GODOT --headless --import
 $GODOT --headless --script res://tests/run_tests.gd
 $GODOT --headless --script res://tests/run_mode_tests.gd
+$GODOT --headless --script res://tests/run_network_tests.gd
 $GODOT --headless --script res://tests/run_menu_tests.gd
 $GODOT --headless --script res://tests/run_save_tests.gd
 $GODOT --headless --script res://tests/run_api_tests.gd
+$GODOT --headless --script res://tests/run_tool_tests.gd
+$GODOT --headless --script res://tests/run_open_world_tests.gd
+$GODOT --headless --script res://tools/e2e_menu_flow.gd
 ```
 
 ```powershell
@@ -63,12 +67,16 @@ $GODOT = "C:\Godot\Godot_v4.7.2-stable_win64_console.exe"
 & $GODOT --headless --import
 & $GODOT --headless --script res://tests/run_tests.gd
 & $GODOT --headless --script res://tests/run_mode_tests.gd
+& $GODOT --headless --script res://tests/run_network_tests.gd
 & $GODOT --headless --script res://tests/run_menu_tests.gd
 & $GODOT --headless --script res://tests/run_save_tests.gd
 & $GODOT --headless --script res://tests/run_api_tests.gd
+& $GODOT --headless --script res://tests/run_tool_tests.gd
+& $GODOT --headless --script res://tests/run_open_world_tests.gd
+& $GODOT --headless --script res://tools/e2e_menu_flow.gd
 ```
 
-Each one should end with **`ALL PASSED`** (90, 244, 89, 21 and 21 checks today). Read that line, not just the exit code: Godot exits with 0 even when a test script fails to load. A few `ERROR` lines are expected; they come from tests that feed in bad data on purpose.
+Each suite should end with **`ALL PASSED`** (123, 244, 325, 142, 21, 21, 72 and 26 checks today), and the last one, which plays the game through its menus with real scene changes, with **`E2E PASSED`**. Read that line, not just the exit code: Godot exits with 0 even when a test script fails to load. A few `ERROR` lines are expected; they come from tests that feed in bad data on purpose.
 
 ### 5. Working on it
 

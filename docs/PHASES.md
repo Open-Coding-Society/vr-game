@@ -10,10 +10,10 @@ The team builds the game **one person at a time**, in this order (the build orde
 | 1 | Aryan | Home menu with a placeholder OCS login, plus the menu system the next phases build on: save system, mode picker, Free Play list, Story roadmap shell | Done; merged into `main` |
 | 2 | Chetan | Two game modes, with placeholder models: Story IRL Act 1 "Set up a pre-built PC" and Free Play "Build your own PC" | Done; merged into `main` |
 | 3 | Kashyap | One more mode: "Build a Network", played as Story IRL Act 4 "Small rigs" and listed in Free Play | Done; merged into `main` |
-| 4 | Ryden | Assigned later | Next |
-| 5 | Aaditya | Finish the game | Waiting |
-| 6 | Chetan + one more Claude | Bug fixes | Waiting |
-| 7 | Aryan | Detailed, dissectible 3D models | Waiting |
+| ~~4~~ | ~~Ryden~~ | Dropped by Aryan, Nov 24 | Removed |
+| 5 | Aaditya | Finish the game: Back to menu, tools, Act 2's two tasks, the multimeter, Open World v1, Act 4's two extras, Settings, a consistency pass and a full playthrough | This branch (`phase-5-finish`) |
+| 6 | Aryan | Detailed, dissectible 3D models | Next |
+| 7 | Chetan + one more Claude | Bug fixes | Waiting |
 | 8 | Aarav / Jake | Canva menu art: the images in `docs/IMAGES_NEEDED.md` | Waiting |
 | 9 | Team | VR test | Waiting |
 | 10 | Team | Flask saving (`OCSSaveBackend` plus real login) | Waiting |
@@ -93,10 +93,39 @@ Where Phase 3 differs from its plan:
 - **Not done here:** no IP addresses (mission 3) and no packet scanner; both are questions for Aryan in the plan.
 - **Commits:** one per step.
 
+## Phase 5 steps
+
+From `OCSVR_Phase5_Plan.md` in the team Drive (Aaditya, vr-game issue #15): fill the gaps so the IRL side is one complete game. One commit per step.
+
+| # | Step | Checked by |
+|---|---|---|
+| 1 | **Leave a mission early:** a Back to menu plate beside the info panel in every mission (`scripts/ui/back_button.gd`, in `room.tscn`), Esc on the laptop, B, Y or the menu button on a controller. It ends the mission with no result (nothing scored or saved) and reopens the page it came from. Also fixes the `!is_inside_tree()` error `e2e_menu_flow.gd` logged: the real scene change waits for the end of the frame. | `run_menu_tests.gd` (also: every mission's button can be seen and clicked from the laptop camera), `e2e_menu_flow.gd` |
+| 2 | **Tool system:** `scripts/tools/tool.gd`, a `GrabbablePart` with a `tool_type`. A slot's `"tool"` in the registry makes it a tool step: it takes only that tool, one use per drop, `capacity` uses, a `Fasteners` (or `Fastens`) child showing screws come out (or go in); bare hands get the hint. `"needs_strap"` and parts marked `"sensitive"`: touching one without the wrist strap is a mistake and the part stays put. | `run_tool_tests.gd` |
+| 3 | **Tool rack** (`scenes/tools/tool_rack.tscn`): one of each tool, one size; a dropped tool floats back to its place. The wrist strap is worn by dropping it on a wrist slot. | `run_tool_tests.gd` |
+| 4 | **Swap in an SSD** (`build_computer.swap_ssd`): strap on, four panel screws, panel off, drive screw, old SSD out, new SSD in, screw it down, panel back on. A 2.5" SATA SSD, since the starter board's M.2 is SATA only. | `run_tool_tests.gd`, `run_tests.gd` |
+| 5 | **Reseat the cooler** (`build_computer.cooler_paste`): unscrew it, put it down, wipe the old paste (the cloth), new paste, cooler back, screw it down, fan into `CPU_FAN`; the monitor goes from 95 °C to 45 °C. | `run_tool_tests.gd`, `run_tests.gd` |
+| 6 | **Story and Free Play:** Act 2's two planned tasks play the new missions; both are in Free Play; their images are in `docs/IMAGES_NEEDED.md`. | `run_menu_tests.gd`, `e2e_menu_flow.gd` |
+| 7 | **The multimeter in Diagnose a failure:** dropping it on a part shows a reading on its own display and what it means on the panel (a slot's `"probe"`, and `"probe_fixed"` after a swap). Not a mistake; the old way still works. Each tool is its own scene now. | `run_tests.gd` |
+| 8 | **Open World v1** (`scenes/open_world/open_world.tscn`): your desk, the tool rack, a spawn panel with every catalog part and network device, parts that stay where they're put (`free_placement`), Clear the desk, and the layout saved through `SaveService` when you leave and loaded when you come back. No Transfer to Cloud yet. | `run_open_world_tests.gd`, `run_save_tests.gd` |
+| 9 | **Act 4 extras:** Build a mini server rack (`build_network.server_rack`) and A Raspberry Pi cluster (`build_network.pi_cluster`, a new placeholder device `scenes/network/devices/raspberry_pi.tscn`); Act 4 has no planned tasks left. | `run_network_tests.gd`, `run_menu_tests.gd` |
+| 10 | **Settings** (from the mode picker): Comfort, standing or seated (seated lowers the desk 20 cm in the headset), and the menu pointer's hand. | `run_menu_tests.gd`, `run_save_tests.gd` |
+| 11 | **Consistency pass:** the text every mission shares is in `data/modules.json`'s `"messages"`; every "it went in" message starts with "Yes!"; every miss says what happened before the hint; one success panel order (title; score, time, mistakes; what it taught; bonus; where next; saving status); bonus lines read the same. | `run_tests.gd`, `run_menu_tests.gd` |
+| 12 | **Full playthrough:** `e2e_menu_flow.gd` also plays a task from Act 2 and Act 4 through the roadmap, leaves a mission early, opens Open World and comes back to the saved desk, and changes a setting; this file; the new phase order. | `e2e_menu_flow.gd` |
+
+Where Phase 5 differs from its plan:
+- **Back to menu** is a plate beside the info panel, not on it (`info_panel.gd` isn't restyled; that's Phase 7). The three Act 1 scenes and Diagnose a failure place it where their tower or monitor doesn't hide it.
+- **The server rack lies on its back**, as the case in Swap in an SSD lies on its side: the laptop's mouse carries parts at one height, so ports stacked one above another couldn't be told apart. Each machine carries its own network port into the rack, and the ports wait until all four bays are full.
+- **Settings has two settings, not three:** Comfort and the menu pointer's hand. No volume while the game has no sound, and no hands/controllers switch until hand tracking is built ("only settings that work").
+- **The cooler has two screws** each way, not four, so it isn't eight trips with the screwdriver.
+- **The Pi cluster needs all four Pis** (`min_machines` 4): it's the cluster, so 3 tiles each also earns the even-spread bonus.
+- **A slot's tool step takes uses, not installs:** a tool never stays in a slot, so one screwdriver does every screw step. The wrist strap is the one tool that stays (on the wrist slot).
+- **When several slots share a spot** (the steps at the CPU), the slot that takes that kind of part explains a "Not yet", and a part's own slots (a server's port) never judge it.
+- **Commits:** one per step.
+
 ## Rules (from the build plan)
 
 - **Every screen is a 3D panel.** Normal screen UI doesn't show in the headset.
 - **One input layer:** the menus use one pointer (mouse ray on the laptop, controller ray in the headset).
 - **Data, not code:** task text, Free Play cards and the Story roadmap come from `data/`.
-- **Saving goes only through `SaveService`,** so OCS saves (phase 5) plug in without touching menus or missions.
+- **Saving goes only through `SaveService`,** so OCS saves (phase 10) plug in without touching menus or missions.
 - **The headless tests keep passing,** and new logic gets tests.
