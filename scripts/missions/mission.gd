@@ -14,6 +14,8 @@ extends Node3D
 const SnapZone := preload("res://scripts/snap_zone.gd")
 const GrabbablePart := preload("res://scripts/grabbable_part.gd")
 const InfoPanel := preload("res://scripts/ui/info_panel.gd")
+## Where "Back to menu" goes when the mission wasn't started from the menu.
+const MENU_SCENE := "res://scenes/menus/menu.tscn"
 
 ## Full mission id in the registry, e.g. "build_computer.identify_components".
 @export var mission_id: String = ""
@@ -47,6 +49,7 @@ func _ready() -> void:
 		_problem('on_complete is "boot" but the scene has no MonitorScreen (scripts/parts/monitor_screen.gd)')
 	_apply_monitor_text()
 	$Room.grabber.part_grabbed.connect(_on_part_grabbed)
+	$Room.back_button.pressed.connect(leave_early)
 	for zone in zones:
 		zone.snapped.connect(_on_snapped)
 		zone.rejected.connect(_on_rejected)
@@ -258,14 +261,33 @@ func _result_extras() -> PackedStringArray:
 	return PackedStringArray()
 
 
+## "Back to menu": leave now, finished or not. An unfinished mission ends with
+## no result (nothing is scored or saved); the menu reopens the page the
+## mission was started from (Free Play or the Story roadmap), or the Home page
+## for a mission that wasn't started from the menu.
+func leave_early() -> void:
+	if not is_inside_tree() or _leaving:
+		return
+	_leaving = true
+	for z in zones:
+		z.locked = true
+	if manager.state != manager.State.SUCCESS:
+		manager.leave()
+	var target: String = manager.return_scene if manager.return_scene != "" else MENU_SCENE
+	manager.open_scene(target)
+
+
+var _leaving := false
+
+
 ## Started from the menu: go back to it (it reopens manager.return_page).
 func _return_to_menu() -> void:
-	if is_inside_tree() and manager.state == manager.State.SUCCESS and manager.mission.full_id == mission_id:
+	if is_inside_tree() and not _leaving and manager.state == manager.State.SUCCESS and manager.mission.full_id == mission_id:
 		manager.open_scene(manager.return_scene)
 
 
 func _open_next() -> void:
-	if is_inside_tree() and manager.state == manager.State.SUCCESS and manager.mission.full_id == mission_id:
+	if is_inside_tree() and not _leaving and manager.state == manager.State.SUCCESS and manager.mission.full_id == mission_id:
 		manager.open_scene(manager.registry.mission(next_mission).scene)
 
 

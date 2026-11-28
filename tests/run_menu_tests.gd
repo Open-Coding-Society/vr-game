@@ -46,6 +46,7 @@ func _tests() -> Array:
 		_test_ray_transform, _test_home_page, _test_login_placeholder,
 		_test_mode_picker, _test_free_play_lists_tasks, _test_free_play_lists_the_new_modes, _test_free_play_cloud_empty,
 		_test_free_play_starts_task, _test_done_task_shows_best, _test_mission_returns_to_menu,
+		_test_back_to_menu_leaves_early, _test_back_to_menu_without_the_menu, _test_back_button_in_every_mission,
 		_test_menu_reopens_return_page, _test_story_map_states, _test_story_act_1_unlocks_in_order,
 		_test_story_act_3_starts_with_build_your_own, _test_story_act_4_unlocks_in_order,
 		_test_free_play_lists_build_network, _test_roadmap_plays_act_4,
@@ -354,6 +355,117 @@ func _test_done_task_shows_best() -> void:
 	check("a finished task is marked Done", row != null and row.get_parent().find_child("DoneTag", true, false) != null)
 	check("an unfinished task isn't", other != null and other.get_parent().find_child("DoneTag", true, false) == null)
 	menu.queue_free()
+
+
+# ---- Phase 5, step 1: leave a mission early ----
+
+func _test_back_to_menu_leaves_early() -> void:
+	_opened.clear()
+	var manager := root.get_node("TrainingManager")
+	var saves := root.get_node("SaveService")
+	saves.profile.tasks.clear()
+	manager.return_scene = "res://scenes/menus/menu.tscn"
+	manager.return_page = "roadmap:irl"
+	manager.return_label = "Story Mode"
+	var mission: Node3D = load("res://scenes/build_computer/assemble_system.tscn").instantiate()
+	root.add_child(mission)
+	await process_frame
+	var button = mission.get_node("Room/BackButton")
+	check("every mission has a Back to menu button", button != null and button.get_node("Label").text == "Back to menu")
+	var left := []
+	manager.mission_left.connect(func(id: String) -> void: left.append(id))
+	var finished := []
+	var on_done := func(id: String, _score: int, _time: int) -> void: finished.append(id)
+	manager.module_completed.connect(on_done)
+	manager.note_grab()
+	button.press()
+	check("pressing it opens the menu scene the mission came from", _opened == ["res://scenes/menus/menu.tscn"], _opened)
+	check("the mission ends with no result", manager.state == manager.State.IDLE and left == ["build_computer.assemble_system"] and finished.is_empty(),
+		"%s %s %s" % [manager.state, left, finished])
+	check("nothing is saved for it", not saves.is_task_done("build_computer.assemble_system"))
+	check("the menu will reopen the page it came from", manager.return_page == "roadmap:irl", manager.return_page)
+	check("its slots take nothing more once it's left", mission.zones.all(func(z) -> bool: return z.locked))
+	button.press()
+	check("a second press does nothing more", _opened.size() == 1, _opened)
+	manager.module_completed.disconnect(on_done)
+	mission.queue_free()
+	await process_frame
+	var menu: Node3D = MenuScene.instantiate()
+	root.add_child(menu)
+	await process_frame
+	check("back on the menu, the roadmap it was started from is open", menu.page == "roadmap", menu.page)
+	menu.queue_free()
+	await process_frame
+
+
+func _test_back_to_menu_without_the_menu() -> void:
+	_opened.clear()
+	var manager := root.get_node("TrainingManager")
+	manager.return_scene = ""
+	manager.return_page = ""
+	var mission: Node3D = load("res://scenes/workbench.tscn").instantiate()
+	root.add_child(mission)
+	await process_frame
+	var esc := InputEventAction.new()
+	esc.action = "ui_cancel"
+	esc.pressed = true
+	mission.get_node("Room/BackButton")._unhandled_input(esc)
+	check("Esc on the laptop does the same, and a mission opened on its own goes to the menu's Home",
+		_opened == ["res://scenes/menus/menu.tscn"] and manager.state == manager.State.IDLE, "%s %s" % [_opened, manager.state])
+	mission.queue_free()
+	await process_frame
+
+
+## The button is beside the info panel, off the desk, in sight of the laptop
+## camera, and nothing in any mission's scene sits in front of it.
+func _test_back_button_in_every_mission() -> void:
+	# Headless runs use a 100x100 window; look through the game's real one.
+	var old_size := root.size
+	root.size = Vector2i(ProjectSettings.get_setting("display/window/size/viewport_width"),
+		ProjectSettings.get_setting("display/window/size/viewport_height"))
+	var manager := root.get_node("TrainingManager")
+	var bad := []
+	for id in manager.registry.missions:
+		var mission: Node3D = load(manager.registry.mission(id).scene).instantiate()
+		root.add_child(mission)
+		await process_frame
+		await physics_frame
+		var button: Node3D = mission.get_node("Room/BackButton")
+		var camera: Camera3D = mission.get_node("Room/Camera3D")
+		var at := camera.unproject_position(button.global_position)
+		var view := Rect2(Vector2.ZERO, mission.get_viewport().get_visible_rect().size)
+		if camera.is_position_behind(button.global_position) or not view.has_point(at):
+			bad.append("%s: off screen" % id)
+		elif not button.is_under(at):
+			bad.append("%s: something is in front of it" % id)
+		else:
+			var blocking := _meshes_between(mission, camera.global_position, button)
+			if not blocking.is_empty():
+				bad.append("%s: hidden by %s" % [id, ", ".join(blocking)])
+		mission.queue_free()
+		await process_frame
+	manager.leave()
+	root.size = old_size
+	check("every mission's Back to menu button can be seen and clicked from the laptop camera", bad.is_empty(), bad)
+
+
+## Meshes of a mission (not the room's) on the line from the eye to any of the
+## button's corners: the laptop camera couldn't see the whole button.
+func _meshes_between(mission: Node3D, eye: Vector3, button: Node3D) -> Array:
+	var out := []
+	var half: Vector2 = button.SIZE / 2.0
+	var corners := []
+	for c in [Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1), Vector2(1, 1), Vector2.ZERO]:
+		corners.append(button.global_transform * Vector3(c.x * half.x, c.y * half.y, 0.006))
+	for node in mission.find_children("*", "MeshInstance3D", true, false):
+		if mission.get_node("Room").is_ancestor_of(node) or not node.is_visible_in_tree() or node.mesh == null:
+			continue
+		var box: AABB = node.global_transform * node.mesh.get_aabb()
+		for corner in corners:
+			if box.intersects_segment(eye, corner):
+				out.append(str(mission.get_path_to(node)))
+				break
+	return out
 
 
 func _test_mission_returns_to_menu() -> void:
