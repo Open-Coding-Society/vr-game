@@ -115,6 +115,15 @@ func drop() -> void:
 		return_home()
 
 
+## The grab is called off (the mission says the part can't be touched yet):
+## the part goes back where it was, and no zone judges it.
+func cancel_grab() -> void:
+	if not is_held:
+		return
+	is_held = false
+	return_home()
+
+
 ## The one zone that decides about this drop, or null when over none:
 ## the nearest zone that takes this part, else the nearest zone at all.
 func zone_for_drop() -> Area3D:

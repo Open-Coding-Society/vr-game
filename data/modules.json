@@ -456,6 +456,107 @@
               "role": "Power on!"
             }
           }
+        },
+        {
+          "id": "swap_ssd",
+          "title": "Swap in an SSD",
+          "description": "Open a PC with the right tools, take out its old drive and fit a new SSD.",
+          "topic": "Storage",
+          "difficulty": "Intermediate",
+          "scene": "res://scenes/build_computer/swap_ssd.tscn",
+          "needs_strap": true,
+          "intro": [
+            "This PC's old drive is slow and nearly full. Swap in the new SSD.",
+            "Put on the wrist strap before you touch the drives. Use the screwdriver from the tool rack: four screws hold the side panel on, and one holds the drive."
+          ],
+          "success": [
+            "Swapped! The new SSD now holds the operating system and your files, and keeps them when the power is off. Memory (RAM) forgets everything at power off; storage doesn't."
+          ],
+          "scoring": {
+            "full": 100,
+            "per_mistake": 10
+          },
+          "parts": {
+            "SidePanel": {
+              "type": "side_panel",
+              "name": "side panel"
+            },
+            "OldSsd": {
+              "type": "old_ssd",
+              "name": "old SSD",
+              "sensitive": true
+            },
+            "NewSsd": {
+              "type": "storage",
+              "name": "new SSD",
+              "sensitive": true
+            }
+          },
+          "slots": {
+            "Wrist": {
+              "accepts": "wrist_strap",
+              "name": "put on the wrist strap",
+              "hint": "The wrist strap goes on your wrist: it keeps static away from the parts.",
+              "role": "The strap is on: static from your body now goes to ground instead of into the parts."
+            },
+            "Case/PanelScrews": {
+              "tool": "screwdriver",
+              "capacity": 4,
+              "name": "side panel screws out",
+              "hint": "Use the screwdriver for that: four screws hold the side panel on."
+            },
+            "PanelSpot": {
+              "accepts": "side_panel",
+              "pass_through": true,
+              "requires": [
+                "Case/PanelScrews"
+              ],
+              "name": "side panel off",
+              "hint": "Put the side panel down here, out of the way.",
+              "role": "The case is open. The drive is in its bay at the front."
+            },
+            "Case/DriveScrew": {
+              "tool": "screwdriver",
+              "requires": [
+                "PanelSpot"
+              ],
+              "name": "drive screw out",
+              "hint": "Use the screwdriver for that: one screw holds the drive in its bay."
+            },
+            "OldTray": {
+              "accepts": "old_ssd",
+              "requires": [
+                "Case/DriveScrew"
+              ],
+              "name": "old SSD out",
+              "hint": "The old drive goes in the tray for old parts."
+            },
+            "Case/DriveBay": {
+              "accepts": "storage",
+              "requires": [
+                "OldTray"
+              ],
+              "name": "new SSD in",
+              "hint": "The new SSD goes in the drive bay, where the old one was.",
+              "role": "The new SSD is in. Storage keeps your files even with the power off."
+            },
+            "Case/ScrewDown": {
+              "tool": "screwdriver",
+              "requires": [
+                "Case/DriveBay"
+              ],
+              "name": "drive screw back in",
+              "hint": "Use the screwdriver for that: screw the new drive down so it can't shake loose."
+            },
+            "Case/CloseCase": {
+              "accepts": "side_panel",
+              "requires": [
+                "Case/ScrewDown"
+              ],
+              "name": "side panel back on",
+              "hint": "The side panel goes back on the case last, once the drive is screwed down."
+            }
+          }
         }
       ]
     },

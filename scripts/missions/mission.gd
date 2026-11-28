@@ -136,6 +136,8 @@ func _on_part_grabbed(part: GrabbablePart) -> void:
 	var was_intro: bool = manager.state == manager.State.INTRO
 	manager.note_grab()
 	if config.needs_strap and sensitive_parts.has(part) and not is_strap_on():
+		# Hands off until the strap is on: the part stays where it is.
+		$Room.grabber.cancel()
 		manager.note_mistake()
 		_show_checklist(str(config.get("strap_hint", STRAP_HINT)))
 	elif was_intro:

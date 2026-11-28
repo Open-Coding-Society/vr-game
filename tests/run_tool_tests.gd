@@ -10,6 +10,7 @@ extends SceneTree
 ## SnapZones see the overlaps exactly as in the game.
 
 const ToolRack := preload("res://scenes/tools/tool_rack.tscn")
+const SwapSsd := preload("res://scenes/build_computer/swap_ssd.tscn")
 const Tool := preload("res://scripts/tools/tool.gd")
 const GrabbablePart := preload("res://scripts/grabbable_part.gd")
 const SnapZone := preload("res://scripts/snap_zone.gd")
@@ -50,7 +51,9 @@ func _tests() -> Array:
 	return [_test_tool_describes_itself, _test_tool_step_takes_its_tool, _test_tool_step_counts_uses,
 		_test_bare_hands_on_a_tool_step, _test_dropped_tool_floats_home, _test_registry_tool_steps,
 		_test_registry_needs_strap,
-		_test_rack_has_one_of_each, _test_rack_tools_go_home, _test_strap_is_worn]
+		_test_rack_has_one_of_each, _test_rack_tools_go_home, _test_strap_is_worn,
+		_test_swap_ssd_loads, _test_swap_ssd_perfect_run, _test_swap_ssd_strap_first,
+		_test_swap_ssd_order_and_bare_hands]
 
 
 func check(label: String, ok: bool, detail = "") -> void:
@@ -83,6 +86,56 @@ func _carry_and_drop(part: GrabbablePart, to: Vector3) -> void:
 	await _settle()
 	part.drop()
 	await _settle()
+
+
+## The middle of a slot's drop area: where a carried part has to be for the
+## slot to see it.
+func _over(mission: Node3D, slot_path: String) -> Vector3:
+	return (mission.get_node(slot_path).get_node("CollisionShape3D") as Node3D).global_position
+
+
+## The real input path, as the mouse does it: press on the part through the
+## camera, carry it above the table to over `to`, let go.
+func _drag(mission: Node3D, part_path: String, to: Vector3) -> void:
+	var part: GrabbablePart = mission.get_node(part_path)
+	var grabber = mission.get_node("Room/MouseGrabber")
+	var camera: Camera3D = mission.get_node("Room/Camera3D")
+	var middle: Vector3 = (part.get_node("CollisionShape3D") as Node3D).global_position
+	var got = grabber.try_grab_at(camera.unproject_position(middle))
+	if got != part:
+		check("pressing on %s through the camera picks it up" % part_path, false, got.name if got else "nothing")
+		if got:
+			grabber.cancel()
+		return
+	grabber.carry_to(camera.unproject_position(Vector3(to.x, grabber.carry_height, to.z)))
+	await _settle()
+	grabber.release()
+	await _settle()
+
+
+## Drags each [part, slot] pair in turn.
+func _drag_all(mission: Node3D, pairs: Array) -> void:
+	for pair in pairs:
+		await _drag(mission, pair[0], _over(mission, pair[1]))
+
+
+## True when pressing on a part through the laptop camera would pick up
+## something else in front of it.
+func _hidden(mission: Node3D, part_path: String) -> bool:
+	var part: GrabbablePart = mission.get_node(part_path)
+	var grabber = mission.get_node("Room/MouseGrabber")
+	var camera: Camera3D = mission.get_node("Room/Camera3D")
+	return grabber.part_at(camera.unproject_position((part.get_node("CollisionShape3D") as Node3D).global_position)) != part
+
+
+## Loads a mission scene with its tools set to go back to the rack at once.
+func _mission(scene: PackedScene) -> Node3D:
+	var mission: Node3D = scene.instantiate()
+	for node in mission.find_children("*", "RigidBody3D", true, false):
+		if node.get("tool_type") != null:
+			node.return_delay_s = 0.0
+			node.return_time_s = 0.0
+	return await _fresh(mission)
 
 
 ## A zone made in code at `at`: a tool step for `tool` with `uses` uses, or an
@@ -304,3 +357,88 @@ func _test_strap_is_worn() -> void:
 	await _carry_and_drop(strap, wrist.global_position)
 	check("the strap dropped on the wrist is worn: it stays there", strap.is_installed and wrist.is_filled()
 		and strap.global_position.distance_to(wrist.global_position) < 0.01, strap.global_position)
+
+
+# ---- Step 4: Act 2, Swap in an SSD ----
+
+## Every step of Swap in an SSD, in order, as [part, slot] drags.
+const SWAP_SSD_RUN := [
+	["ToolRack/WristStrap", "Wrist"],
+	["ToolRack/Screwdriver", "Case/PanelScrews"], ["ToolRack/Screwdriver", "Case/PanelScrews"],
+	["ToolRack/Screwdriver", "Case/PanelScrews"], ["ToolRack/Screwdriver", "Case/PanelScrews"],
+	["SidePanel", "PanelSpot"],
+	["ToolRack/Screwdriver", "Case/DriveScrew"],
+	["OldSsd", "OldTray"],
+	["NewSsd", "Case/DriveBay"],
+	["ToolRack/Screwdriver", "Case/ScrewDown"],
+	["SidePanel", "Case/CloseCase"],
+]
+
+
+func _test_swap_ssd_loads() -> void:
+	var mission := await _mission(SwapSsd)
+	check("Swap in an SSD loads with nothing out of place", mission.problems.is_empty(), "; ".join(mission.problems))
+	check("its tools come from the rack without being listed", mission.parts.any(func(p) -> bool: return p.name == "Screwdriver"))
+	var entry: Dictionary = manager.registry.mission("build_computer.swap_ssd")
+	check("it's in the registry, with the strap rule", not entry.is_empty() and entry.needs_strap)
+	check("it has eight steps", mission.goals.size() == 8, mission.goals.size())
+
+
+func _test_swap_ssd_perfect_run() -> void:
+	var mission := await _mission(SwapSsd)
+	await _drag_all(mission, SWAP_SSD_RUN.slice(0, 3))
+	check("two screws out: the checklist counts them", "side panel screws out (2 of 4)" in mission.panel.text(), mission.panel.text())
+	check("and two of the four screws are gone from the panel",
+		mission.get_node("Case/PanelScrews/Fasteners").get_children().filter(func(n) -> bool: return n.visible).size() == 2)
+	await _drag_all(mission, SWAP_SSD_RUN.slice(3, 6))
+	var side_panel: GrabbablePart = mission.get_node("SidePanel")
+	check("with the panel off, the old SSD in its bay can be reached", not _hidden(mission, "OldSsd"))
+	check("the side panel comes off onto its spot, still free to pick up",
+		not side_panel.is_installed and side_panel.global_position.distance_to(mission.get_node("PanelSpot").global_position) < 0.01,
+		side_panel.global_position)
+	await _drag_all(mission, SWAP_SSD_RUN.slice(6, 9))
+	var new_ssd: GrabbablePart = mission.get_node("NewSsd")
+	check("the new SSD sits in the drive bay", new_ssd.is_installed and new_ssd.installed_zone == mission.get_node("Case/DriveBay"))
+	check("the screwdriver is back on the rack, not in the case", mission.get_node("ToolRack/Screwdriver").is_home())
+	await _drag_all(mission, SWAP_SSD_RUN.slice(9))
+	check("the drive screw goes back in", mission.get_node("Case/ScrewDown/Fastens/Screw").visible)
+	check("with the side panel back on, the mission is complete at full score",
+		manager.state == manager.State.SUCCESS and manager.mistakes == 0 and manager.score == 100,
+		"%s %s %s" % [manager.state, manager.mistakes, manager.score])
+	check("the panel says what storage is for", "Swapped!" in mission.panel.text(), mission.panel.text())
+
+
+func _test_swap_ssd_strap_first() -> void:
+	var mission := await _mission(SwapSsd)
+	var new_ssd: GrabbablePart = mission.get_node("NewSsd")
+	await _drag(mission, "NewSsd", _over(mission, "Case/DriveBay"))
+	check("touching the new SSD without the strap is one mistake", manager.mistakes == 1, manager.mistakes)
+	check("and the panel says to put the strap on", "wrist strap first" in mission.panel.text(), mission.panel.text())
+	check("the SSD stays where it was: hands off until the strap is on",
+		not new_ssd.is_held and new_ssd.global_position.is_equal_approx(new_ssd.home_transform.origin)
+			and mission.get_node("Room/MouseGrabber").held == null, new_ssd.global_position)
+	await _drag(mission, "SidePanel", _over(mission, "PanelSpot"))
+	check("the side panel isn't sensitive, so it needs no strap (it's only early: its screws are still in)",
+		manager.mistakes == 2 and "Not yet" in mission.panel.text(), "%d %s" % [manager.mistakes, mission.panel.text()])
+	await _drag(mission, "ToolRack/WristStrap", _over(mission, "Wrist"))
+	await _drag(mission, "NewSsd", _over(mission, "OldTray"))
+	check("with the strap on, a drive can be picked up (here it's only the wrong spot)",
+		manager.mistakes == 3 and "doesn't go there" in mission.panel.text(), "%d %s" % [manager.mistakes, mission.panel.text()])
+
+
+func _test_swap_ssd_order_and_bare_hands() -> void:
+	var mission := await _mission(SwapSsd)
+	check("the old SSD can't be reached while the side panel is on", _hidden(mission, "OldSsd"))
+	await _drag(mission, "ToolRack/WristStrap", _over(mission, "Wrist"))
+	await _drag(mission, "NewSsd", _over(mission, "Case/PanelScrews"))
+	check("a part on the panel's screws (bare hands) is turned away with the tool hint",
+		manager.mistakes == 1 and "Use the screwdriver for that" in mission.panel.text(), mission.panel.text())
+	await _drag(mission, "ToolRack/ThermalPaste", _over(mission, "Case/PanelScrews"))
+	check("so is the wrong tool", manager.mistakes == 2 and mission.get_node("Case/PanelScrews").installed_parts.is_empty(), manager.mistakes)
+	await _drag(mission, "ToolRack/Screwdriver", _over(mission, "Case/DriveScrew"))
+	check("the screwdriver over the drive counts a panel screw first: the panel is still on",
+		mission.get_node("Case/PanelScrews").installed_parts.size() == 1 and mission.get_node("Case/DriveScrew").installed_parts.is_empty())
+	await _drag(mission, "SidePanel", _over(mission, "PanelSpot"))
+	check("the side panel won't come off before its screws are out", manager.mistakes == 3 and "Not yet" in mission.panel.text(),
+		mission.panel.text())
+

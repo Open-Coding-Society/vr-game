@@ -57,6 +57,16 @@ func carry_to(screen_pos: Vector2) -> void:
 		held.global_position = hit
 
 
+## Lets go of the held part without dropping it anywhere: it goes straight
+## back home. Missions use it for a part that can't be touched yet.
+func cancel() -> void:
+	if held == null:
+		return
+	var part := held
+	held = null
+	part.cancel_grab()
+
+
 func release() -> void:
 	if held == null:
 		return

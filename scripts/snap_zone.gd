@@ -38,7 +38,8 @@ extends Area3D
 ##   after `capacity` uses. Anything else dropped here, bare hands included, is
 ##   turned away with the hint ("Use the screwdriver for that."). A child
 ##   named "Fasteners" shows what the tool works on: one of its children (a
-##   screw) is hidden per use.
+##   screw) is hidden per use. Children of "Fastens" do the opposite: one
+##   appears per use (a screw going in).
 ##
 ## A child named "Replaced" (e.g. the old, faulty part's mesh) is hidden once
 ## the zone is full, so the new part doesn't sit on top of the old one.
@@ -224,15 +225,19 @@ func eject_all() -> void:
 		get_node("Replaced").visible = true
 
 
-## A tool step's fasteners (children of "Fasteners"): one is hidden per use,
-## so the screws come out one by one; all show again when the step is undone.
+## A tool step's fasteners: one child of "Fasteners" is hidden per use, so
+## the screws come out one by one, and one child of "Fastens" shows per use
+## (screwing in). Undoing the step puts them back as they were.
 func _show_fasteners() -> void:
-	var fasteners := get_node_or_null("Fasteners")
-	if fasteners == null:
-		return
 	var uses := installed_parts.size()
-	for i in fasteners.get_child_count():
-		fasteners.get_child(i).visible = i >= uses
+	var fasteners := get_node_or_null("Fasteners")
+	if fasteners:
+		for i in fasteners.get_child_count():
+			fasteners.get_child(i).visible = i >= uses
+	var fastens := get_node_or_null("Fastens")
+	if fastens:
+		for i in fastens.get_child_count():
+			fastens.get_child(i).visible = i < uses
 
 
 func _on_body_entered(body: Node) -> void:

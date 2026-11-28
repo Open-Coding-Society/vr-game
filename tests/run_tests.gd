@@ -125,7 +125,8 @@ func _test_registry_loads() -> void:
 	check("it lists the Build a Computer missions first, in order",
 		registry.modules[0].mission_ids == ["build_computer.install_ram",
 			"build_computer.identify_components", "build_computer.assemble_system", "build_computer.execute_task",
-			"build_computer.add_capacity", "build_computer.diagnose_failure", "build_computer.build_your_own"],
+			"build_computer.add_capacity", "build_computer.diagnose_failure", "build_computer.build_your_own",
+			"build_computer.swap_ssd"],
 		str(registry.modules))
 	check("a mission keeps its module title and full id",
 		registry.mission("build_computer.identify_components").get("module_title") == "Build a Computer")
@@ -317,15 +318,17 @@ func _test_mission_mistake_gives_hint_and_costs_points() -> void:
 
 func _test_every_mission_scene_is_clean() -> void:
 	# Every mission in the registry loads with no scene/registry mismatch, and no
-	# part starts inside a slot (it would install itself on its first drop),
-	# unless it starts installed there (a network cable that starts plugged in).
+	# part starts inside a slot that could take it (it would install itself on
+	# its first drop), unless it starts installed there (a network cable that
+	# starts plugged in). A part may start inside a slot that can't take it yet:
+	# the old SSD in its drive bay, under steps that come first (Phase 5).
 	for module in manager.registry.modules:
 		for full_id in module.mission_ids:
 			var mission := await _fresh(load(manager.registry.mission(full_id).scene))
 			var overlapping := []
 			for zone in mission.zones:
 				for body in zone.get_overlapping_bodies():
-					if body is GrabbablePart and body.installed_zone != zone:
+					if body is GrabbablePart and body.installed_zone != zone and zone.can_take(body):
 						overlapping.append("%s in %s" % [body.name, zone.name])
 			check("%s: loads cleanly, no part starts inside a slot" % full_id,
 				mission.problems.is_empty() and overlapping.is_empty() and mission.zones.size() > 0,
@@ -375,7 +378,8 @@ func _test_next_mission_order() -> void:
 	check("missions chain in registry order",
 		manager.next_mission_id("build_computer.install_ram") == "build_computer.identify_components"
 			and manager.next_mission_id("build_computer.assemble_system") == "build_computer.execute_task")
-	check("the module's last mission has no next one", manager.next_mission_id("build_computer.build_your_own") == "")
+	var last: String = manager.registry.modules[0].mission_ids.back()
+	check("the module's last mission has no next one", manager.next_mission_id(last) == "", last)
 
 
 func _test_assemble_power_goes_last() -> void:

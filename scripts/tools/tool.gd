@@ -21,6 +21,16 @@ const TYPES := {
 	"cloth": "cleaning cloth",
 }
 
+## The short name on the tool's label in the room, so the rack's labels don't
+## run into each other. Hints use the full name (TYPES).
+const TAGS := {
+	"screwdriver": "Screwdriver",
+	"wrist_strap": "Wrist strap",
+	"thermal_paste": "Paste",
+	"multimeter": "Multimeter",
+	"cloth": "Cloth",
+}
+
 ## Which tool this is: one of TYPES.
 @export_enum("screwdriver", "wrist_strap", "thermal_paste", "multimeter", "cloth") var tool_type: String = "screwdriver"
 ## How long a dropped tool waits before it floats back (seconds), and how long
@@ -37,7 +47,7 @@ func _ready() -> void:
 	display_name = TYPES.get(tool_type, tool_type)
 	var tag := get_node_or_null("Name") as Label3D
 	if tag:
-		tag.text = display_name.left(1).to_upper() + display_name.substr(1)
+		tag.text = TAGS.get(tool_type, display_name)
 
 
 func grab() -> bool:
