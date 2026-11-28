@@ -16,9 +16,9 @@ const GrabbablePart := preload("res://scripts/grabbable_part.gd")
 const InfoPanel := preload("res://scripts/ui/info_panel.gd")
 ## Where "Back to menu" goes when the mission wasn't started from the menu.
 const MENU_SCENE := "res://scenes/menus/menu.tscn"
-## What a mission with "needs_strap" says when a sensitive part is touched
-## without the wrist strap on (a mission can say it its own way: "strap_hint").
-const STRAP_HINT := "Put on the anti-static wrist strap first: a spark of static from your hand can kill a part you touch."
+## The registry's shared text (data/modules.json "messages"), filled in.
+func say(key: String, values := {}) -> String:
+	return manager.registry.say(key, values)
 
 ## Full mission id in the registry, e.g. "build_computer.identify_components".
 @export var mission_id: String = ""
@@ -143,7 +143,7 @@ func _on_part_grabbed(part: GrabbablePart) -> void:
 		# Hands off until the strap is on: the part stays where it is.
 		$Room.grabber.cancel()
 		manager.note_mistake()
-		_show_checklist(str(config.get("strap_hint", STRAP_HINT)))
+		_show_checklist(str(config.get("strap_hint", say("strap_first"))))
 	elif was_intro:
 		_show_checklist("")
 
@@ -184,13 +184,13 @@ func _installed_text(zone: SnapZone, part: GrabbablePart) -> String:
 	if zone.required_tool != &"":
 		# A tool step: one use at a time (a screw out), then the step is done.
 		if not zone.is_filled():
-			return "Good. %d of %d done." % [zone.installed_parts.size(), zone.capacity]
-		return ("Yes! " + zone.role) if zone.role != "" else "Yes! That's done."
-	if zone.pass_through:
-		return zone.role if zone.role != "" else "Yes! On to the next step."
+			return say("step_progress", {"done": zone.installed_parts.size(), "total": zone.capacity})
+		return say("installed_role", {"role": zone.role}) if zone.role != "" else say("step_done")
 	if zone.role != "":
-		return "Yes! " + zone.role
-	return "Yes! The %s goes in the %s." % [part.display_name, zone.display_name]
+		return say("installed_role", {"role": zone.role})
+	if zone.pass_through:
+		return say("next_step")
+	return say("installed", {"part": part.display_name, "slot": zone.display_name})
 
 
 func _on_rejected(zone: SnapZone, part: GrabbablePart) -> void:
@@ -201,12 +201,12 @@ func _on_rejected(zone: SnapZone, part: GrabbablePart) -> void:
 		# The right kind of part, but it doesn't work with the others.
 		_show_checklist(zone.last_problem)
 	elif zone.working:
-		_show_checklist("Not that one. " + zone.hint)
+		_show_checklist(say("working_part", {"hint": zone.hint}))
 	elif zone.required_tool != &"":
 		# A tool step: bare hands (or the wrong tool) can't do it.
-		_show_checklist(zone.hint)
+		_show_checklist(say("needs_tool", {"part": part.display_name, "hint": zone.hint}))
 	else:
-		_show_checklist("The %s doesn't go there. %s" % [part.display_name, zone.hint])
+		_show_checklist(say("wrong_part", {"part": part.display_name, "hint": zone.hint}))
 
 
 ## A part was swapped out. Whatever was plugged into it can't stay: every slot
@@ -246,7 +246,7 @@ func _on_probed(zone: SnapZone, meter: GrabbablePart) -> void:
 	var reading: Dictionary = slot.get("probe_fixed", slot.probe) if zone.is_filled() else slot.probe
 	if meter.has_method("show_reading"):
 		meter.show_reading(reading.reads)
-	_show_checklist("Multimeter on the %s: %s. %s" % [zone.display_name, reading.reads, reading.means])
+	_show_checklist(say("probe", {"slot": zone.display_name, "reads": reading.reads, "means": reading.means}))
 
 
 func _empty_dependents(zone: SnapZone, seen: Array) -> void:
@@ -262,7 +262,7 @@ func _on_blocked(zone: SnapZone, part: GrabbablePart) -> void:
 		return
 	manager.note_mistake()
 	var first := zone.missing_prerequisites().map(func(z) -> String: return z.display_name)
-	_show_checklist("Not yet. First finish: %s. %s" % [name_list(first), zone.hint])
+	_show_checklist(say("too_early", {"first": name_list(first), "hint": zone.hint}))
 
 
 func _on_module_completed(_module_id: String, score: int, duration_s: int) -> void:
@@ -272,15 +272,18 @@ func _on_module_completed(_module_id: String, score: int, duration_s: int) -> vo
 			await screen.play_boot(PackedStringArray(config.boot_lines))
 		if not is_inside_tree() or manager.mission.get("full_id", "") != mission_id:
 			return
-	_result_lines = PackedStringArray(config.success)
+	# Every mode's success panel in the same order: the score, time and
+	# mistakes, what the mission taught, anything the mission adds (a
+	# bonus), then where the game goes next, and last the saving status.
+	_result_lines = PackedStringArray([say("result_score", {"score": score, "time": _clock(duration_s), "mistakes": manager.mistakes})])
+	_result_lines.append_array(PackedStringArray(config.success))
 	_result_lines.append_array(_result_extras())
-	_result_lines.append("Score: %d   Time: %s   Mistakes: %d" % [score, _clock(duration_s), manager.mistakes])
 	next_mission = manager.next_mission_id(mission_id)
 	if manager.return_scene != "":
-		_result_lines.append("Back to %s in %d seconds" % [manager.return_label, roundi(manager.advance_delay_s)])
+		_result_lines.append(say("back_to", {"label": manager.return_label, "seconds": roundi(manager.advance_delay_s)}))
 		get_tree().create_timer(manager.advance_delay_s).timeout.connect(_return_to_menu)
 	elif next_mission != "" and manager.auto_advance:
-		_result_lines.append("Next: %s in %d seconds" % [manager.registry.mission(next_mission).title, roundi(manager.advance_delay_s)])
+		_result_lines.append(say("next_mission", {"title": manager.registry.mission(next_mission).title, "seconds": roundi(manager.advance_delay_s)}))
 		get_tree().create_timer(manager.advance_delay_s).timeout.connect(_open_next)
 	_show_result()
 
@@ -358,8 +361,8 @@ func _on_report_finished(_ok: bool, message: String) -> void:
 func _show_result() -> void:
 	var out := _result_lines.duplicate()
 	if not config.practice:
-		out.append(_save_message if _save_message != "" else "Saving your score...")
-	panel.show_text("Mission complete!", out)
+		out.append(_save_message if _save_message != "" else say("saving"))
+	panel.show_text(say("result_title"), out)
 
 
 ## One line per slot, ticked once its part is in, then any feedback.

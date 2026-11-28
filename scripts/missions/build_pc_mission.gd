@@ -45,5 +45,7 @@ func _on_rejected(zone: SnapZone, part: GrabbablePart) -> void:
 func _result_extras() -> PackedStringArray:
 	var out := PackedStringArray(["Your build: " + Compatibility.summary(_booted)])
 	if manager.bonus > 0:
-		out.append("Balanced build: +%d" % manager.bonus)
+		out.append(say("bonus", {"why": "Balanced build", "points": manager.bonus}))
+	elif config.scoring.balanced_bonus > 0:
+		out.append(say("bonus_missed", {"how": "Pick parts all within one tier of each other", "points": config.scoring.balanced_bonus}))
 	return out

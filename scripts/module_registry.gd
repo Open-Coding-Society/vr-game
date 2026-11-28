@@ -25,6 +25,34 @@ const ON_COMPLETE := ["boot"]
 ## finishes when the goal is met, not when its slots are full.
 const GOAL_KINDS := ["connected", "reach", "delivered", "cut_then_restore", "survives_any_single_cut", "jobs_done"]
 
+## The text every mission shares (Phase 5's consistency pass): what the panel
+## says when a part goes in, when it's turned away, and on the success panel.
+## data/modules.json's "messages" can reword any of them; {names} in braces
+## are filled in. A mission's own text (intro, hints, roles) stays with it.
+const MESSAGE_DEFAULTS := {
+	"installed": "Yes! The {part} goes in the {slot}.",
+	"installed_role": "Yes! {role}",
+	"next_step": "Yes! On to the next step.",
+	"step_progress": "Yes! {done} of {total} done.",
+	"step_done": "Yes! That's done.",
+	"wrong_part": "The {part} doesn't go there. {hint}",
+	"working_part": "Not that one. {hint}",
+	"needs_tool": "Not with the {part}. {hint}",
+	"too_early": "Not yet. First finish: {first}. {hint}",
+	"strap_first": "Put on the anti-static wrist strap first: a spark of static from your hand can kill a part you touch.",
+	"probe": "Multimeter on the {slot}: {reads}. {means}",
+	"result_title": "Mission complete!",
+	"result_score": "Score: {score}   Time: {time}   Mistakes: {mistakes}",
+	"bonus": "{why}: +{points}",
+	"bonus_missed": "{how} for {points} more points.",
+	"back_to": "Back to {label} in {seconds} seconds",
+	"next_mission": "Next: {title} in {seconds} seconds",
+	"saving": "Saving your score...",
+}
+
+## MESSAGE_DEFAULTS, with any rewording from the file.
+var messages: Dictionary = MESSAGE_DEFAULTS.duplicate()
+
 ## Every mission by its full id ("module.mission"), each a Dictionary with the
 ## mission's fields plus "full_id" and "module_title".
 var missions: Dictionary = {}
@@ -56,6 +84,39 @@ func read(data: Dictionary) -> void:
 		return
 	for module in module_list:
 		_read_module(module)
+	_read_messages(data.get("messages", {}))
+
+
+## The file's "messages": each must be a known key and text, keeping every
+## {name} the default has, so no blank ends up on a panel.
+func _read_messages(given) -> void:
+	if typeof(given) != TYPE_DICTIONARY:
+		errors.append("messages: must map message names to text")
+		return
+	for key in given:
+		if not MESSAGE_DEFAULTS.has(key):
+			errors.append("messages.%s: not a message the game shows (%s)" % [key, ", ".join(MESSAGE_DEFAULTS.keys())])
+		elif typeof(given[key]) != TYPE_STRING or given[key] == "":
+			errors.append("messages.%s: must be text" % key)
+		else:
+			var missing := _placeholders(MESSAGE_DEFAULTS[key]).filter(func(p) -> bool: return not "{%s}" % p in given[key])
+			if not missing.is_empty():
+				errors.append("messages.%s: must keep %s" % [key, ", ".join(missing.map(func(p) -> String: return "{%s}" % p))])
+			else:
+				messages[key] = given[key]
+
+
+## A shared message with its {names} filled in, e.g.
+## say("wrong_part", {"part": "RAM stick", "hint": "..."}).
+func say(key: String, values := {}) -> String:
+	return str(messages.get(key, MESSAGE_DEFAULTS.get(key, key))).format(values)
+
+
+static func _placeholders(text: String) -> Array:
+	var out := []
+	for m in RegEx.create_from_string("\\{([a-z_]+)\\}").search_all(text):
+		out.append(m.get_string(1))
+	return out
 
 
 func mission(full_id: String) -> Dictionary:

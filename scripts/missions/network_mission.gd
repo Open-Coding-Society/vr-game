@@ -282,9 +282,9 @@ func _result_extras() -> PackedStringArray:
 	if job_board and not job_zones.is_empty():
 		out.append(job_board.summary(int(config.goal.jobs_done), job_counts.values()))
 		if job_board.is_even(_all_job_counts()):
-			out.append("Spread evenly across every machine: +%d" % config.scoring.balanced_bonus)
+			out.append(say("bonus", {"why": "Spread evenly across every machine", "points": config.scoring.balanced_bonus}))
 		else:
-			out.append("Spread the tiles evenly across all the machines for %d more points." % config.scoring.balanced_bonus)
+			out.append(say("bonus_missed", {"how": "Spread the tiles evenly across all the machines", "points": config.scoring.balanced_bonus}))
 	return out
 
 

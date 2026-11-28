@@ -1,4 +1,24 @@
 {
+  "messages": {
+    "installed": "Yes! The {part} goes in the {slot}.",
+    "installed_role": "Yes! {role}",
+    "next_step": "Yes! On to the next step.",
+    "step_progress": "Yes! {done} of {total} done.",
+    "step_done": "Yes! That's done.",
+    "wrong_part": "The {part} doesn't go there. {hint}",
+    "working_part": "Not that one. {hint}",
+    "needs_tool": "Not with the {part}. {hint}",
+    "too_early": "Not yet. First finish: {first}. {hint}",
+    "strap_first": "Put on the anti-static wrist strap first: a spark of static from your hand can kill a part you touch.",
+    "probe": "Multimeter on the {slot}: {reads}. {means}",
+    "result_title": "Mission complete!",
+    "result_score": "Score: {score}   Time: {time}   Mistakes: {mistakes}",
+    "bonus": "{why}: +{points}",
+    "bonus_missed": "{how} for {points} more points.",
+    "back_to": "Back to {label} in {seconds} seconds",
+    "next_mission": "Next: {title} in {seconds} seconds",
+    "saving": "Saving your score..."
+  },
   "modules": [
     {
       "id": "build_computer",
